@@ -40,10 +40,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickLogin = (email: string) => {
-    setLoginIdentifier(email);
-    setPassword('password123');
-  };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden bg-slate-950">
@@ -154,31 +151,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Quick Demo Switcher Title */}
-          <div className="mt-8 border-t border-white/5 pt-6">
-            <p className="text-[10px] uppercase font-extrabold text-slate-500 text-center tracking-widest mb-4">ทดสอบสิทธิ์ของแต่ละหน้าบอร์ด (Demo Quick Logins)</p>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                onClick={() => handleQuickLogin('admin@warehouse.com')}
-                className="px-2 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-[10px] font-semibold text-slate-300 text-center transition-colors border border-white/5 hover:border-warehouse-orange/30"
-              >
-                Admin (ผู้ดูแล/HR)
-              </button>
-              <button
-                onClick={() => handleQuickLogin('supervisor1@warehouse.com')}
-                className="px-2 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-[10px] font-semibold text-slate-300 text-center transition-colors border border-white/5 hover:border-warehouse-orange/30"
-              >
-                Staff (หัวหน้า/ฝึกสอน)
-              </button>
-              <button
-                onClick={() => handleQuickLogin('employee1@warehouse.com')}
-                className="px-2 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-[10px] font-semibold text-slate-300 text-center transition-colors border border-white/5 hover:border-warehouse-orange/30"
-              >
-                Employee (พนักงานคลัง)
-              </button>
-            </div>
-            <p className="text-[10px] text-slate-500 text-center mt-3">รหัสผ่านสำหรับทุกสิทธิ์คือ: <code className="text-warehouse-orange">password123</code></p>
-          </div>
+
 
         </div>
       </motion.div>

@@ -7,7 +7,7 @@ const router = Router();
 
 // Helper to encrypt password (default to 'password123')
 const getDefaultPasswordHash = async () => {
-  return '$2a$10$e0MYzXy5FA47f7.rA.pS4eUa3qU0j4wF4.1Hj5K/v6Gv6o2C7Lh4C';
+  return '$2a$10$U1FNXk2W1scs2ZpblqipzuMN92V3rAAkW1UOdFSdgrCcmYjadz5O2';
 };
 
 /**

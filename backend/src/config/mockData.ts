@@ -177,7 +177,7 @@ export interface WarehouseDocument {
 
 // Global In-Memory Arrays (Seed values)
 // Password hash is for 'password123'
-const bcryptHash = '$2a$10$e0MYzXy5FA47f7.rA.pS4eUa3qU0j4wF4.1Hj5K/v6Gv6o2C7Lh4C';
+const bcryptHash = '$2a$10$U1FNXk2W1scs2ZpblqipzuMN92V3rAAkW1UOdFSdgrCcmYjadz5O2';
 
 export const mockUsers: User[] = [
   { id: 1, employee_id: 'EMP001', email: 'admin@warehouse.com', password_hash: bcryptHash, name: 'สมชาย แสนดี', role: 'admin', department: 'Management', position: 'Warehouse Director', warehouse_area: 'Executive Office', phone: '081-234-5678', status: 'active', supervisor_id: null, start_date: '2020-01-15', photo_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', working_shift: 'A' },

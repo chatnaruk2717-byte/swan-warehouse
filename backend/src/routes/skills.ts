@@ -30,7 +30,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
  *   get:
  *     summary: Retrieve full skill matrix (employees and their skills status)
  */
-router.get('/matrix', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
+router.get('/matrix', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (getMockStatus()) {
       throw new Error('MOCK_MODE');
@@ -63,28 +63,30 @@ router.get('/matrix', authenticateToken, requireRole(['admin', 'staff']), async 
 
   } catch (err: any) {
     // Mock Mode Fallback
-    const matrix = mockStore.mockEmployeeSkills.map(es => {
-      const employee = mockStore.mockUsers.find(u => u.id === es.employee_id);
-      const skill = mockStore.mockSkills.find(s => s.id === es.skill_id);
-      const approver = mockStore.mockUsers.find(u => u.id === es.approved_by);
+    const matrix = mockStore.mockEmployeeSkills
+      .filter(es => mockStore.mockUsers.some(u => u.id === es.employee_id))
+      .map(es => {
+        const employee = mockStore.mockUsers.find(u => u.id === es.employee_id);
+        const skill = mockStore.mockSkills.find(s => s.id === es.skill_id);
+        const approver = mockStore.mockUsers.find(u => u.id === es.approved_by);
 
-      return {
-        id: es.id,
-        employee_id: es.employee_id,
-        employee_name: employee ? employee.name : 'Unknown',
-        emp_code: employee ? employee.employee_id : '',
-        department: employee ? employee.department : '',
-        position: employee ? employee.position : '',
-        skill_id: es.skill_id,
-        skill_name: skill ? skill.name : 'Unknown',
-        skill_category: skill ? skill.category : '',
-        level: es.level,
-        status: es.status,
-        expiration_date: es.expiration_date,
-        approved_at: es.approved_at,
-        approved_by_name: approver ? approver.name : null
-      };
-    });
+        return {
+          id: es.id,
+          employee_id: es.employee_id,
+          employee_name: employee ? employee.name : 'Unknown',
+          emp_code: employee ? employee.employee_id : '',
+          department: employee ? employee.department : '',
+          position: employee ? employee.position : '',
+          skill_id: es.skill_id,
+          skill_name: skill ? skill.name : 'Unknown',
+          skill_category: skill ? skill.category : '',
+          level: es.level,
+          status: es.status,
+          expiration_date: es.expiration_date,
+          approved_at: es.approved_at,
+          approved_by_name: approver ? approver.name : null
+        };
+      });
     return res.json(matrix);
   }
 });

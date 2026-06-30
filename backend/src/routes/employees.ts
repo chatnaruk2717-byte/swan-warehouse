@@ -250,6 +250,11 @@ router.delete('/:id', authenticateToken, requireRole(['admin']), async (req: Aut
       throw new Error('MOCK_MODE');
     }
 
+    // Cascade Delete associated records in PostgreSQL database
+    await query('DELETE FROM daily_tasks WHERE employee_id = $1', [employeeId]);
+    await query('DELETE FROM employee_skills WHERE employee_id = $1', [employeeId]);
+    await query('DELETE FROM enrollments WHERE employee_id = $1', [employeeId]);
+
     const deleteResult = await query('DELETE FROM users WHERE id = $1 RETURNING *', [employeeId]);
     if (deleteResult.rows.length === 0) {
       return res.status(404).json({ message: 'Employee not found.' });
@@ -263,6 +268,11 @@ router.delete('/:id', authenticateToken, requireRole(['admin']), async (req: Aut
     if (index === -1) {
       return res.status(404).json({ message: 'Employee not found (Mock).' });
     }
+
+    // Cascade Delete in Mock Storage
+    mockStore.mockDailyTasks = mockStore.mockDailyTasks.filter(t => t.employee_id !== employeeId);
+    mockStore.mockEmployeeSkills = mockStore.mockEmployeeSkills.filter(s => s.employee_id !== employeeId);
+    mockStore.mockEnrollments = mockStore.mockEnrollments.filter(e => e.employee_id !== employeeId);
 
     mockStore.mockUsers.splice(index, 1);
     return res.json({ message: 'Employee deleted successfully (Mock).' });

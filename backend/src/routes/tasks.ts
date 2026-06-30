@@ -48,20 +48,23 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
     if (userRole === 'employee') {
       const list = mockStore.mockDailyTasks
         .filter(t => t.employee_id === userId)
+        .filter(t => mockStore.mockUsers.some(u => u.id === t.employee_id))
         .map(t => {
           const emp = mockStore.mockUsers.find(u => u.id === t.employee_id);
           return { ...t, employee_name: emp ? emp.name : 'Unknown' };
         });
       return res.json(list);
     } else {
-      const list = mockStore.mockDailyTasks.map(t => {
-        const emp = mockStore.mockUsers.find(u => u.id === t.employee_id);
-        return {
-          ...t,
-          employee_name: emp ? emp.name : 'Unknown',
-          emp_code: emp ? emp.employee_id : ''
-        };
-      });
+      const list = mockStore.mockDailyTasks
+        .filter(t => mockStore.mockUsers.some(u => u.id === t.employee_id))
+        .map(t => {
+          const emp = mockStore.mockUsers.find(u => u.id === t.employee_id);
+          return {
+            ...t,
+            employee_name: emp ? emp.name : 'Unknown',
+            emp_code: emp ? emp.employee_id : ''
+          };
+        });
       return res.json(list);
     }
   }

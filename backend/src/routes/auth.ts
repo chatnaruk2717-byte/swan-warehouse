@@ -162,9 +162,10 @@ router.post('/change-password', authenticateToken, async (req: AuthenticatedRequ
     return res.status(400).json({ message: 'Current password and new password are required.' });
   }
 
+  let newHash = '';
   try {
     const salt = await bcrypt.genSalt(10);
-    const newHash = await bcrypt.hash(newPassword, salt);
+    newHash = await bcrypt.hash(newPassword, salt);
 
     if (getMockStatus()) {
       throw new Error('MOCK_MODE');

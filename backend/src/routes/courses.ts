@@ -813,7 +813,9 @@ router.delete('/questions/:id', authenticateToken, requireRole(['admin', 'staff'
     return res.json({ message: 'Question deleted successfully.' });
 
   } catch (err: any) {
-    mockStore.mockQuestions = mockStore.mockQuestions.filter(q => q.id !== qId);
+    const filtered = mockStore.mockQuestions.filter(q => q.id !== qId);
+    mockStore.mockQuestions.length = 0;
+    mockStore.mockQuestions.push(...filtered);
     return res.json({ message: 'Question deleted successfully (Mock).' });
   }
 });

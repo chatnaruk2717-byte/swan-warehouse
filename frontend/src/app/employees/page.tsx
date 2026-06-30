@@ -83,10 +83,12 @@ export default function EmployeesPage() {
       resetForm();
     } catch (err) {
       // Mock mode append
+      const selectedSup = employees.find(e => e.id.toString() === formFields.supervisor_id);
       const mockNew = {
         ...formFields,
         id: Date.now(),
-        supervisor_name: formFields.supervisor_id === '4' ? 'ประพันธ์ ยอดคุม' : 'สมศรี มีคุม',
+        supervisor_id: formFields.supervisor_id ? parseInt(formFields.supervisor_id, 10) : null,
+        supervisor_name: selectedSup ? selectedSup.name : 'ไม่มี',
         status: 'active'
       };
       setEmployees([...employees, mockNew]);
@@ -106,10 +108,12 @@ export default function EmployeesPage() {
       resetForm();
     } catch (err) {
       // Mock mode edit
+      const selectedSup = employees.find(e => e.id.toString() === formFields.supervisor_id);
       const updated = {
         ...selectedEmp,
         ...formFields,
-        supervisor_name: formFields.supervisor_id === '4' ? 'ประพันธ์ ยอดคุม' : 'สมศรี มีคุม'
+        supervisor_id: formFields.supervisor_id ? parseInt(formFields.supervisor_id, 10) : null,
+        supervisor_name: selectedSup ? selectedSup.name : 'ไม่มี'
       };
       setEmployees(employees.map(emp => emp.id === selectedEmp.id ? updated : emp));
       setShowEditModal(false);
@@ -474,6 +478,23 @@ export default function EmployeesPage() {
                   <input type="date" value={formFields.start_date} onChange={(e) => setFormFields({ ...formFields, start_date: e.target.value })} className="glass-input text-xs" />
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5 col-span-2">
+                  <label className="text-[10px] font-bold text-slate-400">หัวหน้างานผู้ควบคุม (Supervisor)</label>
+                  <select 
+                    value={formFields.supervisor_id || ''} 
+                    onChange={(e) => setFormFields({ ...formFields, supervisor_id: e.target.value })} 
+                    className="glass-input text-xs bg-white dark:bg-warehouse-slate"
+                  >
+                    <option value="">-- ไม่มีหัวหน้างาน --</option>
+                    {employees.filter(e => e.role === 'admin' || e.role === 'staff').map(sup => (
+                      <option key={sup.id} value={sup.id.toString()}>
+                        {sup.name} ({sup.position || sup.role})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
               <div className="grid grid-cols-1 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-400">อัปโหลดรูปภาพพนักงาน (Photo Upload)</label>
@@ -577,6 +598,23 @@ export default function EmployeesPage() {
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-400">วันเริ่มงาน (Start Date)</label>
                   <input type="date" value={formFields.start_date} onChange={(e) => setFormFields({ ...formFields, start_date: e.target.value })} className="glass-input text-xs" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5 col-span-2">
+                  <label className="text-[10px] font-bold text-slate-400">หัวหน้างานผู้ควบคุม (Supervisor)</label>
+                  <select 
+                    value={formFields.supervisor_id || ''} 
+                    onChange={(e) => setFormFields({ ...formFields, supervisor_id: e.target.value })} 
+                    className="glass-input text-xs bg-white dark:bg-warehouse-slate"
+                  >
+                    <option value="">-- ไม่มีหัวหน้างาน --</option>
+                    {employees.filter(e => e.role === 'admin' || e.role === 'staff').map(sup => (
+                      <option key={sup.id} value={sup.id.toString()}>
+                        {sup.name} ({sup.position || sup.role})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-4">

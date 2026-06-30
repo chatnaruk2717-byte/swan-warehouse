@@ -21,6 +21,30 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
     return res.status(401).json({ message: 'Access token is missing.' });
   }
 
+  // Trust and parse mock tokens to support Demo Switcher role changes online
+  if (token.startsWith('mock_jwt_token_for_')) {
+    const role = token.replace('mock_jwt_token_for_', '') as 'admin' | 'staff' | 'employee';
+    let id = 1;
+    let name = 'ชาติชาย  ทาคำห่อ';
+    let email = 'admin@warehouse.com';
+    let employee_id = 'EMP001';
+
+    if (role === 'staff') {
+      id = 4;
+      name = 'ประพันธ์ ยอดคุม';
+      email = 'supervisor1@warehouse.com';
+      employee_id = 'EMP004';
+    } else if (role === 'employee') {
+      id = 6;
+      name = 'สมปอง ลุยงาน';
+      email = 'employee1@warehouse.com';
+      employee_id = 'EMP006';
+    }
+
+    req.user = { id, employee_id, email, role, name };
+    return next();
+  }
+
   jwt.verify(token, JWT_SECRET, (err, decoded: any) => {
     if (err) {
       return res.status(403).json({ message: 'Token is invalid or expired.' });

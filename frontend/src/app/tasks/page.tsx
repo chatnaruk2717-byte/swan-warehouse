@@ -14,7 +14,8 @@ import {
   Clock, 
   CheckCircle2,
   Sliders,
-  Upload
+  Upload,
+  Trash2
 } from 'lucide-react';
 
 export default function TasksPage() {
@@ -254,6 +255,17 @@ export default function TasksPage() {
     }
   };
 
+  const handleDeleteTask = async (taskId: number) => {
+    if (!confirm('คุณแน่ใจว่าต้องการลบภารกิจงานชิ้นนี้ออกจากระบบ?')) return;
+    try {
+      await api.delete(`/api/tasks/${taskId}`);
+      loadData();
+    } catch (err) {
+      // Mock delete
+      setTasks(tasks.filter(t => t.id !== taskId));
+    }
+  };
+
   const resetTaskForm = () => {
     setTaskForm({
       employee_id: '',
@@ -428,6 +440,16 @@ export default function TasksPage() {
                   >
                     <Check size={14} />
                     <span>ตรวจและอนุมัติงาน</span>
+                  </button>
+                )}
+                {user && ['admin', 'staff'].includes(user.role) && (
+                  <button 
+                    onClick={() => handleDeleteTask(task.id)}
+                    className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 transition-all border border-rose-500/20 flex items-center gap-1 text-[10px] font-bold"
+                    title="ลบงานที่มอบหมาย"
+                  >
+                    <Trash2 size={14} />
+                    <span>ลบงาน</span>
                   </button>
                 )}
               </div>

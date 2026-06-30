@@ -267,4 +267,33 @@ router.post('/:id/reject', authenticateToken, requireRole(['admin', 'staff']), a
   }
 });
 
+/**
+ * DELETE /api/tasks/:id
+ * Admin/Staff deletes an assigned daily task
+ */
+router.delete('/:id', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
+  const taskId = parseInt(req.params.id, 10);
+  try {
+    if (getMockStatus()) {
+      throw new Error('MOCK_MODE');
+    }
+
+    const deleteResult = await query('DELETE FROM daily_tasks WHERE id = $1 RETURNING *', [taskId]);
+    if (deleteResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Task not found.' });
+    }
+    return res.json({ message: 'Task deleted successfully.' });
+
+  } catch (err: any) {
+    // Mock Mode Fallback
+    const index = mockStore.mockDailyTasks.findIndex(t => t.id === taskId);
+    if (index === -1) {
+      return res.status(404).json({ message: 'Task not found (Mock).' });
+    }
+
+    mockStore.mockDailyTasks.splice(index, 1);
+    return res.json({ message: 'Task deleted successfully (Mock).' });
+  }
+});
+
 export default router;

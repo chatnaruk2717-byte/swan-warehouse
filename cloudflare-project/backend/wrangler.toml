@@ -1,0 +1,9 @@
+name = "warehouse-api"
+main = "src/index.ts"
+compatibility_date = "2024-03-03"
+
+# Allow CORS by default or let Hono handle it
+[[d1_databases]]
+binding = "DB"
+database_name = "warehouse-db"
+database_id = "10c1ba6d-ddd9-4469-b410-8b303ec22490"

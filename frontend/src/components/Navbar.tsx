@@ -76,38 +76,40 @@ export const Navbar = () => {
       <div className="flex items-center gap-4">
         
         {/* DEMO ROLE SWITCHER BADGE */}
-        <div className="relative">
-          <button 
-            onClick={() => setShowRoleDropdown(!showRoleDropdown)}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-warehouse-orange/10 hover:bg-warehouse-orange/20 text-warehouse-orange transition-colors text-xs font-bold border border-warehouse-orange/30"
-          >
-            <UserSquare2 size={16} />
-            <span>สลับบทบาท (Demo Role)</span>
-            <ChevronDown size={14} />
-          </button>
+        {typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && (
+          <div className="relative">
+            <button 
+              onClick={() => setShowRoleDropdown(!showRoleDropdown)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-warehouse-orange/10 hover:bg-warehouse-orange/20 text-warehouse-orange transition-colors text-xs font-bold border border-warehouse-orange/30"
+            >
+              <UserSquare2 size={16} />
+              <span>สลับบทบาท (Demo Role)</span>
+              <ChevronDown size={14} />
+            </button>
 
-          {showRoleDropdown && (
-            <div className="absolute right-0 mt-2 w-64 rounded-2xl glass-panel shadow-xl dark:shadow-black/30 border border-slate-200/60 dark:border-white/10 p-2 z-50">
-              <p className="text-[10px] uppercase font-bold text-slate-400 px-3 py-2 tracking-wider">เลือกสิทธิ์จำลองระบบ</p>
-              {rolesList.map((item) => (
-                <button
-                  key={item.role}
-                  onClick={() => {
-                    switchDemoRole(item.role);
-                    setShowRoleDropdown(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
-                    user.role === item.role 
-                      ? 'bg-warehouse-orange/15 text-warehouse-orange font-semibold' 
-                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5'
-                  }`}
-                >
-                  {item.name}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+            {showRoleDropdown && (
+              <div className="absolute right-0 mt-2 w-64 rounded-2xl glass-panel shadow-xl dark:shadow-black/30 border border-slate-200/60 dark:border-white/10 p-2 z-50">
+                <p className="text-[10px] uppercase font-bold text-slate-400 px-3 py-2 tracking-wider">เลือกสิทธิ์จำลองระบบ</p>
+                {rolesList.map((item) => (
+                  <button
+                    key={item.role}
+                    onClick={() => {
+                      switchDemoRole(item.role);
+                      setShowRoleDropdown(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
+                      user.role === item.role 
+                        ? 'bg-warehouse-orange/15 text-warehouse-orange font-semibold' 
+                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    {item.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* DARK / LIGHT THEME TOGGLE */}
         <button 

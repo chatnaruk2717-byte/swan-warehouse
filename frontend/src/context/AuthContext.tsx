@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Intercept request to inject Authorization header
   api.interceptors.request.use((config) => {
-    const savedToken = localStorage.getItem('token');
+    const savedToken = sessionStorage.getItem('token');
     if (savedToken) {
       config.headers.Authorization = `Bearer ${savedToken}`;
     }
@@ -62,20 +62,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   });
 
   useEffect(() => {
-    const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
+    const savedToken = sessionStorage.getItem('token');
+    const savedUser = sessionStorage.getItem('user');
 
     if (savedToken && savedUser) {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
     } else {
-      // Default to employee demo user on initial load for easier evaluation
-      const defaultUser = demoProfiles.employee;
-      const defaultToken = 'mock_jwt_token_for_employee';
-      setToken(defaultToken);
-      setUser(defaultUser);
-      localStorage.setItem('token', defaultToken);
-      localStorage.setItem('user', JSON.stringify(defaultUser));
+      // Force redirect to login on fresh page entries
+      setToken(null);
+      setUser(null);
+      router.push('/login');
     }
     setLoading(false);
   }, []);
@@ -87,8 +84,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       setToken(jwtToken);
       setUser(loggedUser);
-      localStorage.setItem('token', jwtToken);
-      localStorage.setItem('user', JSON.stringify(loggedUser));
+      sessionStorage.setItem('token', jwtToken);
+      sessionStorage.setItem('user', JSON.stringify(loggedUser));
       
       router.push('/dashboard');
       return true;
@@ -109,8 +106,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           
           setToken(mockToken);
           setUser(profile);
-          localStorage.setItem('token', mockToken);
-          localStorage.setItem('user', JSON.stringify(profile));
+          sessionStorage.setItem('token', mockToken);
+          sessionStorage.setItem('user', JSON.stringify(profile));
           router.push('/dashboard');
           return true;
         }
@@ -122,8 +119,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     router.push('/login');
   };
 
@@ -133,8 +130,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     setToken(mockToken);
     setUser(profile);
-    localStorage.setItem('token', mockToken);
-    localStorage.setItem('user', JSON.stringify(profile));
+    sessionStorage.setItem('token', mockToken);
+    sessionStorage.setItem('user', JSON.stringify(profile));
     
     // Refresh page/routing after role switch
     router.refresh();
@@ -142,7 +139,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const updateProfile = (updatedUser: User) => {
     setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+    sessionStorage.setItem('user', JSON.stringify(updatedUser));
   };
 
   return (

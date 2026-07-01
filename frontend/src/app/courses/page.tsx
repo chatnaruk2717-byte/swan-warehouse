@@ -17,7 +17,8 @@ import {
   PlusCircle,
   HelpCircle,
   Upload,
-  Trash2
+  Trash2,
+  Sliders
 } from 'lucide-react';
 import Link from 'next/link';
 

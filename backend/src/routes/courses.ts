@@ -799,24 +799,248 @@ router.post('/lessons/:id/questions', authenticateToken, requireRole(['admin', '
 });
 
 /**
- * DELETE /api/courses/questions/:id
- * Delete a quiz question
+ * DELETE /api/courses/:id
+ * Delete a course and all its associated chapters, lessons, questions, and enrollments
  */
-router.delete('/questions/:id', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
-  const qId = parseInt(req.params.id, 10);
+router.delete('/:id', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
+  const courseId = parseInt(req.params.id, 10);
   try {
     if (getMockStatus()) {
       throw new Error('MOCK_MODE');
     }
 
-    await query('DELETE FROM questions WHERE id = $1', [qId]);
-    return res.json({ message: 'Question deleted successfully.' });
+    // Cascade delete in PostgreSQL
+    await query(`
+      DELETE FROM questions WHERE lesson_id IN (
+        SELECT l.id FROM lessons l
+        JOIN chapters c ON l.chapter_id = c.id
+        WHERE c.course_id = $1
+      )
+    `, [courseId]);
+
+    await query(`
+      DELETE FROM lesson_progress WHERE lesson_id IN (
+        SELECT l.id FROM lessons l
+        JOIN chapters c ON l.chapter_id = c.id
+        WHERE c.course_id = $1
+      )
+    `, [courseId]);
+
+    await query(`
+      DELETE FROM lessons WHERE chapter_id IN (
+        SELECT id FROM chapters WHERE course_id = $1
+      )
+    `, [courseId]);
+
+    await query('DELETE FROM chapters WHERE course_id = $1', [courseId]);
+    await query('DELETE FROM enrollments WHERE course_id = $1', [courseId]);
+    const deleteResult = await query('DELETE FROM courses WHERE id = $1 RETURNING *', [courseId]);
+
+    if (deleteResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Course not found.' });
+    }
+    return res.json({ message: 'Course deleted successfully.' });
 
   } catch (err: any) {
-    const filtered = mockStore.mockQuestions.filter(q => q.id !== qId);
+    // Mock Mode Fallback
+    const index = mockStore.mockCourses.findIndex(c => c.id === courseId);
+    if (index === -1) {
+      return res.status(404).json({ message: 'Course not found (Mock).' });
+    }
+
+    const chapIds = mockStore.mockChapters.filter(ch => ch.course_id === courseId).map(ch => ch.id);
+    const lesIds = mockStore.mockLessons.filter(l => chapIds.includes(l.chapter_id)).map(l => l.id);
+
+    const filteredQuestions = mockStore.mockQuestions.filter(q => !lesIds.includes(q.lesson_id));
     mockStore.mockQuestions.length = 0;
-    mockStore.mockQuestions.push(...filtered);
-    return res.json({ message: 'Question deleted successfully (Mock).' });
+    mockStore.mockQuestions.push(...filteredQuestions);
+
+    const filteredLessons = mockStore.mockLessons.filter(l => !chapIds.includes(l.chapter_id));
+    mockStore.mockLessons.length = 0;
+    mockStore.mockLessons.push(...filteredLessons);
+
+    const filteredChapters = mockStore.mockChapters.filter(ch => ch.course_id !== courseId);
+    mockStore.mockChapters.length = 0;
+    mockStore.mockChapters.push(...filteredChapters);
+
+    const filteredEnrollments = mockStore.mockEnrollments.filter(e => e.course_id !== courseId);
+    mockStore.mockEnrollments.length = 0;
+    mockStore.mockEnrollments.push(...filteredEnrollments);
+
+    mockStore.mockCourses.splice(index, 1);
+    return res.json({ message: 'Course deleted successfully (Mock).' });
+  }
+});
+
+/**
+ * DELETE /api/courses/chapters/:id
+ * Delete a chapter and all its lessons and questions
+ */
+router.delete('/chapters/:id', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
+  const chapterId = parseInt(req.params.id, 10);
+  try {
+    if (getMockStatus()) {
+      throw new Error('MOCK_MODE');
+    }
+
+    await query(`
+      DELETE FROM questions WHERE lesson_id IN (
+        SELECT id FROM lessons WHERE chapter_id = $1
+      )
+    `, [chapterId]);
+
+    await query(`
+      DELETE FROM lesson_progress WHERE lesson_id IN (
+        SELECT id FROM lessons WHERE chapter_id = $1
+      )
+    `, [chapterId]);
+
+    await query('DELETE FROM lessons WHERE chapter_id = $1', [chapterId]);
+    const deleteResult = await query('DELETE FROM chapters WHERE id = $1 RETURNING *', [chapterId]);
+
+    if (deleteResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Chapter not found.' });
+    }
+    return res.json({ message: 'Chapter deleted successfully.' });
+
+  } catch (err: any) {
+    const index = mockStore.mockChapters.findIndex(ch => ch.id === chapterId);
+    if (index === -1) {
+      return res.status(404).json({ message: 'Chapter not found (Mock).' });
+    }
+
+    const lesIds = mockStore.mockLessons.filter(l => l.chapter_id === chapterId).map(l => l.id);
+
+    const filteredQuestions = mockStore.mockQuestions.filter(q => !lesIds.includes(q.lesson_id));
+    mockStore.mockQuestions.length = 0;
+    mockStore.mockQuestions.push(...filteredQuestions);
+
+    const filteredLessons = mockStore.mockLessons.filter(l => l.chapter_id !== chapterId);
+    mockStore.mockLessons.length = 0;
+    mockStore.mockLessons.push(...filteredLessons);
+
+    mockStore.mockChapters.splice(index, 1);
+    return res.json({ message: 'Chapter deleted successfully (Mock).' });
+  }
+});
+
+/**
+ * PUT /api/courses/chapters/:id
+ * Edit chapter title
+ */
+router.put('/chapters/:id', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
+  const chapterId = parseInt(req.params.id, 10);
+  const { title } = req.body;
+
+  if (!title) {
+    return res.status(400).json({ message: 'Chapter title is required.' });
+  }
+
+  try {
+    if (getMockStatus()) {
+      throw new Error('MOCK_MODE');
+    }
+
+    const updateQuery = `
+      UPDATE chapters 
+      SET title = $1, updated_at = NOW() 
+      WHERE id = $2 
+      RETURNING *
+    `;
+    const result = await query(updateQuery, [title, chapterId]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Chapter not found.' });
+    }
+    return res.json(result.rows[0]);
+
+  } catch (err: any) {
+    const chapter = mockStore.mockChapters.find(ch => ch.id === chapterId);
+    if (!chapter) {
+      return res.status(404).json({ message: 'Chapter not found (Mock).' });
+    }
+
+    chapter.title = title;
+    return res.json(chapter);
+  }
+});
+
+/**
+ * DELETE /api/courses/lessons/:id
+ * Delete a lesson and its questions
+ */
+router.delete('/lessons/:id', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
+  const lessonId = parseInt(req.params.id, 10);
+  try {
+    if (getMockStatus()) {
+      throw new Error('MOCK_MODE');
+    }
+
+    await query('DELETE FROM questions WHERE lesson_id = $1', [lessonId]);
+    await query('DELETE FROM lesson_progress WHERE lesson_id = $1', [lessonId]);
+    const deleteResult = await query('DELETE FROM lessons WHERE id = $1 RETURNING *', [lessonId]);
+
+    if (deleteResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Lesson not found.' });
+    }
+    return res.json({ message: 'Lesson deleted successfully.' });
+
+  } catch (err: any) {
+    const index = mockStore.mockLessons.findIndex(l => l.id === lessonId);
+    if (index === -1) {
+      return res.status(404).json({ message: 'Lesson not found (Mock).' });
+    }
+
+    const filteredQuestions = mockStore.mockQuestions.filter(q => q.lesson_id !== lessonId);
+    mockStore.mockQuestions.length = 0;
+    mockStore.mockQuestions.push(...filteredQuestions);
+
+    mockStore.mockLessons.splice(index, 1);
+    return res.json({ message: 'Lesson deleted successfully (Mock).' });
+  }
+});
+
+/**
+ * PUT /api/courses/lessons/:id
+ * Edit lesson details
+ */
+router.put('/lessons/:id', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
+  const lessonId = parseInt(req.params.id, 10);
+  const { title, content_type, content_url, body_text } = req.body;
+
+  try {
+    if (getMockStatus()) {
+      throw new Error('MOCK_MODE');
+    }
+
+    const updateQuery = `
+      UPDATE lessons 
+      SET 
+        title = COALESCE($1, title),
+        content_type = COALESCE($2, content_type),
+        content_url = COALESCE($3, content_url),
+        body_text = COALESCE($4, body_text),
+        updated_at = NOW() 
+      WHERE id = $5 
+      RETURNING *
+    `;
+    const result = await query(updateQuery, [title, content_type, content_url || null, body_text || null, lessonId]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Lesson not found.' });
+    }
+    return res.json(result.rows[0]);
+
+  } catch (err: any) {
+    const lesson = mockStore.mockLessons.find(l => l.id === lessonId);
+    if (!lesson) {
+      return res.status(404).json({ message: 'Lesson not found (Mock).' });
+    }
+
+    if (title !== undefined) lesson.title = title;
+    if (content_type !== undefined) lesson.content_type = content_type as any;
+    if (content_url !== undefined) lesson.content_url = content_url;
+    if (body_text !== undefined) lesson.body_text = body_text;
+
+    return res.json(lesson);
   }
 });
 

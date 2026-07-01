@@ -76,6 +76,9 @@ export default function CoursesPage() {
     estimated_time: '2 ชั่วโมง'
   });
 
+  const [editingCourseId, setEditingCourseId] = useState<number | null>(null);
+  const [editingLessonId, setEditingLessonId] = useState<number | null>(null);
+
   const [assignForm, setAssignForm] = useState({
     employee_id: '',
     due_date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 15 days default
@@ -158,19 +161,93 @@ export default function CoursesPage() {
     }
   };
 
+  const handleEditChapter = async (chapId: number, title: string) => {
+    try {
+      const res = await api.put(`/api/courses/chapters/${chapId}`, { title });
+      setBuilderChapters(builderChapters.map(c => c.id === chapId ? res.data : c));
+    } catch {
+      setBuilderChapters(builderChapters.map(c => c.id === chapId ? { ...c, title } : c));
+    }
+  };
+
+  const handleDeleteChapter = async (chapId: number) => {
+    if (!confirm('คุณแน่ใจว่าต้องการลบบทเรียนย่อยนี้และเนื้อหาทั้งหมดภายใน?')) return;
+    try {
+      await api.delete(`/api/courses/chapters/${chapId}`);
+      setBuilderChapters(builderChapters.filter(c => c.id !== chapId));
+      if (activeChapterId === chapId) {
+        setActiveChapterId(null);
+        setBuilderLessons([]);
+        setActiveLessonId(null);
+      }
+    } catch {
+      setBuilderChapters(builderChapters.filter(c => c.id !== chapId));
+      if (activeChapterId === chapId) {
+        setActiveChapterId(null);
+        setBuilderLessons([]);
+        setActiveLessonId(null);
+      }
+    }
+  };
+
   const handleCreateLesson = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeChapterId || !newLessonForm.title) return;
     try {
-      const res = await api.post(`/api/courses/chapters/${activeChapterId}/lessons`, newLessonForm);
-      setBuilderLessons([...builderLessons, res.data]);
-      setActiveLessonId(res.data.id);
+      if (editingLessonId) {
+        const res = await api.put(`/api/courses/lessons/${editingLessonId}`, newLessonForm);
+        setBuilderLessons(builderLessons.map(l => l.id === editingLessonId ? res.data : l));
+        setEditingLessonId(null);
+      } else {
+        const res = await api.post(`/api/courses/chapters/${activeChapterId}/lessons`, newLessonForm);
+        setBuilderLessons([...builderLessons, res.data]);
+        setActiveLessonId(res.data.id);
+      }
       setNewLessonForm({ title: '', content_type: 'video', content_url: '', body_text: '' });
+      setUploadedFileName('');
     } catch {
-      const mockLesson = { id: Date.now(), chapter_id: activeChapterId, ...newLessonForm, sort_order: builderLessons.length };
-      setBuilderLessons([...builderLessons, mockLesson]);
-      setActiveLessonId(mockLesson.id);
+      if (editingLessonId) {
+        setBuilderLessons(builderLessons.map(l => l.id === editingLessonId ? { ...l, ...newLessonForm } : l));
+        setEditingLessonId(null);
+      } else {
+        const mockLesson = { id: Date.now(), chapter_id: activeChapterId, ...newLessonForm, sort_order: builderLessons.length };
+        setBuilderLessons([...builderLessons, mockLesson]);
+        setActiveLessonId(mockLesson.id);
+      }
       setNewLessonForm({ title: '', content_type: 'video', content_url: '', body_text: '' });
+      setUploadedFileName('');
+    }
+  };
+
+  const startEditLesson = (les: any) => {
+    setEditingLessonId(les.id);
+    setNewLessonForm({
+      title: les.title,
+      content_type: les.content_type,
+      content_url: les.content_url || '',
+      body_text: les.body_text || ''
+    });
+    setUploadMode(les.content_url && les.content_url.startsWith('data:') ? 'file' : 'link');
+    if (les.content_url && les.content_url.startsWith('data:')) {
+      setUploadedFileName('ไฟล์อัปโหลดเดิม');
+    } else {
+      setUploadedFileName('');
+    }
+  };
+
+  const handleDeleteLesson = async (lesId: number) => {
+    if (!confirm('คุณแน่ใจว่าต้องการลบเนื้อหาบทเรียนนี้?')) return;
+    try {
+      await api.delete(`/api/courses/lessons/${lesId}`);
+      setBuilderLessons(builderLessons.filter(l => l.id !== lesId));
+      if (activeLessonId === lesId) {
+        setActiveLessonId(null);
+      }
+    } catch {
+      setBuilderLessons(builderLessons.filter(l => l.id !== lesId));
+      if (activeLessonId === lesId) {
+        setActiveLessonId(null);
+      }
     }
   };
 
@@ -301,20 +378,57 @@ export default function CoursesPage() {
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await api.post('/api/courses', courseForm);
-      setCourses([...courses, res.data]);
+      if (editingCourseId) {
+        const res = await api.put(`/api/courses/${editingCourseId}`, courseForm);
+        setCourses(courses.map(c => c.id === editingCourseId ? res.data : c));
+      } else {
+        const res = await api.post('/api/courses', courseForm);
+        setCourses([...courses, res.data]);
+      }
       setShowCreateCourseModal(false);
       resetCourseForm();
     } catch {
-      // Mock append
-      const mockCourse = {
-        id: Date.now(),
-        ...courseForm,
-        duration_minutes: parseInt(courseForm.duration_minutes, 10)
-      };
-      setCourses([...courses, mockCourse]);
+      // Mock append/edit
+      if (editingCourseId) {
+        setCourses(courses.map(c => c.id === editingCourseId ? {
+          ...c,
+          ...courseForm,
+          duration_minutes: parseInt(courseForm.duration_minutes, 10)
+        } : c));
+      } else {
+        const mockCourse = {
+          id: Date.now(),
+          ...courseForm,
+          duration_minutes: parseInt(courseForm.duration_minutes, 10)
+        };
+        setCourses([...courses, mockCourse]);
+      }
       setShowCreateCourseModal(false);
       resetCourseForm();
+    }
+  };
+
+  const openEditCourse = (course: any) => {
+    setEditingCourseId(course.id);
+    setCourseForm({
+      name: course.name,
+      description: course.description,
+      duration_minutes: String(course.duration_minutes),
+      category: course.category,
+      instructor: course.instructor,
+      difficulty: course.difficulty,
+      estimated_time: course.estimated_time
+    });
+    setShowCreateCourseModal(true);
+  };
+
+  const handleDeleteCourse = async (courseId: number) => {
+    if (!confirm('คุณแน่ใจว่าต้องการลบหลักสูตรนี้และบทเรียนทั้งหมดที่อยู่ภายใน? ข้อมูลการลงทะเบียนเรียนของพนักงานจะถูกลบไปด้วย')) return;
+    try {
+      await api.delete(`/api/courses/${courseId}`);
+      loadData();
+    } catch {
+      setCourses(courses.filter(c => c.id !== courseId));
     }
   };
 
@@ -360,6 +474,7 @@ export default function CoursesPage() {
   };
 
   const resetCourseForm = () => {
+    setEditingCourseId(null);
     setCourseForm({
       name: '',
       description: '',
@@ -504,13 +619,31 @@ export default function CoursesPage() {
                   </div>
                   
                   {user && ['admin', 'staff'].includes(user.role) && (
-                    <button 
-                      type="button"
-                      onClick={() => openCourseBuilder(course)}
-                      className="text-warehouse-orange hover:underline text-[9px] font-bold"
-                    >
-                      จัดการบทเรียน (Builder)
-                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button 
+                        type="button"
+                        onClick={() => openCourseBuilder(course)}
+                        className="text-warehouse-orange hover:underline text-[9px] font-bold"
+                      >
+                        จัดการบทเรียน
+                      </button>
+                      <span className="text-slate-300 dark:text-white/10 text-[9px]">|</span>
+                      <button 
+                        type="button"
+                        onClick={() => openEditCourse(course)}
+                        className="text-sky-500 hover:underline text-[9px] font-bold"
+                      >
+                        แก้ไขวิชา
+                      </button>
+                      <span className="text-slate-300 dark:text-white/10 text-[9px]">|</span>
+                      <button 
+                        type="button"
+                        onClick={() => handleDeleteCourse(course.id)}
+                        className="text-rose-500 hover:underline text-[9px] font-bold"
+                      >
+                        ลบ
+                      </button>
+                    </div>
                   )}
                 </div>
 
@@ -577,7 +710,7 @@ export default function CoursesPage() {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <GlassCard className="w-full max-w-md overflow-hidden border border-white/10" animate={false}>
             <div className="flex items-center justify-between pb-4 border-b border-slate-200/50 dark:border-white/5 mb-6">
-              <h3 className="font-bold text-base">สร้างหลักสูตรใหม่ (Create Course)</h3>
+              <h3 className="font-bold text-base">{editingCourseId ? 'แก้ไขข้อมูลหลักสูตร (Edit Course)' : 'สร้างหลักสูตรใหม่ (Create Course)'}</h3>
               <button onClick={() => setShowCreateCourseModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                 <X size={18} />
               </button>
@@ -624,7 +757,7 @@ export default function CoursesPage() {
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/50 dark:border-white/5">
                 <button type="button" onClick={() => setShowCreateCourseModal(false)} className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-xs font-semibold">ยกเลิก</button>
-                <button type="submit" className="px-4 py-2 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold shadow-md shadow-warehouse-orange/15">สร้างหลักสูตร</button>
+                <button type="submit" className="px-4 py-2 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold shadow-md shadow-warehouse-orange/15">{editingCourseId ? 'บันทึกการแก้ไข' : 'สร้างหลักสูตร'}</button>
               </div>
             </form>
           </GlassCard>
@@ -733,17 +866,45 @@ export default function CoursesPage() {
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">บทเรียนย่อย (Chapters)</label>
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {builderChapters.map(chap => (
-                      <button
+                      <div 
                         key={chap.id}
-                        onClick={() => handleSelectChapter(chap.id)}
-                        className={`w-full text-left p-3 rounded-xl text-xs font-semibold border transition-all ${
+                        className={`w-full flex items-center justify-between p-2 rounded-xl text-xs font-semibold border transition-all ${
                           activeChapterId === chap.id
                             ? 'bg-warehouse-orange/10 border-warehouse-orange/30 text-warehouse-orange'
                             : 'bg-white dark:bg-white/5 border-slate-200/50 dark:border-white/5 text-slate-700 dark:text-slate-300'
                         }`}
                       >
-                        {chap.title}
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectChapter(chap.id)}
+                          className="flex-1 text-left truncate pr-2 font-semibold text-xs"
+                        >
+                          {chap.title}
+                        </button>
+                        <div className="flex items-center gap-1 shrink-0 pl-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newTitle = prompt('แก้ไขชื่อบทเรียนย่อย:', chap.title);
+                              if (newTitle && newTitle !== chap.title) {
+                                handleEditChapter(chap.id, newTitle);
+                              }
+                            }}
+                            className="p-1 text-sky-500 hover:text-sky-400 transition-colors"
+                            title="แก้ไขชื่อบทเรียน"
+                          >
+                            <Sliders size={12} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteChapter(chap.id)}
+                            className="p-1 text-rose-500 hover:text-rose-400 transition-colors"
+                            title="ลบบทเรียนนี้"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
                     ))}
                     {builderChapters.length === 0 && (
                       <p className="text-[10px] text-slate-500 py-2">ยังไม่มีบทเรียนย่อย</p>
@@ -771,18 +932,41 @@ export default function CoursesPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2 border-r border-slate-200/50 dark:border-white/5 pr-4 max-h-48 overflow-y-auto">
                         {builderLessons.map(les => (
-                          <button
+                          <div
                             key={les.id}
-                            onClick={() => setActiveLessonId(les.id)}
-                            className={`w-full text-left p-2.5 rounded-xl text-[11px] font-medium border transition-all flex items-center justify-between ${
+                            className={`w-full p-2 rounded-xl text-[11px] font-medium border transition-all flex items-center justify-between ${
                               activeLessonId === les.id
                                 ? 'bg-warehouse-orange/10 border-warehouse-orange/30 text-warehouse-orange'
                                 : 'bg-slate-50 dark:bg-white/5 border-slate-200/50 dark:border-white/5 text-slate-600 dark:text-slate-300'
                             }`}
                           >
-                            <span className="truncate pr-2">{les.title}</span>
-                            <span className="text-[9px] uppercase font-bold text-slate-400 shrink-0">{les.content_type}</span>
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => setActiveLessonId(les.id)}
+                              className="flex-1 text-left truncate pr-2 font-medium"
+                            >
+                              <div>{les.title}</div>
+                              <span className="text-[8px] uppercase font-bold text-slate-400">{les.content_type}</span>
+                            </button>
+                            <div className="flex items-center gap-1 shrink-0 pl-1">
+                              <button
+                                type="button"
+                                onClick={() => startEditLesson(les)}
+                                className="p-1 text-sky-500 hover:text-sky-400 transition-colors"
+                                title="แก้ไขเนื้อหา"
+                              >
+                                <Sliders size={11} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteLesson(les.id)}
+                                className="p-1 text-rose-500 hover:text-rose-400 transition-colors"
+                                title="ลบเนื้อหา"
+                              >
+                                <Trash2 size={11} />
+                              </button>
+                            </div>
+                          </div>
                         ))}
                         {builderLessons.length === 0 && (
                           <p className="text-[10px] text-slate-500 py-2">ยังไม่มีเนื้อหา</p>
@@ -790,7 +974,7 @@ export default function CoursesPage() {
                       </div>
 
                       <form onSubmit={handleCreateLesson} className="space-y-3 bg-slate-50/50 dark:bg-white/5 p-3.5 rounded-2xl border border-slate-200/50 dark:border-white/5">
-                        <p className="text-[10px] font-bold text-slate-400">เพิ่มเนื้อหาใหม่ (Add Lesson)</p>
+                        <p className="text-[10px] font-bold text-slate-400">{editingLessonId ? 'แก้ไขเนื้อหา (Edit Lesson)' : 'เพิ่มเนื้อหาใหม่ (Add Lesson)'}</p>
                         <input 
                           type="text" 
                           required 
@@ -894,13 +1078,28 @@ export default function CoursesPage() {
                           className="w-full glass-input text-[10px] py-1.5 px-2.5" 
                           placeholder="คำอธิบายเนื้อหา / รายละเอียดวิชา..." 
                         />
-                        <button 
-                          type="submit" 
-                          disabled={isUploading}
-                          className="w-full py-1.5 bg-warehouse-orange text-white text-[11px] font-bold rounded-xl hover:bg-warehouse-orange/95 shadow-sm disabled:bg-slate-400 disabled:cursor-not-allowed"
-                        >
-                          {isUploading ? 'กรุณารอการอัปโหลดไฟล์...' : 'บันทึกเนื้อหา'}
-                        </button>
+                        <div className="flex gap-2">
+                          {editingLessonId && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingLessonId(null);
+                                setNewLessonForm({ title: '', content_type: 'video', content_url: '', body_text: '' });
+                                setUploadedFileName('');
+                              }}
+                              className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-white text-[11px] font-bold rounded-xl"
+                            >
+                              ยกเลิก
+                            </button>
+                          )}
+                          <button 
+                            type="submit" 
+                            disabled={isUploading}
+                            className="flex-1 py-1.5 bg-warehouse-orange text-white text-[11px] font-bold rounded-xl hover:bg-warehouse-orange/95 shadow-sm disabled:bg-slate-400 disabled:cursor-not-allowed"
+                          >
+                            {isUploading ? 'กรุณารอการอัปโหลดไฟล์...' : editingLessonId ? 'บันทึกการแก้ไข' : 'บันทึกเนื้อหา'}
+                          </button>
+                        </div>
                       </form>
                     </div>
                   </div>

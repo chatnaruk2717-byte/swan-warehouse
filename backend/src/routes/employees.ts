@@ -269,10 +269,18 @@ router.delete('/:id', authenticateToken, requireRole(['admin']), async (req: Aut
       return res.status(404).json({ message: 'Employee not found (Mock).' });
     }
 
-    // Cascade Delete in Mock Storage
-    mockStore.mockDailyTasks = mockStore.mockDailyTasks.filter(t => t.employee_id !== employeeId);
-    mockStore.mockEmployeeSkills = mockStore.mockEmployeeSkills.filter(s => s.employee_id !== employeeId);
-    mockStore.mockEnrollments = mockStore.mockEnrollments.filter(e => e.employee_id !== employeeId);
+    // Cascade Delete in Mock Storage (In-place Mutation to bypass read-only ESModule bindings)
+    const filteredTasks = mockStore.mockDailyTasks.filter(t => t.employee_id !== employeeId);
+    mockStore.mockDailyTasks.length = 0;
+    mockStore.mockDailyTasks.push(...filteredTasks);
+
+    const filteredSkills = mockStore.mockEmployeeSkills.filter(s => s.employee_id !== employeeId);
+    mockStore.mockEmployeeSkills.length = 0;
+    mockStore.mockEmployeeSkills.push(...filteredSkills);
+
+    const filteredEnrollments = mockStore.mockEnrollments.filter(e => e.employee_id !== employeeId);
+    mockStore.mockEnrollments.length = 0;
+    mockStore.mockEnrollments.push(...filteredEnrollments);
 
     mockStore.mockUsers.splice(index, 1);
     return res.json({ message: 'Employee deleted successfully (Mock).' });

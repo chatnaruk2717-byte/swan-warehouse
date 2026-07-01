@@ -20,6 +20,17 @@ import {
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
+const formatYoutubeUrl = (url: string) => {
+  if (!url) return '';
+  if (url.includes('youtube.com/embed/')) return url;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  if (match && match[2].length === 11) {
+    return `https://www.youtube.com/embed/${match[2]}`;
+  }
+  return url;
+};
+
 export default function CourseViewerClient() {
   const { id } = useParams();
   const router = useRouter();
@@ -462,7 +473,7 @@ export default function CourseViewerClient() {
                       />
                     ) : (
                       <iframe
-                        src={activeLesson.content_url}
+                        src={formatYoutubeUrl(activeLesson.content_url)}
                         title={activeLesson.title}
                         className="w-full h-full border-none"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

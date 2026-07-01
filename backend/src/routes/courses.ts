@@ -32,6 +32,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
  */
 router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const courseId = parseInt(req.params.id, 10);
+  const isAdminOrStaff = req.user && ['admin', 'staff'].includes(req.user.role);
 
   try {
     if (getMockStatus()) {
@@ -54,7 +55,10 @@ router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
       // For quiz lessons, attach questions (excluding correct answers for regular employees)
       for (const lesson of lessons) {
         if (lesson.content_type === 'quiz') {
-          const questionsResult = await query('SELECT id, question_type, question_text, media_url, options, points FROM questions WHERE lesson_id = $1', [lesson.id]);
+          const selectFields = isAdminOrStaff
+            ? 'id, question_type, question_text, media_url, options, correct_answers, points'
+            : 'id, question_type, question_text, media_url, options, points';
+          const questionsResult = await query(`SELECT ${selectFields} FROM questions WHERE lesson_id = $1`, [lesson.id]);
           lesson.questions = questionsResult.rows;
         }
       }
@@ -83,14 +87,20 @@ router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
             if (l.content_type === 'quiz') {
               copy.questions = mockStore.mockQuestions
                 .filter(q => q.lesson_id === l.id)
-                .map(q => ({
-                  id: q.id,
-                  question_type: q.question_type,
-                  question_text: q.question_text,
-                  media_url: q.media_url,
-                  options: q.options,
-                  points: q.points
-                }));
+                .map(q => {
+                  const qCopy = {
+                    id: q.id,
+                    question_type: q.question_type,
+                    question_text: q.question_text,
+                    media_url: q.media_url,
+                    options: q.options,
+                    points: q.points
+                  } as any;
+                  if (isAdminOrStaff) {
+                    qCopy.correct_answers = q.correct_answers;
+                  }
+                  return qCopy;
+                });
             }
             return copy;
           });
@@ -795,6 +805,8 @@ router.post('/lessons/:id/questions', authenticateToken, requireRole(['admin', '
       correct_answers,
       points: parseInt(points, 10) || 1
     };
+    mockStore.mockQuestions.push(newQuestion);
+    return res.status(201).json(newQuestion);
   }
 });
 

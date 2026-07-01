@@ -22,6 +22,17 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+const formatYoutubeUrl = (url: string) => {
+  if (!url) return '';
+  if (url.includes('youtube.com/embed/')) return url;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  if (match && match[2].length === 11) {
+    return `https://www.youtube.com/embed/${match[2]}`;
+  }
+  return url;
+};
+
 export default function CoursesPage() {
   const { api, user } = useAuth();
   const [courses, setCourses] = useState<any[]>([]);
@@ -194,13 +205,24 @@ export default function CoursesPage() {
   const handleCreateLesson = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeChapterId || !newLessonForm.title) return;
+
+    // Format YouTube URL
+    const formattedUrl = newLessonForm.content_type === 'video'
+      ? formatYoutubeUrl(newLessonForm.content_url)
+      : newLessonForm.content_url;
+
+    const formattedLessonForm = {
+      ...newLessonForm,
+      content_url: formattedUrl
+    };
+
     try {
       if (editingLessonId) {
-        const res = await api.put(`/api/courses/lessons/${editingLessonId}`, newLessonForm);
+        const res = await api.put(`/api/courses/lessons/${editingLessonId}`, formattedLessonForm);
         setBuilderLessons(builderLessons.map(l => l.id === editingLessonId ? res.data : l));
         setEditingLessonId(null);
       } else {
-        const res = await api.post(`/api/courses/chapters/${activeChapterId}/lessons`, newLessonForm);
+        const res = await api.post(`/api/courses/chapters/${activeChapterId}/lessons`, formattedLessonForm);
         setBuilderLessons([...builderLessons, res.data]);
         setActiveLessonId(res.data.id);
       }
@@ -208,10 +230,10 @@ export default function CoursesPage() {
       setUploadedFileName('');
     } catch {
       if (editingLessonId) {
-        setBuilderLessons(builderLessons.map(l => l.id === editingLessonId ? { ...l, ...newLessonForm } : l));
+        setBuilderLessons(builderLessons.map(l => l.id === editingLessonId ? { ...l, ...formattedLessonForm } : l));
         setEditingLessonId(null);
       } else {
-        const mockLesson = { id: Date.now(), chapter_id: activeChapterId, ...newLessonForm, sort_order: builderLessons.length };
+        const mockLesson = { id: Date.now(), chapter_id: activeChapterId, ...formattedLessonForm, sort_order: builderLessons.length };
         setBuilderLessons([...builderLessons, mockLesson]);
         setActiveLessonId(mockLesson.id);
       }

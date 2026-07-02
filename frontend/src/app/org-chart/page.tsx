@@ -22,6 +22,8 @@ interface OrgChartItem {
   name: string;
   role_name: string;
   level_order: number; // 1: ผู้จัดการ, 2: ผู้ช่วยผู้จัดการ, 3: หัวหน้าแผนก, 4: หัวหน้างาน, 5: ปฏิบัติงาน
+  level?: string;
+  warehouse_area?: string;
   image_url: string;
 }
 
@@ -39,6 +41,8 @@ export default function OrgChartPage() {
     name: '',
     role_name: '',
     level_order: 5,
+    level: '',
+    warehouse_area: '',
     image_url: ''
   });
   const [uploadedFileName, setUploadedFileName] = useState('');
@@ -87,6 +91,8 @@ export default function OrgChartPage() {
       name: '',
       role_name: '',
       level_order: 5,
+      level: '',
+      warehouse_area: '',
       image_url: ''
     });
     setUploadedFileName('');
@@ -100,6 +106,8 @@ export default function OrgChartPage() {
       name: item.name,
       role_name: item.role_name,
       level_order: item.level_order,
+      level: item.level || '',
+      warehouse_area: item.warehouse_area || '',
       image_url: item.image_url
     });
     setUploadedFileName(item.image_url ? 'มีรูปภาพพนักงานเดิม' : '');
@@ -141,10 +149,10 @@ export default function OrgChartPage() {
   };
 
   // Group items by level
-  const manager = orgItems.find(item => item.level_order === 1);
-  const assistant = orgItems.find(item => item.level_order === 2);
-  const departmentHead = orgItems.find(item => item.level_order === 3);
-  const supervisor = orgItems.find(item => item.level_order === 4);
+  const managers = orgItems.filter(item => item.level_order === 1);
+  const assistants = orgItems.filter(item => item.level_order === 2);
+  const departmentHeads = orgItems.filter(item => item.level_order === 3);
+  const supervisors = orgItems.filter(item => item.level_order === 4);
   const staffMembers = orgItems.filter(item => item.level_order === 5);
 
   const isAdmin = user?.role === 'admin';
@@ -165,7 +173,17 @@ export default function OrgChartPage() {
 
         {/* Member Details */}
         <h5 className="font-bold text-sm text-slate-800 dark:text-white leading-snug">{item.name}</h5>
-        <p className="text-[10px] font-bold text-warehouse-orange mt-1 px-2.5 py-0.5 rounded-full bg-warehouse-orange/5 border border-warehouse-orange/15 max-w-full truncate">{item.role_name}</p>
+        <p className="text-[10px] font-bold text-warehouse-orange mt-1 px-2.5 py-0.5 rounded-full bg-warehouse-orange/5 border border-warehouse-orange/15 max-w-full truncate">
+          {item.role_name} {item.level ? `(${item.level})` : ''}
+        </p>
+
+        {/* Warehouse Zone */}
+        {item.warehouse_area && (
+          <p className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 mt-1.5 flex items-center gap-1">
+            <span>โซนคลัง:</span>
+            <span className="text-slate-600 dark:text-slate-300 font-bold">{item.warehouse_area}</span>
+          </p>
+        )}
 
         {/* Admin actions overlay */}
         {isAdmin && (
@@ -224,94 +242,62 @@ export default function OrgChartPage() {
           <p className="text-xs text-slate-400 font-bold">กำลังโหลดผังองค์กร...</p>
         </div>
       ) : (
-        <div className="relative flex flex-col items-center gap-12 py-6 overflow-x-auto min-w-full">
+        <div className="relative flex flex-col items-center gap-8 py-6 overflow-x-auto min-w-full">
           
-          {/* Level 1: Manager */}
-          {manager ? (
+          {/* Level 1: Managers */}
+          {managers.length > 0 && (
             <div className="flex flex-col items-center relative">
-              {renderMemberCard(manager)}
-              {(assistant || departmentHead || supervisor || staffMembers.length > 0) && (
-                <div className="w-0.5 h-12 bg-slate-300 dark:bg-white/10"></div>
-              )}
-            </div>
-          ) : (
-            isAdmin && (
-              <button 
-                onClick={handleOpenAddModal}
-                className="w-56 p-6 border-2 border-dashed border-slate-300 dark:border-white/10 hover:border-emerald-500 rounded-2xl flex flex-col items-center justify-center text-slate-400 hover:text-emerald-500 transition-colors text-center text-xs font-bold gap-2"
-              >
-                <Plus size={24} />
-                <span>เพิ่มตำแหน่งผู้จัดการ</span>
-              </button>
-            )
-          )}
-
-          {/* Level 2: Assistant Manager */}
-          {assistant && (
-            <div className="flex flex-col items-center relative -mt-6">
-              {renderMemberCard(assistant)}
-              {(departmentHead || supervisor || staffMembers.length > 0) && (
-                <div className="w-0.5 h-12 bg-slate-300 dark:bg-white/10"></div>
+              <div className="flex flex-wrap justify-center gap-6">
+                {managers.map(item => renderMemberCard(item))}
+              </div>
+              {(assistants.length > 0 || departmentHeads.length > 0 || supervisors.length > 0 || staffMembers.length > 0) && (
+                <div className="w-0.5 h-8 bg-slate-300 dark:bg-white/10 mt-3"></div>
               )}
             </div>
           )}
 
-          {/* Level 3: Department Head */}
-          {departmentHead ? (
+          {/* Level 2: Assistant Managers */}
+          {assistants.length > 0 && (
             <div className="flex flex-col items-center relative">
-              {renderMemberCard(departmentHead)}
-              {(supervisor || staffMembers.length > 0) && (
-                <div className="w-0.5 h-12 bg-slate-300 dark:bg-white/10"></div>
+              <div className="flex flex-wrap justify-center gap-6">
+                {assistants.map(item => renderMemberCard(item))}
+              </div>
+              {(departmentHeads.length > 0 || supervisors.length > 0 || staffMembers.length > 0) && (
+                <div className="w-0.5 h-8 bg-slate-300 dark:bg-white/10 mt-3"></div>
               )}
             </div>
-          ) : (
-            isAdmin && !assistant && (
-              <button 
-                onClick={handleOpenAddModal}
-                className="w-56 p-6 border-2 border-dashed border-slate-300 dark:border-white/10 hover:border-emerald-500 rounded-2xl flex flex-col items-center justify-center text-slate-400 hover:text-emerald-500 transition-colors text-center text-xs font-bold gap-2"
-              >
-                <Plus size={24} />
-                <span>เพิ่มหัวหน้าแผนก</span>
-              </button>
-            )
           )}
 
-          {/* Level 4: Supervisor */}
-          {supervisor ? (
+          {/* Level 3: Department Heads */}
+          {departmentHeads.length > 0 && (
             <div className="flex flex-col items-center relative">
-              {renderMemberCard(supervisor)}
+              <div className="flex flex-wrap justify-center gap-6">
+                {departmentHeads.map(item => renderMemberCard(item))}
+              </div>
+              {(supervisors.length > 0 || staffMembers.length > 0) && (
+                <div className="w-0.5 h-8 bg-slate-300 dark:bg-white/10 mt-3"></div>
+              )}
+            </div>
+          )}
+
+          {/* Level 4: Supervisors */}
+          {supervisors.length > 0 && (
+            <div className="flex flex-col items-center relative">
+              <div className="flex flex-wrap justify-center gap-6">
+                {supervisors.map(item => renderMemberCard(item))}
+              </div>
               {staffMembers.length > 0 && (
-                <>
-                  <div className="w-0.5 h-10 bg-slate-300 dark:bg-white/10"></div>
-                  {/* Horizontal Connector Line for Level 5 staff */}
-                  <div className="relative w-full max-w-5xl flex items-center justify-center">
-                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-slate-300 dark:bg-white/10"></div>
-                  </div>
-                </>
+                <div className="w-0.5 h-8 bg-slate-300 dark:bg-white/10 mt-3"></div>
               )}
             </div>
-          ) : (
-            isAdmin && (
-              <button 
-                onClick={handleOpenAddModal}
-                className="w-56 p-6 border-2 border-dashed border-slate-300 dark:border-white/10 hover:border-emerald-500 rounded-2xl flex flex-col items-center justify-center text-slate-400 hover:text-emerald-500 transition-colors text-center text-xs font-bold gap-2"
-              >
-                <Plus size={24} />
-                <span>เพิ่มหัวหน้างาน</span>
-              </button>
-            )
           )}
 
           {/* Level 5: Staff Members / Operators Grid */}
           {staffMembers.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-10 items-start max-w-6xl mt-2">
-              {staffMembers.map((item) => (
-                <div key={item.id} className="flex flex-col items-center relative">
-                  {/* Vertical line connecting to the horizontal parent line */}
-                  <div className="w-0.5 h-6 bg-slate-300 dark:bg-white/10 -mt-6 mb-2"></div>
-                  {renderMemberCard(item)}
-                </div>
-              ))}
+            <div className="flex flex-col items-center relative">
+              <div className="flex flex-wrap justify-center gap-6 max-w-6xl">
+                {staffMembers.map((item) => renderMemberCard(item))}
+              </div>
             </div>
           )}
 
@@ -381,6 +367,30 @@ export default function OrgChartPage() {
                   onChange={(e) => setFormState(prev => ({ ...prev, role_name: e.target.value }))}
                   className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">เลเวลตำแหน่ง (Level)</label>
+                  <input 
+                    type="text" 
+                    placeholder="เช่น L1, L2, L3"
+                    value={formState.level}
+                    onChange={(e) => setFormState(prev => ({ ...prev, level: e.target.value }))}
+                    className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">โซนคลัง (Zone)</label>
+                  <input 
+                    type="text" 
+                    placeholder="เช่น Zone A, Zone B"
+                    value={formState.warehouse_area}
+                    onChange={(e) => setFormState(prev => ({ ...prev, warehouse_area: e.target.value }))}
+                    className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate"
+                  />
+                </div>
               </div>
 
               <div className="flex flex-col gap-1.5">

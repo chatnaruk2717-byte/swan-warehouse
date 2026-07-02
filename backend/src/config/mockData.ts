@@ -439,18 +439,20 @@ export interface OrgChartItem {
   name: string;
   role_name: string;
   level_order: number;
+  level?: string;
+  warehouse_area?: string;
   image_url: string;
 }
 
 export const mockOrgChart: OrgChartItem[] = [
-  { id: 1, name: 'ประวิตร รักดี', role_name: 'ผู้จัดการแผนกวางแผนการผลิต คลังสินค้าและขนส่ง', level_order: 1, image_url: '' },
-  { id: 2, name: 'สมชาย มีสุข', role_name: 'ผู้ช่วยผู้จัดการแผนกวางแผนการผลิต คลังสินค้าและขนส่ง', level_order: 2, image_url: '' },
-  { id: 3, name: 'ประพันธ์ ยอดคุม', role_name: 'หัวหน้าแผนกคลังสินค้า', level_order: 3, image_url: '' },
-  { id: 4, name: 'วิชัย อดทน', role_name: 'หัวหน้างานคลังสินค้า', level_order: 4, image_url: '' },
-  { id: 5, name: 'เกล้า ทองดี', role_name: 'เจ้าหน้าที่คลังสินค้า', level_order: 5, image_url: '' },
-  { id: 6, name: 'สิริ พูนเพิ่ม', role_name: 'เจ้าหน้าที่บันทึกข้อมูล', level_order: 5, image_url: '' },
-  { id: 7, name: 'สมปอง ลุยงาน', role_name: 'พนักงานขับรถยก รับ-จ่าย', level_order: 5, image_url: '' },
-  { id: 8, name: 'มานะ คัดของ', role_name: 'พนักงานหน้าลิฟท์', level_order: 5, image_url: '' },
-  { id: 9, name: 'สมศักดิ์ รักชาติ', role_name: 'พนักงานยิง Barcode', level_order: 5, image_url: '' },
-  { id: 10, name: 'อรุณ ดีเลิศ', role_name: 'พนักงานจัดเตรียมสินค้า', level_order: 5, image_url: '' }
+  { id: 1, name: 'ประวิตร รักดี', role_name: 'ผู้จัดการแผนกวางแผนการผลิต คลังสินค้าและขนส่ง', level_order: 1, level: 'L1', warehouse_area: 'Management', image_url: '' },
+  { id: 2, name: 'สมชาย มีสุข', role_name: 'ผู้ช่วยผู้จัดการแผนกวางแผนการผลิต คลังสินค้าและขนส่ง', level_order: 2, level: 'L2', warehouse_area: 'Management', image_url: '' },
+  { id: 3, name: 'ประพันธ์ ยอดคุม', role_name: 'หัวหน้าแผนกคลังสินค้า', level_order: 3, level: 'L3', warehouse_area: 'Warehouse', image_url: '' },
+  { id: 4, name: 'วิชัย อดทน', role_name: 'หัวหน้างานคลังสินค้า', level_order: 4, level: 'L4', warehouse_area: 'Warehouse', image_url: '' },
+  { id: 5, name: 'เกล้า ทองดี', role_name: 'เจ้าหน้าที่คลังสินค้า', level_order: 5, level: 'L5', warehouse_area: 'Zone A', image_url: '' },
+  { id: 6, name: 'สิริ พูนเพิ่ม', role_name: 'เจ้าหน้าที่บันทึกข้อมูล', level_order: 5, level: 'L5', warehouse_area: 'Zone A', image_url: '' },
+  { id: 7, name: 'สมปอง ลุยงาน', role_name: 'พนักงานขับรถยก รับ-จ่าย', level_order: 5, level: 'L5', warehouse_area: 'Zone A', image_url: '' },
+  { id: 8, name: 'มานะ คัดของ', role_name: 'พนักงานหน้าลิฟท์', level_order: 5, level: 'L5', warehouse_area: 'Zone B', image_url: '' },
+  { id: 9, name: 'สมศักดิ์ รักชาติ', role_name: 'พนักงานยิง Barcode', level_order: 5, level: 'L5', warehouse_area: 'Zone B', image_url: '' },
+  { id: 10, name: 'อรุณ ดีเลิศ', role_name: 'พนักงานจัดเตรียมสินค้า', level_order: 5, level: 'L5', warehouse_area: 'Zone B', image_url: '' }
 ];

@@ -20,23 +20,23 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
 
 // POST /api/org-chart - Add new position (Admin only)
 router.post('/', authenticateToken, requireRole(['admin']), async (req: AuthenticatedRequest, res: Response) => {
-  const { name, role_name, level_order, image_url } = req.body;
+  const { name, role_name, level_order, level, warehouse_area, image_url } = req.body;
 
   if (!name || !role_name || !level_order) {
     return res.status(400).json({ message: 'name, role_name, and level_order are required.' });
   }
 
-  const level = parseInt(level_order, 10);
+  const levelOrderNum = parseInt(level_order, 10);
 
   try {
     if (getMockStatus()) {
       throw new Error('MOCK_MODE');
     }
     const result = await query(
-      `INSERT INTO org_chart (name, role_name, level_order, image_url) 
-       VALUES ($1, $2, $3, $4) 
+      `INSERT INTO org_chart (name, role_name, level_order, level, warehouse_area, image_url) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
        RETURNING *`,
-      [name, role_name, level, image_url || '']
+      [name, role_name, levelOrderNum, level || '', warehouse_area || '', image_url || '']
     );
     return res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -46,7 +46,9 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req: Authenti
       id: newId,
       name,
       role_name,
-      level_order: level,
+      level_order: levelOrderNum,
+      level: level || '',
+      warehouse_area: warehouse_area || '',
       image_url: image_url || ''
     };
     mockStore.mockOrgChart.push(newItem);
@@ -57,13 +59,13 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req: Authenti
 // PUT /api/org-chart/:id - Edit position (Admin only)
 router.put('/:id', authenticateToken, requireRole(['admin']), async (req: AuthenticatedRequest, res: Response) => {
   const id = parseInt(req.params.id, 10);
-  const { name, role_name, level_order, image_url } = req.body;
+  const { name, role_name, level_order, level, warehouse_area, image_url } = req.body;
 
   if (!name || !role_name || !level_order) {
     return res.status(400).json({ message: 'name, role_name, and level_order are required.' });
   }
 
-  const level = parseInt(level_order, 10);
+  const levelOrderNum = parseInt(level_order, 10);
 
   try {
     if (getMockStatus()) {
@@ -71,10 +73,10 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req: Authen
     }
     const result = await query(
       `UPDATE org_chart 
-       SET name = $1, role_name = $2, level_order = $3, image_url = COALESCE($4, image_url), updated_at = NOW() 
-       WHERE id = $5 
+       SET name = $1, role_name = $2, level_order = $3, level = $4, warehouse_area = $5, image_url = COALESCE($6, image_url), updated_at = NOW() 
+       WHERE id = $7 
        RETURNING *`,
-      [name, role_name, level, image_url || null, id]
+      [name, role_name, levelOrderNum, level || '', warehouse_area || '', image_url || null, id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Position not found.' });
@@ -89,7 +91,9 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req: Authen
     const item = mockStore.mockOrgChart[index];
     item.name = name;
     item.role_name = role_name;
-    item.level_order = level;
+    item.level_order = levelOrderNum;
+    item.level = level || '';
+    item.warehouse_area = warehouse_area || '';
     if (image_url !== undefined) {
       item.image_url = image_url;
     }

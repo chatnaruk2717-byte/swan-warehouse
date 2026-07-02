@@ -234,6 +234,8 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         name VARCHAR(100) NOT NULL,
         role_name VARCHAR(100) NOT NULL,
         level_order INT NOT NULL,
+        level VARCHAR(50),
+        warehouse_area VARCHAR(100),
         image_url TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -243,6 +245,15 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
     for (const query of schemaQueries) {
       await connection.query(query);
     }
+
+    // Upgrade existing database schemas if needed
+    try {
+      await connection.query("ALTER TABLE org_chart ADD COLUMN level VARCHAR(50)");
+    } catch (e) {}
+    try {
+      await connection.query("ALTER TABLE org_chart ADD COLUMN warehouse_area VARCHAR(100)");
+    } catch (e) {}
+
     console.log('MySQL schema tables created successfully.');
 
     // Seed Data
@@ -415,19 +426,18 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
       (5, 10, '2026-06-30 07:50:00', '2026-06-30 17:00:00', '2026-06-30 12:00:00', '2026-06-30 13:00:00', 0.00, 'present', '2026-06-30')
     `);
 
-    // 13. Org Chart
     await connection.query(`
-      INSERT INTO org_chart (id, name, role_name, level_order, image_url) VALUES 
-      (1, 'ประวิตร รักดี', 'ผู้จัดการแผนกวางแผนการผลิต คลังสินค้าและขนส่ง', 1, ''),
-      (2, 'สมชาย มีสุข', 'ผู้ช่วยผู้จัดการแผนกวางแผนการผลิต คลังสินค้าและขนส่ง', 2, ''),
-      (3, 'ประพันธ์ ยอดคุม', 'หัวหน้าแผนกคลังสินค้า', 3, ''),
-      (4, 'วิชัย อดทน', 'หัวหน้างานคลังสินค้า', 4, ''),
-      (5, 'เกล้า ทองดี', 'เจ้าหน้าที่คลังสินค้า', 5, ''),
-      (6, 'สิริ พูนเพิ่ม', 'เจ้าหน้าที่บันทึกข้อมูล', 5, ''),
-      (7, 'สมปอง ลุยงาน', 'พนักงานขับรถยก รับ-จ่าย', 5, ''),
-      (8, 'มานะ คัดของ', 'พนักงานหน้าลิฟท์', 5, ''),
-      (9, 'สมศักดิ์ รักชาติ', 'พนักงานยิง Barcode', 5, ''),
-      (10, 'อรุณ ดีเลิศ', 'พนักงานจัดเตรียมสินค้า', 5, '')
+      INSERT INTO org_chart (id, name, role_name, level_order, level, warehouse_area, image_url) VALUES 
+      (1, 'ประวิตร รักดี', 'ผู้จัดการแผนกวางแผนการผลิต คลังสินค้าและขนส่ง', 1, 'L1', 'Management', ''),
+      (2, 'สมชาย มีสุข', 'ผู้ช่วยผู้จัดการแผนกวางแผนการผลิต คลังสินค้าและขนส่ง', 2, 'L2', 'Management', ''),
+      (3, 'ประพันธ์ ยอดคุม', 'หัวหน้าแผนกคลังสินค้า', 3, 'L3', 'Warehouse', ''),
+      (4, 'วิชัย อดทน', 'หัวหน้างานคลังสินค้า', 4, 'L4', 'Warehouse', ''),
+      (5, 'เกล้า ทองดี', 'เจ้าหน้าที่คลังสินค้า', 5, 'L5', 'Zone A', ''),
+      (6, 'สิริ พูนเพิ่ม', 'เจ้าหน้าที่บันทึกข้อมูล', 5, 'L5', 'Zone A', ''),
+      (7, 'สมปอง ลุยงาน', 'พนักงานขับรถยก รับ-จ่าย', 5, 'L5', 'Zone A', ''),
+      (8, 'มานะ คัดของ', 'พนักงานหน้าลิฟท์', 5, 'L5', 'Zone B', ''),
+      (9, 'สมศักดิ์ รักชาติ', 'พนักงานยิง Barcode', 5, 'L5', 'Zone B', ''),
+      (10, 'อรุณ ดีเลิศ', 'พนักงานจัดเตรียมสินค้า', 5, 'L5', 'Zone B', '')
     `);
 
     console.log('MySQL database initialized and seeded successfully.');

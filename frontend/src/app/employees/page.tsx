@@ -45,7 +45,7 @@ export default function EmployeesPage() {
     position: 'Forklift Driver',
     warehouse_area: 'Zone A',
     phone: '',
-    supervisor_id: '4',
+    supervisor_id: '',
     start_date: new Date().toISOString().split('T')[0],
     photo_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
     working_shift: 'A'
@@ -142,7 +142,7 @@ export default function EmployeesPage() {
       position: emp.position,
       warehouse_area: emp.warehouse_area || '',
       phone: emp.phone || '',
-      supervisor_id: emp.supervisor_id ? emp.supervisor_id.toString() : '4',
+      supervisor_id: emp.supervisor_id ? emp.supervisor_id.toString() : '',
       start_date: emp.start_date || new Date().toISOString().split('T')[0],
       photo_url: emp.photo_url || '',
       working_shift: emp.working_shift || 'A'
@@ -165,7 +165,7 @@ export default function EmployeesPage() {
       position: 'Forklift Driver',
       warehouse_area: 'Zone A',
       phone: '',
-      supervisor_id: '4',
+      supervisor_id: '',
       start_date: new Date().toISOString().split('T')[0],
       photo_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
       working_shift: 'A'

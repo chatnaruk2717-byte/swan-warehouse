@@ -136,6 +136,10 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req: Authenti
     return res.status(201).json(newEmp);
 
   } catch (err: any) {
+    if (!getMockStatus()) {
+      console.error('Database error in create employee:', err);
+      return res.status(500).json({ message: 'Database error: ' + err.message });
+    }
     // Mock Mode Fallback
     // Check duplication
     const duplicate = mockStore.mockUsers.find(u => u.employee_id === employee_id || u.email === email);
@@ -206,6 +210,10 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req: Authen
     return res.json(updated);
 
   } catch (err: any) {
+    if (!getMockStatus()) {
+      console.error('Database error in update employee:', err);
+      return res.status(500).json({ message: 'Database error: ' + err.message });
+    }
     // Mock Mode Fallback
     const userIndex = mockStore.mockUsers.findIndex(u => u.id === employeeId);
     if (userIndex === -1) {
@@ -263,6 +271,10 @@ router.delete('/:id', authenticateToken, requireRole(['admin']), async (req: Aut
     return res.json({ message: 'Employee deleted successfully.' });
 
   } catch (err: any) {
+    if (!getMockStatus()) {
+      console.error('Database error in delete employee:', err);
+      return res.status(500).json({ message: 'Database error: ' + err.message });
+    }
     // Mock Mode Fallback
     const index = mockStore.mockUsers.findIndex(u => u.id === employeeId);
     if (index === -1) {

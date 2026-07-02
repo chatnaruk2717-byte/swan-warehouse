@@ -81,7 +81,12 @@ export default function EmployeesPage() {
       setEmployees([...employees, res.data]);
       setShowCreateModal(false);
       resetForm();
-    } catch (err) {
+    } catch (err: any) {
+      console.error(err);
+      if (err.response) {
+        alert('เพิ่มพนักงานไม่สำเร็จ: ' + (err.response.data?.message || err.message));
+        return;
+      }
       // Mock mode append
       const selectedSup = employees.find(e => e.id.toString() === formFields.supervisor_id);
       const mockNew = {
@@ -106,7 +111,12 @@ export default function EmployeesPage() {
       setEmployees(employees.map(emp => emp.id === selectedEmp.id ? res.data : emp));
       setShowEditModal(false);
       resetForm();
-    } catch (err) {
+    } catch (err: any) {
+      console.error(err);
+      if (err.response) {
+        alert('แก้ไขพนักงานไม่สำเร็จ: ' + (err.response.data?.message || err.message));
+        return;
+      }
       // Mock mode edit
       const selectedSup = employees.find(e => e.id.toString() === formFields.supervisor_id);
       const updated = {
@@ -126,7 +136,12 @@ export default function EmployeesPage() {
     try {
       await api.delete(`/api/employees/${id}`);
       setEmployees(employees.filter(emp => emp.id !== id));
-    } catch (err) {
+    } catch (err: any) {
+      console.error(err);
+      if (err.response) {
+        alert('ลบพนักงานไม่สำเร็จ: ' + (err.response.data?.message || err.message));
+        return;
+      }
       setEmployees(employees.filter(emp => emp.id !== id));
     }
   };

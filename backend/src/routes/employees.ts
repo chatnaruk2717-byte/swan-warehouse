@@ -124,11 +124,22 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req: Authenti
       throw new Error('MOCK_MODE');
     }
 
+    let formattedStartDate = start_date;
+    if (typeof start_date === 'string') {
+      if (start_date.includes('T')) {
+        formattedStartDate = start_date.split('T')[0];
+      }
+    } else if (start_date instanceof Date) {
+      formattedStartDate = start_date.toISOString().split('T')[0];
+    } else {
+      formattedStartDate = new Date().toISOString().split('T')[0];
+    }
+
     const insertResult = await query(
       `INSERT INTO users (employee_id, email, password_hash, name, role, department, position, warehouse_area, phone, supervisor_id, start_date, photo_url, working_shift) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) 
        RETURNING *`,
-      [employee_id, email, defaultHash, name, role, department, position, warehouse_area || null, phone || null, supervisor_id || null, start_date || new Date(), photo_url || null, working_shift || 'A']
+      [employee_id, email, defaultHash, name, role, department, position, warehouse_area || null, phone || null, supervisor_id || null, formattedStartDate, photo_url || null, working_shift || 'A']
     );
 
     const newEmp = insertResult.rows[0];
@@ -193,12 +204,23 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req: Authen
       throw new Error('MOCK_MODE');
     }
 
+    let formattedStartDate = start_date;
+    if (typeof start_date === 'string') {
+      if (start_date.includes('T')) {
+        formattedStartDate = start_date.split('T')[0];
+      }
+    } else if (start_date instanceof Date) {
+      formattedStartDate = start_date.toISOString().split('T')[0];
+    } else if (!start_date) {
+      formattedStartDate = new Date().toISOString().split('T')[0];
+    }
+
     const updateResult = await query(
       `UPDATE users 
        SET name = $1, role = $2, department = $3, position = $4, warehouse_area = $5, phone = $6, status = $7, supervisor_id = $8, start_date = $9, photo_url = $10, working_shift = $11 
        WHERE id = $12 
        RETURNING *`,
-      [name, role, department, position, warehouse_area, phone, status, supervisor_id || null, start_date, photo_url, working_shift || 'A', employeeId]
+      [name, role, department, position, warehouse_area, phone, status, supervisor_id || null, formattedStartDate, photo_url, working_shift || 'A', employeeId]
     );
 
     if (updateResult.rows.length === 0) {

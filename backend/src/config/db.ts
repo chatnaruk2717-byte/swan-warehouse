@@ -17,7 +17,10 @@ if (process.env.USE_MOCK_DB === 'true') {
       uri: connectionString,
       waitForConnections: true,
       connectionLimit: 10,
-      queueLimit: 0
+      queueLimit: 0,
+      ssl: {
+        rejectUnauthorized: false
+      }
     });
     
     // Test the database connection and initialize tables

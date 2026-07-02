@@ -392,9 +392,27 @@ export default function SkillsPage() {
                 <th className="px-6 py-4 text-left text-[10px] uppercase font-bold text-slate-400 tracking-wider w-64 min-w-[240px] sticky left-0 bg-white dark:bg-slate-900 z-10">พนักงาน</th>
                 {filteredSkills.map(skill => (
                   <th key={skill.id} className="px-4 py-4 text-center text-[10px] uppercase font-bold text-slate-400 tracking-wider min-w-[150px]">
-                    <div className="flex flex-col items-center">
+                    <div className="flex flex-col items-center group/header relative">
                       <span className="text-[9px] text-warehouse-orange tracking-widest">{skill.category}</span>
                       <span className="mt-0.5 line-clamp-1">{skill.name.split(' (')[0]}</span>
+                      {user?.role !== 'employee' && (
+                        <div className="flex items-center gap-1 mt-1 opacity-0 group-hover/header:opacity-100 transition-opacity">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); openEditSkillModal(skill); }}
+                            className="p-1 hover:text-warehouse-orange hover:bg-warehouse-orange/10 rounded transition-all"
+                            title="แก้ไขรายละเอียดทักษะ"
+                          >
+                            <Edit2 size={10} />
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleDeleteSkill(skill.id); }}
+                            className="p-1 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
+                            title="ลบหัวข้อทักษะนี้"
+                          >
+                            <Trash2 size={10} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </th>
                 ))}

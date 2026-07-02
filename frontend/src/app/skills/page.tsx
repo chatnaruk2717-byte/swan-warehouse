@@ -13,7 +13,9 @@ import {
   AlertTriangle, 
   Clock, 
   CheckCircle2,
-  FileText
+  FileText,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { 
   Radar, 
@@ -35,6 +37,7 @@ export default function SkillsPage() {
 
   // Modal / Detail drawer states
   const [showCreateSkillModal, setShowCreateSkillModal] = useState(false);
+  const [selectedSkill, setSelectedSkill] = useState<any>(null);
   const [selectedCell, setSelectedCell] = useState<any>(null); // { employee, skill, record }
   const [showApprovalDrawer, setShowApprovalDrawer] = useState(false);
 
@@ -125,20 +128,50 @@ export default function SkillsPage() {
 
   const handleCreateSkill = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (selectedSkill) {
+      // EDIT MODE
+      try {
+        const res = await api.put(`/api/skills/${selectedSkill.id}`, skillForm);
+        setSkills(skills.map(s => s.id === selectedSkill.id ? res.data : s));
+        // Update matrix names if edited
+        setMatrix(matrix.map(m => m.skill_id === selectedSkill.id ? { ...m, skill_name: res.data.name } : m));
+        setShowCreateSkillModal(false);
+        setSelectedSkill(null);
+        setSkillForm({ name: '', category: 'Warehouse', description: '' });
+      } catch (err: any) {
+        alert('แก้ไขทักษะไม่สำเร็จ: ' + (err.response?.data?.message || err.message));
+      }
+    } else {
+      // CREATE MODE
+      try {
+        const res = await api.post('/api/skills', skillForm);
+        setSkills([...skills, res.data]);
+        setShowCreateSkillModal(false);
+        setSkillForm({ name: '', category: 'Warehouse', description: '' });
+      } catch (err: any) {
+        alert('สร้างทักษะไม่สำเร็จ: ' + (err.response?.data?.message || err.message));
+      }
+    }
+  };
+
+  const openEditSkillModal = (skill: any) => {
+    setSelectedSkill(skill);
+    setSkillForm({
+      name: skill.name,
+      category: skill.category,
+      description: skill.description || ''
+    });
+    setShowCreateSkillModal(true);
+  };
+
+  const handleDeleteSkill = async (id: number) => {
+    if (!confirm('คุณแน่ใจว่าต้องการลบหัวข้อทักษะนี้ออกจากระบบ? ข้อมูลประวัติการประเมินพนักงานทุกคนในหัวข้อนี้จะถูกลบไปด้วย!')) return;
     try {
-      const res = await api.post('/api/skills', skillForm);
-      setSkills([...skills, res.data]);
-      setShowCreateSkillModal(false);
-      setSkillForm({ name: '', category: 'Warehouse', description: '' });
-    } catch {
-      // Mock append
-      const mockSkill = {
-        id: Date.now(),
-        ...skillForm
-      };
-      setSkills([...skills, mockSkill]);
-      setShowCreateSkillModal(false);
-      setSkillForm({ name: '', category: 'Warehouse', description: '' });
+      await api.delete(`/api/skills/${id}`);
+      setSkills(skills.filter(s => s.id !== id));
+      setMatrix(matrix.filter(m => m.skill_id !== id));
+    } catch (err: any) {
+      alert('ลบทักษะไม่สำเร็จ: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -479,13 +512,84 @@ export default function SkillsPage() {
         </GlassCard>
       </div>
 
+      {/* MANAGE SKILLS CATALOG (ADMIN/STAFF ONLY) */}
+      {user?.role !== 'employee' && (
+        <GlassCard className="border border-slate-200/50 dark:border-white/5 mt-6">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200/50 dark:border-white/5 mb-4">
+            <div className="flex items-center gap-2">
+              <Award className="text-warehouse-orange" size={20} />
+              <h4 className="font-bold text-sm text-slate-800 dark:text-white">จัดการคลังหัวข้อทักษะ (Manage Skills Catalog)</h4>
+            </div>
+            <button 
+              onClick={() => {
+                setSkillForm({ name: '', category: 'Warehouse', description: '' });
+                setSelectedSkill(null);
+                setShowCreateSkillModal(true);
+              }}
+              className="px-3 py-1.5 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-[10px] font-bold flex items-center gap-1 shadow-md shadow-warehouse-orange/15"
+            >
+              <Plus size={12} />
+              <span>สร้างทักษะใหม่ (Create)</span>
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200/50 dark:border-white/5 text-slate-400 font-bold">
+                  <th className="py-2.5 px-3">ชื่อทักษะ (Skill Name)</th>
+                  <th className="py-2.5 px-3">หมวดหมู่ (Category)</th>
+                  <th className="py-2.5 px-3">คำอธิบายรายละเอียด (Description)</th>
+                  <th className="py-2.5 px-3 text-right">การจัดการ</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                {skills.map(skill => (
+                  <tr key={skill.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="py-3 px-3 font-semibold text-slate-700 dark:text-slate-200">{skill.name}</td>
+                    <td className="py-3 px-3">
+                      <span className="bg-warehouse-orange/10 text-warehouse-orange px-2.5 py-0.5 rounded text-[10px] font-bold">
+                        {skill.category}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-slate-400 max-w-xs truncate">{skill.description || 'ไม่มีคำอธิบาย'}</td>
+                    <td className="py-3 px-3 text-right space-x-2">
+                      <button 
+                        onClick={() => openEditSkillModal(skill)}
+                        className="p-1.5 text-slate-400 hover:text-warehouse-orange hover:bg-warehouse-orange/10 rounded-lg transition-all inline-flex items-center justify-center"
+                      >
+                        <Edit2 size={13} />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteSkill(skill.id)}
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all inline-flex items-center justify-center"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </GlassCard>
+      )}
+
       {/* CREATE SKILL CATALOG MODAL */}
       {showCreateSkillModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <GlassCard className="w-full max-w-md overflow-hidden border border-white/10" animate={false}>
             <div className="flex items-center justify-between pb-4 border-b border-slate-200/50 dark:border-white/5 mb-6">
-              <h3 className="font-bold text-base">สร้างหัวข้อทักษะใหม่ (Create Skill)</h3>
-              <button onClick={() => setShowCreateSkillModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+              <h3 className="font-bold text-base">
+                {selectedSkill ? 'แก้ไขรายละเอียดทักษะ (Edit Skill)' : 'สร้างหัวข้อทักษะใหม่ (Create Skill)'}
+              </h3>
+              <button 
+                onClick={() => {
+                  setShowCreateSkillModal(false);
+                  setSelectedSkill(null);
+                }} 
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
                 <X size={18} />
               </button>
             </div>
@@ -513,8 +617,19 @@ export default function SkillsPage() {
                 <textarea rows={3} value={skillForm.description} onChange={(e) => setSkillForm({ ...skillForm, description: e.target.value })} className="glass-input text-xs" placeholder="รายละเอียดเกณฑ์การชี้วัดหรือใบอนุญาตที่ต้องใช้..." />
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/50 dark:border-white/5">
-                <button type="button" onClick={() => setShowCreateSkillModal(false)} className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-xs font-semibold">ยกเลิก</button>
-                <button type="submit" className="px-4 py-2 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold shadow-md shadow-warehouse-orange/15">สร้างทักษะ</button>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setShowCreateSkillModal(false);
+                    setSelectedSkill(null);
+                  }} 
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-xs font-semibold"
+                >
+                  ยกเลิก
+                </button>
+                <button type="submit" className="px-4 py-2 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold shadow-md shadow-warehouse-orange/15">
+                  {selectedSkill ? 'บันทึกการแก้ไข' : 'สร้างทักษะ'}
+                </button>
               </div>
             </form>
           </GlassCard>

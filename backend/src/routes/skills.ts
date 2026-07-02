@@ -309,4 +309,87 @@ router.post('/', authenticateToken, requireRole(['admin', 'staff']), async (req:
   }
 });
 
+router.put('/:id', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
+  const skillId = parseInt(req.params.id, 10);
+  const { name, category, description } = req.body;
+
+  if (!name || !category) {
+    return res.status(400).json({ message: 'name and category are required.' });
+  }
+
+  try {
+    if (getMockStatus()) {
+      throw new Error('MOCK_MODE');
+    }
+
+    const result = await query(
+      `UPDATE skills SET name = $1, category = $2, description = $3 WHERE id = $4 RETURNING *`,
+      [name, category, description || '', skillId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Skill not found.' });
+    }
+
+    return res.json(result.rows[0]);
+
+  } catch (err: any) {
+    if (!getMockStatus()) {
+      console.error('Database error in edit skill:', err);
+      return res.status(500).json({ message: 'Database error: ' + err.message });
+    }
+    // Mock Mode Fallback
+    const skillIndex = mockStore.mockSkills.findIndex(s => s.id === skillId);
+    if (skillIndex === -1) {
+      return res.status(404).json({ message: 'Skill not found (Mock).' });
+    }
+
+    const updated = {
+      ...mockStore.mockSkills[skillIndex],
+      name,
+      category,
+      description: description || ''
+    };
+    mockStore.mockSkills[skillIndex] = updated;
+    return res.json(updated);
+  }
+});
+
+router.delete('/:id', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
+  const skillId = parseInt(req.params.id, 10);
+
+  try {
+    if (getMockStatus()) {
+      throw new Error('MOCK_MODE');
+    }
+
+    const result = await query('DELETE FROM skills WHERE id = $1 RETURNING *', [skillId]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Skill not found.' });
+    }
+
+    return res.json({ message: 'Skill deleted successfully.' });
+
+  } catch (err: any) {
+    if (!getMockStatus()) {
+      console.error('Database error in delete skill:', err);
+      return res.status(500).json({ message: 'Database error: ' + err.message });
+    }
+    // Mock Mode Fallback
+    const skillIndex = mockStore.mockSkills.findIndex(s => s.id === skillId);
+    if (skillIndex === -1) {
+      return res.status(404).json({ message: 'Skill not found (Mock).' });
+    }
+
+    mockStore.mockSkills.splice(skillIndex, 1);
+    
+    // Clean up mock employee skills
+    const filteredSkills = mockStore.mockEmployeeSkills.filter(s => s.skill_id !== skillId);
+    mockStore.mockEmployeeSkills.length = 0;
+    mockStore.mockEmployeeSkills.push(...filteredSkills);
+
+    return res.json({ message: 'Skill deleted successfully (Mock).' });
+  }
+});
+
 export default router;

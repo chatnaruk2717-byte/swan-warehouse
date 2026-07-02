@@ -6,7 +6,13 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
     // Check if users table already exists to avoid re-initializing
     const [tables] = await connection.query("SHOW TABLES LIKE 'users'");
     if (Array.isArray(tables) && tables.length > 0) {
-      console.log('Tables already exist. Skipping database initialization.');
+      console.log('Tables already exist. Ensuring photo_url and cover_image are LONGTEXT.');
+      try {
+        await connection.query('ALTER TABLE users MODIFY COLUMN photo_url LONGTEXT');
+        await connection.query('ALTER TABLE courses MODIFY COLUMN cover_image LONGTEXT');
+      } catch (err: any) {
+        console.warn('Failed to alter columns to LONGTEXT:', err.message);
+      }
       return;
     }
 
@@ -31,7 +37,7 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         status VARCHAR(20) DEFAULT 'active',
         supervisor_id INT,
         start_date DATE NOT NULL,
-        photo_url TEXT,
+        photo_url LONGTEXT,
         working_shift VARCHAR(10) DEFAULT 'A',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -75,7 +81,7 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         difficulty VARCHAR(20) DEFAULT 'beginner',
         estimated_time VARCHAR(50),
         certificate_enabled BOOLEAN DEFAULT TRUE,
-        cover_image TEXT,
+        cover_image LONGTEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )`,

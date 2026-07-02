@@ -76,9 +76,15 @@ export const Sidebar = () => {
       roles: ['admin', 'staff', 'employee']
     },
     {
-      name: 'ผลงานและ KPI (Performance)',
-      path: '/performance',
+      name: 'KPI แผนก (Department KPIs)',
+      path: '/kpis',
       icon: TrendingUp,
+      roles: ['admin', 'staff', 'employee']
+    },
+    {
+      name: 'ผลงานรายบุคคล (Employee Performance)',
+      path: '/performance',
+      icon: Award,
       roles: ['admin', 'staff', 'employee']
     },
     {

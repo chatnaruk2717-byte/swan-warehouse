@@ -1,940 +1,540 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import GlassCard from '../../components/GlassCard';
 import { 
-  ResponsiveContainer, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  RadarChart, 
-  PolarGrid, 
-  PolarAngleAxis, 
-  PolarRadiusAxis, 
-  Radar 
-} from 'recharts';
-import { useAuth } from '../../context/AuthContext';
-import { 
   Award, 
-  Flame, 
-  Gauge, 
-  ShieldCheck, 
-  Activity, 
-  ChevronUp, 
+  Briefcase, 
+  BookOpen, 
+  Settings, 
+  Edit3, 
+  Save, 
+  X, 
+  TrendingUp, 
+  User, 
+  Check, 
+  Trophy, 
   Star,
-  Users,
-  Calendar,
-  TrendingUp,
-  Target,
-  Percent,
-  ClipboardList,
-  CheckCircle2,
-  Edit3,
-  Plus,
-  X,
-  Save,
-  Trash2
+  Activity
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend
+} from 'recharts';
 
 export default function PerformancePage() {
-  const { user } = useAuth();
-  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const { user, api } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'departmentKpi' | 'leaderboard'>('departmentKpi');
-  const [selectedMonth, setSelectedMonth] = useState('June');
-
-  // Edit KPI state variables
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingKpi, setEditingKpi] = useState<any>(null);
-  const [editId, setEditId] = useState('');
-  const [editName, setEditName] = useState('');
-  const [editFormula, setEditFormula] = useState('');
-  const [editWt, setEditWt] = useState('');
-  const [editTarget, setEditTarget] = useState('');
-  const [editActual, setEditActual] = useState('');
-  const [editManualScore, setEditManualScore] = useState('');
-  const [editManualGrade, setEditManualGrade] = useState('');
-
-  // Add KPI state variables
-  const [showAddKpiModal, setShowAddKpiModal] = useState(false);
-  const [addKpiId, setAddKpiId] = useState('');
-  const [addKpiName, setAddKpiName] = useState('');
-  const [addKpiFormula, setAddKpiFormula] = useState('');
-  const [addKpiWt, setAddKpiWt] = useState('');
-  const [addKpiTarget, setAddKpiTarget] = useState('');
-  const [addKpiActual, setAddKpiActual] = useState('');
-  const [addKpiUnit, setAddKpiUnit] = useState('%');
-  const [addKpiCategory, setAddKpiCategory] = useState('FIFO');
-  const [addKpiManualScore, setAddKpiManualScore] = useState('');
-  const [addKpiManualGrade, setAddKpiManualGrade] = useState('');
-
-  // Add month state variables
-  const [showAddMonthModal, setShowAddMonthModal] = useState(false);
-  const [newMonthName, setNewMonthName] = useState('');
-  const [newKpiValues, setNewKpiValues] = useState<Record<string, string>>({});
-
-  // Turn monthlyKpiData into modifiable state!
-  const [kpis, setKpis] = useState<Record<string, any[]>>({
-    'June': [
-      { id: '1.1', name: 'การจ่ายสินค้าออกตามลำดับ FIFO 100%', formula: '(จำนวนรายการที่จ่ายตรงตาม FIFO / จำนวนรายการจ่ายทั้งหมด) x 100', wt: 15.0, target: '98%', actual: 98.2, unit: '%', category: 'FIFO' },
-      { id: '1.2', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม GEN', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 326 PL) x 100', wt: 2.5, target: '20%', actual: 20.8, unit: '%', category: 'FIFO' },
-      { id: '1.3', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม 3PCS/Jui', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 17 PL) x 100', wt: 2.5, target: '20%', actual: 18.5, unit: '%', category: 'FIFO' },
-      { id: '1.4', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม 2PCS', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 42 PL) x 100', wt: 2.5, target: '20%', actual: 21.4, unit: '%', category: 'FIFO' },
-      { id: '1.5', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม EOE', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 35 PL) x 100', wt: 2.5, target: '20%', actual: 16.5, unit: '%', category: 'FIFO' },
-      { id: '2', name: '% On time Delivery = 100% (วางแผน, คลังสินค้า, ขนส่ง)', formula: '(จำนวนรายการส่งมอบตรงเวลา / จำนวนจัดส่งทั้งหมด) x 100', wt: 10.0, target: '100%', actual: 99.1, unit: '%', category: 'Delivery' },
-      { id: '3', name: 'C-CAR (คลังสินค้า+ขนส่ง)', formula: 'Major + Minor ลดลง 50% (ข้อมูลอิงจากปี 2024 = 16 ฉบับ)', wt: 5.0, target: '5 ฉบับ', actual: 6, unit: 'ฉบับ', category: 'Quality' },
-      { id: '4', name: 'Waste ลดของเสียที่เกิดจากกระบวนการคลังสินค้า', formula: 'ลดลง 50% (เป้าหมายสะสมต่อปีไม่เกิน 80 พาเลท)', wt: 5.0, target: '<=80 พาเลท', actual: 78, unit: 'พาเลท', category: 'Quality' },
-      { id: '5.1', name: 'อุบัติเหตุกล่องโหลดล้มสะสม', formula: 'อุบัติเหตุสะสมของกล่อง = 0 PL (ปี 2025 = 13 PL)', wt: 5.0, target: '6 ครั้ง', actual: 6, unit: 'ครั้ง', category: 'Safety' },
-      { id: '5.2', name: 'อุบัติเหตุการทำงาน', formula: 'อุบัติเหตุที่มีเอกสารสอบสวนความปลอดภัยจาก จป. = 0 ครั้ง', wt: 5.0, target: '0 ครั้ง', actual: 0, unit: 'ครั้ง', category: 'Safety' },
-      { id: '7', name: 'Operation Cost +-5%', formula: 'Actual Sales unit (can+eoe+sot) / ค่าใช้จ่ายจริง x 100', wt: 10.0, target: '-5.00%', actual: -5.1, unit: '%', category: 'Cost' },
-      { id: '8', name: 'จำนวนรายการที่ Adjust ในระบบ ERP (ต่อเดือน)', formula: 'การ Adjust = 0 ครั้ง/ตู้ (รวมทุกคลังสินค้า)', wt: 5.0, target: '0 ครั้ง', actual: 1, unit: 'ครั้ง', category: 'System' },
-      { id: '9', name: 'ความถูกต้องของการจัดสินค้าเพื่อจัดส่ง', formula: 'จำนวน Job งานถูกต้อง / จำนวน Job งานทั้งหมด x 100', wt: 5.0, target: '100.00%', actual: 100.0, unit: '%', category: 'Quality' },
-      { id: '10', name: 'จำนวนกิจกรรม FI/Kaizen ที่สำเร็จและนำไปใช้จริง', formula: 'กิจกรรมประดิษฐ์นวัตกรรม/การปรับปรุงงาน (สะสมต่อปี)', wt: 10.0, target: '12 เรื่อง', actual: 11, unit: 'เรื่อง', category: 'Improvement' },
-      { id: '11.1', name: 'ผลประเมิน 5S & Work Instruction (WI)', formula: 'คะแนนการผ่านประเมินมาตรฐานพื้นที่ 5S และหน้างาน', wt: 10.0, target: '28 เรื่อง', actual: 28, unit: 'เรื่อง', category: '5S' },
-      { id: '11.2', name: '% ประเด็นที่ไม่แก้ไข', formula: '(ประเด็นค้างแก้ไขเกิน 3 วัน / ประเด็นตรวจพบทั้งหมด) x 100', wt: 5.0, target: '0%', actual: 1.2, unit: '%', category: '5S' }
-    ],
-    'May': [
-      { id: '1.1', name: 'การจ่ายสินค้าออกตามลำดับ FIFO 100%', formula: '(จำนวนรายการที่จ่ายตรงตาม FIFO / จำนวนรายการจ่ายทั้งหมด) x 100', wt: 15.0, target: '98%', actual: 97.6, unit: '%', category: 'FIFO' },
-      { id: '1.2', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม GEN', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 326 PL) x 100', wt: 2.5, target: '20%', actual: 18.2, unit: '%', category: 'FIFO' },
-      { id: '1.3', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม 3PCS/Jui', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 17 PL) x 100', wt: 2.5, target: '20%', actual: 17.6, unit: '%', category: 'FIFO' },
-      { id: '1.4', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม 2PCS', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 42 PL) x 100', wt: 2.5, target: '20%', actual: 19.8, unit: '%', category: 'FIFO' },
-      { id: '1.5', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม EOE', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 35 PL) x 100', wt: 2.5, target: '20%', actual: 15.2, unit: '%', category: 'FIFO' },
-      { id: '2', name: '% On time Delivery = 100% (วางแผน, คลังสินค้า, ขนส่ง)', formula: '(จำนวนรายการส่งมอบตรงเวลา / จำนวนจัดส่งทั้งหมด) x 100', wt: 10.0, target: '100%', actual: 98.7, unit: '%', category: 'Delivery' },
-      { id: '3', name: 'C-CAR (คลังสินค้า+ขนส่ง)', formula: 'Major + Minor ลดลง 50% (ข้อมูลอิงจากปี 2024 = 16 ฉบับ)', wt: 5.0, target: '5 ฉบับ', actual: 7, unit: 'ฉบับ', category: 'Quality' },
-      { id: '4', name: 'Waste ลดของเสียที่เกิดจากกระบวนการคลังสินค้า', formula: 'ลดลง 50% (เป้าหมายสะสมต่อปีไม่เกิน 80 พาเลท)', wt: 5.0, target: '<=80 พาเลท', actual: 84, unit: 'พาเลท', category: 'Quality' },
-      { id: '5.1', name: 'อุบัติเหตุกล่องโหลดล้มสะสม', formula: 'อุบัติเหตุสะสมของกล่อง = 0 PL (ปี 2025 = 13 PL)', wt: 5.0, target: '6 ครั้ง', actual: 7, unit: 'ครั้ง', category: 'Safety' },
-      { id: '5.2', name: 'อุบัติเหตุการทำงาน', formula: 'อุบัติเหตุที่มีเอกสารสอบสวนความปลอดภัยจาก จป. = 0 ครั้ง', wt: 5.0, target: '0 ครั้ง', actual: 0, unit: 'ครั้ง', category: 'Safety' },
-      { id: '7', name: 'Operation Cost +-5%', formula: 'Actual Sales unit (can+eoe+sot) / ค่าใช้จ่ายจริง x 100', wt: 10.0, target: '-5.00%', actual: -3.2, unit: '%', category: 'Cost' },
-      { id: '8', name: 'จำนวนรายการที่ Adjust ในระบบ ERP (ต่อเดือน)', formula: 'การ Adjust = 0 ครั้ง/ตู้ (รวมทุกคลังสินค้า)', wt: 5.0, target: '0 ครั้ง', actual: 2, unit: 'ครั้ง', category: 'System' },
-      { id: '9', name: 'ความถูกต้องของการจัดสินค้าเพื่อจัดส่ง', formula: 'จำนวน Job งานถูกต้อง / จำนวน Job งานทั้งหมด x 100', wt: 5.0, target: '100.00%', actual: 99.8, unit: '%', category: 'Quality' },
-      { id: '10', name: 'จำนวนกิจกรรม FI/Kaizen ที่สำเร็จและนำไปใช้จริง', formula: 'กิจกรรมประดิษฐ์นวัตกรรม/การปรับปรุงงาน (สะสมต่อปี)', wt: 10.0, target: '12 เรื่อง', actual: 10, unit: 'เรื่อง', category: 'Improvement' },
-      { id: '11.1', name: 'ผลประเมิน 5S & Work Instruction (WI)', formula: 'คะแนนการผ่านประเมินมาตรฐานพื้นที่ 5S และหน้างาน', wt: 10.0, target: '28 เรื่อง', actual: 27, unit: 'เรื่อง', category: '5S' },
-      { id: '11.2', name: '% ประเด็นที่ไม่แก้ไข', formula: '(ประเด็นค้างแก้ไขเกิน 3 วัน / ประเด็นตรวจพบทั้งหมด) x 100', wt: 5.0, target: '0%', actual: 2.1, unit: '%', category: '5S' }
-    ],
-    'April': [
-      { id: '1.1', name: 'การจ่ายสินค้าออกตามลำดับ FIFO 100%', formula: '(จำนวนรายการที่จ่ายตรงตาม FIFO / จำนวนรายการจ่ายทั้งหมด) x 100', wt: 15.0, target: '98%', actual: 95.8, unit: '%', category: 'FIFO' },
-      { id: '1.2', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม GEN', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 326 PL) x 100', wt: 2.5, target: '20%', actual: 15.4, unit: '%', category: 'FIFO' },
-      { id: '1.3', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม 3PCS/Jui', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 17 PL) x 100', wt: 2.5, target: '20%', actual: 14.5, unit: '%', category: 'FIFO' },
-      { id: '1.4', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม 2PCS', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 42 PL) x 100', wt: 2.5, target: '20%', actual: 16.0, unit: '%', category: 'FIFO' },
-      { id: '1.5', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม EOE', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 35 PL) x 100', wt: 2.5, target: '20%', actual: 11.5, unit: '%', category: 'FIFO' },
-      { id: '2', name: '% On time Delivery = 100% (วางแผน, คลังสินค้า, ขนส่ง)', formula: '(จำนวนรายการส่งมอบตรงเวลา / จำนวนจัดส่งทั้งหมด) x 100', wt: 10.0, target: '100%', actual: 96.8, unit: '%', category: 'Delivery' },
-      { id: '3', name: 'C-CAR (คลังสินค้า+ขนส่ง)', formula: 'Major + Minor ลดลง 50% (ข้อมูลอิงจากปี 2024 = 16 ฉบับ)', wt: 5.0, target: '5 ฉบับ', actual: 9, unit: 'ฉบับ', category: 'Quality' },
-      { id: '4', name: 'Waste ลดของเสียที่เกิดจากกระบวนการคลังสินค้า', formula: 'ลดลง 50% (เป้าหมายสะสมต่อปีไม่เกิน 80 พาเลท)', wt: 5.0, target: '<=80 พาเลท', actual: 105, unit: 'พาเลท', category: 'Quality' },
-      { id: '5.1', name: 'อุบัติเหตุกล่องโหลดล้มสะสม', formula: 'อุบัติเหตุสะสมของกล่อง = 0 PL (ปี 2025 = 13 PL)', wt: 5.0, target: '6 ครั้ง', actual: 8, unit: 'ครั้ง', category: 'Safety' },
-      { id: '5.2', name: 'อุบัติเหตุการทำงาน', formula: 'อุบัติเหตุที่มีเอกสารสอบสวนความปลอดภัยจาก จป. = 0 ครั้ง', wt: 5.0, target: '0 ครั้ง', actual: 1, unit: 'ครั้ง', category: 'Safety' },
-      { id: '7', name: 'Operation Cost +-5%', formula: 'Actual Sales unit (can+eoe+sot) / ค่าใช้จ่ายจริง x 100', wt: 10.0, target: '-5.00%', actual: 1.2, unit: '%', category: 'Cost' },
-      { id: '8', name: 'จำนวนรายการที่ Adjust ในระบบ ERP (ต่อเดือน)', formula: 'การ Adjust = 0 ครั้ง/ตู้ (รวมทุกคลังสินค้า)', wt: 5.0, target: '0 ครั้ง', actual: 3, unit: 'ครั้ง', category: 'System' },
-      { id: '9', name: 'ความถูกต้องของการจัดสินค้าเพื่อจัดส่ง', formula: 'จำนวน Job งานถูกต้อง / จำนวน Job งานทั้งหมด x 100', wt: 5.0, target: '100.00%', actual: 98.4, unit: '%', category: 'Quality' },
-      { id: '10', name: 'จำนวนกิจกรรม FI/Kaizen ที่สำเร็จและนำไปใช้จริง', formula: 'กิจกรรมประดิษฐ์นวัตกรรม/การปรับปรุงงาน (สะสมต่อปี)', wt: 10.0, target: '12 เรื่อง', actual: 8, unit: 'เรื่อง', category: 'Improvement' },
-      { id: '11.1', name: 'ผลประเมิน 5S & Work Instruction (WI)', formula: 'คะแนนการผ่านประเมินมาตรฐานพื้นที่ 5S และหน้างาน', wt: 10.0, target: '28 เรื่อง', actual: 23, unit: 'เรื่อง', category: '5S' },
-      { id: '11.2', name: '% ประเด็นที่ไม่แก้ไข', formula: '(ประเด็นค้างแก้ไขเกิน 3 วัน / ประเด็นตรวจพบทั้งหมด) x 100', wt: 5.0, target: '0%', actual: 5.2, unit: '%', category: '5S' }
-    ]
+  
+  // Settings State
+  const [settings, setSettings] = useState<any>({
+    points_per_task: 10,
+    points_per_course: 20,
+    points_per_quiz: 15
   });
+  
+  // Data States
+  const [myStats, setMyStats] = useState<any>(null);
+  const [employees, setEmployees] = useState<any[]>([]);
+  
+  // Modal States
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showScoreModal, setShowScoreModal] = useState(false);
+  const [selectedEmp, setSelectedEmp] = useState<any>(null);
+  
+  // Form Input States
+  const [inputScore, setInputScore] = useState('');
+  const [inputPointsTask, setInputPointsTask] = useState('');
+  const [inputPointsCourse, setInputPointsCourse] = useState('');
+  const [inputPointsQuiz, setInputPointsQuiz] = useState('');
 
-  const getKpiGradeAndScore = (id: string, val: number) => {
-    let score = 1.0;
-    let grade = 'E';
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      // Load settings
+      try {
+        const setRes = await api.get('/api/performance/settings');
+        setSettings(setRes.data);
+      } catch (err) {
+        console.warn('Failed to load settings from DB, using fallback.');
+      }
 
-    if (id === '1.1' || id === '2') {
-      if (val >= 98) { grade = 'A'; score = 4.0; }
-      else if (val >= 97) { grade = 'B+'; score = 3.5; }
-      else if (val >= 96) { grade = 'B'; score = 3.0; }
-      else if (val >= 95) { grade = 'C+'; score = 2.5; }
-      else if (val >= 94) { grade = 'C'; score = 2.0; }
-      else if (val >= 93) { grade = 'D'; score = 1.5; }
-      else { grade = 'E'; score = 1.0; }
-    } 
-    else if (id === '1.2' || id === '1.3' || id === '1.4' || id === '1.5') {
-      if (val >= 20) { grade = 'A'; score = 4.0; }
-      else if (val >= 18) { grade = 'B+'; score = 3.5; }
-      else if (val >= 16) { grade = 'B'; score = 3.0; }
-      else if (val >= 14) { grade = 'C+'; score = 2.5; }
-      else if (val >= 12) { grade = 'C'; score = 2.0; }
-      else if (val >= 10) { grade = 'D'; score = 1.5; }
-      else { grade = 'E'; score = 1.0; }
+      if (user?.role === 'employee') {
+        // Load employee personal stats
+        const statsRes = await api.get('/api/performance/my-stats');
+        setMyStats(statsRes.data);
+      } else {
+        // Load admin list of employees
+        const empRes = await api.get('/api/performance/employees');
+        setEmployees(empRes.data);
+      }
+    } catch (err) {
+      console.error('Error loading performance data:', err);
+      // Fallback mocks
+      if (user?.role === 'employee') {
+        setMyStats({
+          id: user.id,
+          employee_id: user.employee_id,
+          name: user.name,
+          photo_url: user.photo_url || '',
+          department: user.department,
+          position: user.position,
+          evaluation_score: 95,
+          completed_tasks: 4,
+          completed_courses: 2,
+          passed_quizzes: 3,
+          accumulated_points: 125,
+          settings: { points_per_task: 10, points_per_course: 20, points_per_quiz: 15 }
+        });
+      } else {
+        setEmployees([
+          { id: 6, employee_id: 'EMP006', name: 'สมปอง ลุยงาน', department: 'Operations', position: 'Forklift Driver', photo_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', completed_tasks: 3, completed_courses: 2, passed_quizzes: 2, accumulated_points: 100, evaluation_score: 96 },
+          { id: 7, employee_id: 'EMP007', name: 'อรอนงค์ แพ็กเก่ง', department: 'Operations', position: 'Packer', photo_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', completed_tasks: 4, completed_courses: 1, passed_quizzes: 2, accumulated_points: 90, evaluation_score: 98 },
+          { id: 8, employee_id: 'EMP008', name: 'มานะ คัดของ', department: 'Operations', position: 'Picker', photo_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150', completed_tasks: 1, completed_courses: 1, passed_quizzes: 1, accumulated_points: 45, evaluation_score: 89 },
+          { id: 9, employee_id: 'EMP009', name: 'เกษม รับสินค้า', department: 'Operations', position: 'Receiving Clerk', photo_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150', completed_tasks: 2, completed_courses: 2, passed_quizzes: 0, accumulated_points: 60, evaluation_score: 87 },
+          { id: 10, employee_id: 'EMP010', name: 'จารุณี นับสต็อก', department: 'Operations', position: 'Inventory Counter', photo_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150', completed_tasks: 2, completed_courses: 1, passed_quizzes: 1, accumulated_points: 55, evaluation_score: 94 }
+        ]);
+      }
+    } finally {
+      setLoading(false);
     }
-    else if (id === '3') {
-      if (val <= 5) { grade = 'A'; score = 4.0; }
-      else if (val <= 6) { grade = 'B+'; score = 3.5; }
-      else if (val <= 7) { grade = 'B'; score = 3.0; }
-      else if (val <= 8) { grade = 'C+'; score = 2.5; }
-      else if (val <= 9) { grade = 'C'; score = 2.0; }
-      else if (val <= 10) { grade = 'D'; score = 1.5; }
-      else { grade = 'E'; score = 1.0; }
-    }
-    else if (id === '4') {
-      if (val <= 80) { grade = 'A'; score = 4.0; }
-      else if (val <= 100) { grade = 'B+'; score = 3.5; }
-      else if (val <= 120) { grade = 'B'; score = 3.0; }
-      else if (val <= 140) { grade = 'C+'; score = 2.5; }
-      else if (val <= 160) { grade = 'C'; score = 2.0; }
-      else if (val <= 180) { grade = 'D'; score = 1.5; }
-      else { grade = 'E'; score = 1.0; }
-    }
-    else if (id === '5.1') {
-      if (val <= 6) { grade = 'A'; score = 4.0; }
-      else if (val <= 7) { grade = 'B+'; score = 3.5; }
-      else if (val <= 8) { grade = 'B'; score = 3.0; }
-      else if (val <= 9) { grade = 'C+'; score = 2.5; }
-      else if (val <= 10) { grade = 'C'; score = 2.0; }
-      else if (val <= 11) { grade = 'D'; score = 1.5; }
-      else { grade = 'E'; score = 1.0; }
-    }
-    else if (id === '5.2') {
-      if (val === 0) { grade = 'A'; score = 4.0; }
-      else if (val === 1) { grade = 'C+'; score = 2.5; }
-      else { grade = 'E'; score = 1.0; }
-    }
-    else if (id === '7') {
-      if (val <= -5.0) { grade = 'A'; score = 4.0; }
-      else if (val <= -2.5) { grade = 'B+'; score = 3.5; }
-      else if (val <= 0.0) { grade = 'B'; score = 3.0; }
-      else if (val <= 2.5) { grade = 'C+'; score = 2.5; }
-      else if (val <= 5.0) { grade = 'C'; score = 2.0; }
-      else if (val <= 7.5) { grade = 'D'; score = 1.5; }
-      else { grade = 'E'; score = 1.0; }
-    }
-    else if (id === '8') {
-      if (val <= 0) { grade = 'A'; score = 4.0; }
-      else if (val <= 1) { grade = 'B+'; score = 3.5; }
-      else if (val <= 2) { grade = 'B'; score = 3.0; }
-      else if (val <= 3) { grade = 'C+'; score = 2.5; }
-      else if (val <= 4) { grade = 'C'; score = 2.0; }
-      else if (val <= 5) { grade = 'D'; score = 1.5; }
-      else { grade = 'E'; score = 1.0; }
-    }
-    else if (id === '9') {
-      if (val >= 100) { grade = 'A'; score = 4.0; }
-      else if (val >= 90) { grade = 'B+'; score = 3.5; }
-      else if (val >= 80) { grade = 'B'; score = 3.0; }
-      else if (val >= 70) { grade = 'C+'; score = 2.5; }
-      else if (val >= 60) { grade = 'C'; score = 2.0; }
-      else if (val >= 50) { grade = 'D'; score = 1.5; }
-      else { grade = 'E'; score = 1.0; }
-    }
-    else if (id === '10' || id === '11.1') {
-      let threshold = id === '10' ? 12 : 28;
-      if (val >= threshold) { grade = 'A'; score = 4.0; }
-      else if (val >= threshold - 1) { grade = 'B+'; score = 3.5; }
-      else if (val >= threshold - 2) { grade = 'B'; score = 3.0; }
-      else if (val >= threshold - 3) { grade = 'C+'; score = 2.5; }
-      else if (val >= threshold - 4) { grade = 'C'; score = 2.0; }
-      else if (val >= threshold - 5) { grade = 'D'; score = 1.5; }
-      else { grade = 'E'; score = 1.0; }
-    }
-    else if (id === '11.2') {
-      if (val <= 0) { grade = 'A'; score = 4.0; }
-      else if (val <= 1.5) { grade = 'B+'; score = 3.5; }
-      else if (val <= 3.0) { grade = 'B'; score = 3.0; }
-      else if (val <= 4.5) { grade = 'C+'; score = 2.5; }
-      else if (val <= 6.0) { grade = 'C'; score = 2.0; }
-      else if (val <= 7.5) { grade = 'D'; score = 1.5; }
-      else { grade = 'E'; score = 1.0; }
-    }
-
-    return { grade, score };
   };
-
-  const currentKpiList = kpis[selectedMonth] || [];
-  let totalWeightedScore = 0;
-  let totalWeight = 0;
-
-  const kpiItemsWithScores = currentKpiList.map(item => {
-    const autoResult = getKpiGradeAndScore(item.id, item.actual);
-    const score = item.manualScore !== undefined ? item.manualScore : autoResult.score;
-    const grade = item.manualGrade !== undefined ? item.manualGrade : autoResult.grade;
-    
-    totalWeightedScore += (score * (item.wt / 100));
-    totalWeight += (item.wt / 100);
-    return {
-      ...item,
-      grade,
-      score
-    };
-  });
-
-  const finalWeightedScore = totalWeight > 0 ? (totalWeightedScore / totalWeight) : 0;
-  const finalScorePercentage = (finalWeightedScore / 4.0) * 100;
-
-  const getOverallGrade = (avgScore: number) => {
-    if (avgScore >= 3.8) return 'A';
-    if (avgScore >= 3.4) return 'B+';
-    if (avgScore >= 3.0) return 'B';
-    if (avgScore >= 2.5) return 'C+';
-    if (avgScore >= 2.0) return 'C';
-    if (avgScore >= 1.5) return 'D';
-    return 'E';
-  };
-
-  const overallGradeLetter = getOverallGrade(finalWeightedScore);
-
-  // Radar metrics for typical operator vs department averages
-  const radarData = [
-    { subject: 'ความถูกต้อง (Accuracy)', A: 95, B: 85, fullMark: 100 },
-    { subject: 'ความรวดเร็ว (Speed)', A: 88, B: 80, fullMark: 100 },
-    { subject: 'ความปลอดภัย (Safety)', A: 100, B: 90, fullMark: 100 },
-    { subject: 'การเข้างาน (Attendance)', A: 98, B: 92, fullMark: 100 },
-    { subject: 'การเรียนรู้ (Learning)', A: 85, B: 75, fullMark: 100 },
-    { subject: 'การบริหาร (5S)', A: 90, B: 85, fullMark: 100 }
-  ];
-
-  const barData = [
-    { name: 'สมปอง', Efficiency: 96, Accuracy: 94, Safety: 100 },
-    { name: 'อรอนงค์', Efficiency: 92, Accuracy: 98, Safety: 100 },
-    { name: 'มานะ', Efficiency: 88, Accuracy: 90, Safety: 95 },
-    { name: 'เกษม', Efficiency: 85, Accuracy: 88, Safety: 100 },
-    { name: 'จารุณี', Efficiency: 90, Accuracy: 95, Safety: 100 }
-  ];
 
   useEffect(() => {
-    // Simulate API call for leaderboard
-    setTimeout(() => {
-      setLeaderboard([
-        { rank: 1, name: 'อรอนงค์ แพ็กเก่ง', position: 'Packer', points: 985, score: 98, status: 'up' },
-        { rank: 2, name: 'สมปอง ลุยงาน', position: 'Forklift Driver', points: 960, score: 96, status: 'up' },
-        { rank: 3, name: 'จารุณี นับสต็อก', position: 'Inventory Counter', points: 935, score: 94, status: 'down' },
-        { rank: 4, name: 'มานะ คัดของ', position: 'Picker', points: 890, score: 89, status: 'up' },
-        { rank: 5, name: 'เกษม รับสินค้า', position: 'Receiving Clerk', points: 875, score: 87, status: 'down' }
-      ]);
-      setLoading(false);
-    }, 400);
-  }, []);
+    if (user) {
+      loadData();
+    }
+  }, [user]);
 
-  const handleSaveKpiEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingKpi) return;
-
-    const updatedMonthData = kpis[selectedMonth].map(item => {
-      if (item.id === editingKpi.id) {
-        const updatedItem: any = {
-          ...item,
-          id: editId,
-          name: editName,
-          formula: editFormula,
-          wt: parseFloat(editWt) || 0,
-          target: editTarget,
-          actual: parseFloat(editActual) || 0
-        };
-
-        if (editManualScore.trim()) {
-          updatedItem.manualScore = parseFloat(editManualScore);
-        } else {
-          delete updatedItem.manualScore;
-        }
-
-        if (editManualGrade && editManualGrade !== 'Auto') {
-          updatedItem.manualGrade = editManualGrade;
-        } else {
-          delete updatedItem.manualGrade;
-        }
-
-        return updatedItem;
-      }
-      return item;
-    });
-
-    setKpis({
-      ...kpis,
-      [selectedMonth]: updatedMonthData
-    });
-    setShowEditModal(false);
+  // Open Score Modal
+  const openEditScore = (emp: any) => {
+    setSelectedEmp(emp);
+    setInputScore(emp.evaluation_score.toString());
+    setShowScoreModal(true);
   };
 
-  const handleSaveNewKpi = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!addKpiId || !addKpiName) return;
-
-    const newKpi: any = {
-      id: addKpiId,
-      name: addKpiName,
-      formula: addKpiFormula,
-      wt: parseFloat(addKpiWt) || 0,
-      target: addKpiTarget,
-      actual: parseFloat(addKpiActual) || 0,
-      unit: addKpiUnit,
-      category: addKpiCategory
-    };
-
-    if (addKpiManualScore.trim()) {
-      newKpi.manualScore = parseFloat(addKpiManualScore);
-    }
-    if (addKpiManualGrade && addKpiManualGrade !== 'Auto') {
-      newKpi.manualGrade = addKpiManualGrade;
-    }
-
-    const currentMonthKpis = kpis[selectedMonth] || [];
-    setKpis({
-      ...kpis,
-      [selectedMonth]: [...currentMonthKpis, newKpi]
-    });
-
-    setShowAddKpiModal(false);
-    // Reset form
-    setAddKpiId('');
-    setAddKpiName('');
-    setAddKpiFormula('');
-    setAddKpiWt('');
-    setAddKpiTarget('');
-    setAddKpiActual('');
-    setAddKpiManualScore('');
-    setAddKpiManualGrade('');
+  // Open Settings Modal
+  const openSettings = () => {
+    setInputPointsTask(settings.points_per_task.toString());
+    setInputPointsCourse(settings.points_per_course.toString());
+    setInputPointsQuiz(settings.points_per_quiz.toString());
+    setShowSettingsModal(true);
   };
 
-  const handleDeleteKpi = (kpiId: string) => {
-    if (window.confirm(`คุณต้องการลบตัวชี้วัด KPI ลำดับ ${kpiId} ใช่หรือไม่?`)) {
-      const updatedMonthData = kpis[selectedMonth].filter(item => item.id !== kpiId);
-      setKpis({
-        ...kpis,
-        [selectedMonth]: updatedMonthData
+  // Save Settings
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const task = parseInt(inputPointsTask, 10);
+    const course = parseInt(inputPointsCourse, 10);
+    const quiz = parseInt(inputPointsQuiz, 10);
+
+    if (isNaN(task) || isNaN(course) || isNaN(quiz)) {
+      alert('กรุณากรอกตัวเลขคะแนนที่ถูกต้อง');
+      return;
+    }
+
+    try {
+      const res = await api.put('/api/performance/settings', {
+        points_per_task: task,
+        points_per_course: course,
+        points_per_quiz: quiz
       });
+      setSettings(res.data);
+      setShowSettingsModal(false);
+      alert('บันทึกกติกาตั้งค่าคะแนนสำเร็จ');
+      loadData(); // Reload summaries with new point weights
+    } catch (err: any) {
+      alert('บันทึกไม่สำเร็จ: ' + (err.response?.data?.message || err.message));
     }
   };
 
-  const handleAddMonthKpi = (e: React.FormEvent) => {
+  // Save Employee Evaluation Score
+  const handleSaveScore = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMonthName.trim()) return;
+    if (!selectedEmp) return;
 
-    const template = kpis['June'] || [];
-    const newMonthData = template.map(item => {
-      const inputVal = newKpiValues[item.id] || '0';
-      return {
-        ...item,
-        actual: parseFloat(inputVal) || 0
-      };
-    });
+    const score = parseInt(inputScore, 10);
+    if (isNaN(score) || score < 0 || score > 100) {
+      alert('กรุณากรอกคะแนนประเมินระหว่าง 0 ถึง 100 คะแนน');
+      return;
+    }
 
-    setKpis({
-      ...kpis,
-      [newMonthName]: newMonthData
-    });
-    setSelectedMonth(newMonthName);
-    setShowAddMonthModal(false);
-    setNewMonthName('');
-    setNewKpiValues({});
+    try {
+      const res = await api.put(`/api/performance/employee/${selectedEmp.id}`, {
+        evaluation_score: score
+      });
+      
+      setEmployees(employees.map(emp => 
+        emp.id === selectedEmp.id 
+          ? { ...emp, evaluation_score: res.data.evaluation_score } 
+          : emp
+      ));
+      
+      setShowScoreModal(false);
+      setSelectedEmp(null);
+      alert('บันทึกคะแนนประเมินสำเร็จ');
+    } catch (err: any) {
+      alert('บันทึกไม่สำเร็จ: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  // Evaluation text status helper
+  const getScoreGradeText = (score: number) => {
+    if (score >= 95) return { grade: 'A', text: 'ผลงานดีเด่น (Excellent)', color: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/20' };
+    if (score >= 85) return { grade: 'B', text: 'ผลงานดีมาก (Very Good)', color: 'text-blue-500', bg: 'bg-blue-500/10 border-blue-500/20' };
+    if (score >= 70) return { grade: 'C', text: 'ผลงานระดับมาตรฐาน (Good)', color: 'text-amber-500', bg: 'bg-amber-500/10 border-amber-500/20' };
+    if (score >= 50) return { grade: 'D', text: 'ควรปรับปรุงแก้ไข (Needs Improvement)', color: 'text-orange-500', bg: 'bg-orange-500/10 border-orange-500/20' };
+    return { grade: 'F', text: 'ไม่ผ่านเกณฑ์มาตรฐาน (Fail)', color: 'text-rose-500', bg: 'bg-rose-500/10 border-rose-500/20' };
   };
 
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[400px]">
-        <div className="w-10 h-10 border-4 border-slate-300 border-t-warehouse-orange rounded-full animate-spin" />
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-warehouse-orange"></div>
       </div>
     );
   }
 
+  // RENDER EMPLOYEE PERSONAL VIEW
+  if (user?.role === 'employee' && myStats) {
+    const gradeInfo = getScoreGradeText(myStats.evaluation_score);
+    
+    return (
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">รายงานประเมินผลงาน & KPI สะสม</h2>
+          <p className="text-slate-400 text-sm mt-1">สรุปข้อมูลคะแนนสะสมและการประเมินประสิทธิภาพการทำงานคลังสินค้า Swan</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Left Column: Profile & Points Info */}
+          <div className="lg:col-span-1 space-y-6">
+            
+            {/* Profile Detail Card */}
+            <GlassCard className="p-6 flex flex-col items-center text-center">
+              {myStats.photo_url ? (
+                <img 
+                  src={myStats.photo_url} 
+                  alt={myStats.name} 
+                  className="w-24 h-24 rounded-full object-cover border-4 border-warehouse-orange shadow-lg bg-slate-800"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-warehouse-orange/20 border-4 border-warehouse-orange flex items-center justify-center text-warehouse-orange font-bold text-3xl">
+                  {myStats.name.charAt(0)}
+                </div>
+              )}
+              <h3 className="text-lg font-bold text-slate-800 dark:text-white mt-4">{myStats.name}</h3>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">{myStats.employee_id}</p>
+              
+              <div className="w-full border-t border-slate-200/50 dark:border-white/5 my-4 pt-4 text-xs space-y-2.5 text-left">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">แผนก (Department):</span>
+                  <span className="font-semibold text-slate-700 dark:text-slate-200">{myStats.department}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">ตำแหน่ง (Position):</span>
+                  <span className="font-semibold text-slate-700 dark:text-slate-200">{myStats.position}</span>
+                </div>
+              </div>
+            </GlassCard>
+
+            {/* Accumulated Points breakdown card */}
+            <GlassCard className="p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <Trophy className="text-warehouse-orange" size={18} />
+                <h4 className="font-bold text-sm text-slate-800 dark:text-white">คะแนนสะสมแยกตามหัวข้อ</h4>
+              </div>
+
+              <div className="space-y-3.5 pt-2">
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                      <Briefcase size={15} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase">ส่งงานสำเร็จ</p>
+                      <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-0.5">{myStats.completed_tasks} เรื่อง</p>
+                    </div>
+                  </div>
+                  <span className="font-mono text-xs font-bold text-amber-500">+{myStats.completed_tasks * myStats.settings.points_per_task} Pts</span>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                      <BookOpen size={15} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase">อบรมผ่านหลักสูตร</p>
+                      <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-0.5">{myStats.completed_courses} บทเรียน</p>
+                    </div>
+                  </div>
+                  <span className="font-mono text-xs font-bold text-blue-500">+{myStats.completed_courses * myStats.settings.points_per_course} Pts</span>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                      <Award size={15} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase">สอบผ่านแบบทดสอบ</p>
+                      <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-0.5">{myStats.passed_quizzes} ครั้ง</p>
+                    </div>
+                  </div>
+                  <span className="font-mono text-xs font-bold text-emerald-500">+{myStats.passed_quizzes * myStats.settings.points_per_quiz} Pts</span>
+                </div>
+              </div>
+            </GlassCard>
+
+          </div>
+
+          {/* Right Column: Evaluation Score */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* KPI 100 Score card */}
+            <GlassCard className="p-6 flex flex-col md:flex-row items-center gap-8 border border-slate-200/50 dark:border-white/5">
+              
+              {/* Circular Gauge */}
+              <div className="relative w-36 h-36 flex items-center justify-center shrink-0">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                  <circle 
+                    cx="50" cy="50" r="42" 
+                    className="stroke-slate-200 dark:stroke-white/5" 
+                    strokeWidth="8" fill="transparent" 
+                  />
+                  <circle 
+                    cx="50" cy="50" r="42" 
+                    className="stroke-emerald-500 transition-all duration-1000" 
+                    strokeWidth="8" fill="transparent"
+                    strokeDasharray={2 * Math.PI * 42}
+                    strokeDashoffset={2 * Math.PI * 42 * (1 - myStats.evaluation_score / 100)}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute flex flex-col items-center justify-center">
+                  <span className="text-3xl font-black text-slate-800 dark:text-white font-mono">{myStats.evaluation_score}</span>
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">คะแนนเต็ม 100</span>
+                </div>
+              </div>
+
+              {/* Status and Information */}
+              <div className="space-y-3.5 flex-1 w-full text-center md:text-left">
+                <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">คะแนนประเมินผลงานปลายปี</p>
+                  <h4 className="text-xl font-bold text-slate-800 dark:text-white mt-1">เกณฑ์ผลประเมินประจำปี</h4>
+                </div>
+                
+                <div className={`inline-flex px-4 py-2 border rounded-2xl text-xs font-bold ${gradeInfo.bg} ${gradeInfo.color}`}>
+                  {gradeInfo.text} (Grade {gradeInfo.grade})
+                </div>
+
+                <p className="text-slate-400 text-xs leading-relaxed">
+                  คะแนนประเมินนี้คำนวณและตั้งค่าโดยผู้บริหารสูงสุด (Admin) โดยอิงตามพฤติกรรมการเข้าเรียนอบรม, ความแม่นยำในการปฏิบัติงานคลัง, อัตราความปลอดภัย (Safety) และการส่งงานประจำวัน
+                </p>
+              </div>
+
+            </GlassCard>
+
+            {/* Point values legend */}
+            <GlassCard className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Settings className="text-warehouse-orange" size={18} />
+                <h4 className="font-bold text-sm text-slate-800 dark:text-white">เกณฑ์การคิดคำนวณคะแนนสะสม</h4>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                ระบบสะสมคะแนนมีผลโดยตรงต่อการจัดอันดับและคะแนนความก้าวหน้าของพนักงาน โดยแอดมินเป็นผู้กำหนดมูลค่าคะแนนสะสมของแต่ละกิจกรรมดังนี้:
+              </p>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="p-3 bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-2xl">
+                  <p className="text-[10px] text-slate-400 font-semibold">งานสำเร็จ</p>
+                  <p className="text-base font-bold text-slate-700 dark:text-slate-200 mt-1">+{myStats.settings.points_per_task} คะแนน</p>
+                </div>
+                <div className="p-3 bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-2xl">
+                  <p className="text-[10px] text-slate-400 font-semibold">จบคอร์สเรียน</p>
+                  <p className="text-base font-bold text-slate-700 dark:text-slate-200 mt-1">+{myStats.settings.points_per_course} คะแนน</p>
+                </div>
+                <div className="p-3 bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-2xl">
+                  <p className="text-[10px] text-slate-400 font-semibold">ผ่านข้อสอบ</p>
+                  <p className="text-base font-bold text-slate-700 dark:text-slate-200 mt-1">+{myStats.settings.points_per_quiz} คะแนน</p>
+                </div>
+              </div>
+            </GlassCard>
+
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  // RENDER ADMIN / STAFF PERFORMANCE VIEW
+  const chartData = employees.map(emp => ({
+    name: emp.name.split(' ')[0],
+    'คะแนนสะสม': emp.accumulated_points,
+    'คะแนนประเมิน': emp.evaluation_score
+  }));
+
   return (
     <div className="space-y-8">
       
-      {/* Header Info */}
+      {/* Top Title Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">แดชบอร์ดประเมินผลงาน (Performance KPI)</h2>
-          <p className="text-slate-400 text-sm mt-1">วิเคราะห์ประสิทธิภาพ ความเร็ว ความถูกต้อง ความสะอาดระบบ 5S และความปลอดภัยในการทำงาน</p>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">ระบบประเมินผลงาน & KPI พนักงานคลัง</h2>
+          <p className="text-slate-400 text-sm mt-1">จัดการคะแนนประเมินปลายปีเต็ม 100 และกำหนดอัตราส่วนคะแนนสะสมการเรียนการทำงาน</p>
         </div>
-      </div>
-
-      {/* 4 KPI Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        
-        <GlassCard className="flex items-center gap-5 border border-slate-200/50 dark:border-white/5" hoverEffect>
-          <div className="w-12 h-12 rounded-2xl bg-warehouse-orange/10 text-warehouse-orange flex items-center justify-center">
-            <Gauge size={22} />
-          </div>
-          <div>
-            <p className="text-xs text-slate-400 font-bold">ประสิทธิภาพเฉลี่ย (Efficiency)</p>
-            <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">94.2%</h3>
-            <span className="text-[10px] text-emerald-500 font-semibold flex items-center gap-0.5">
-              <ChevronUp size={12} />
-              <span>+1.5% สูงกว่าเป้า</span>
-            </span>
-          </div>
-        </GlassCard>
-
-        <GlassCard className="flex items-center gap-5 border border-slate-200/50 dark:border-white/5" hoverEffect>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-            <ShieldCheck size={22} />
-          </div>
-          <div>
-            <p className="text-xs text-slate-400 font-bold">คะแนนความปลอดภัย (Safety)</p>
-            <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">99.8%</h3>
-            <span className="text-[10px] text-slate-400 font-medium">เกิดอุบัติเหตุสะสม: 0 ครั้ง</span>
-          </div>
-        </GlassCard>
-
-        <GlassCard className="flex items-center gap-5 border border-slate-200/50 dark:border-white/5" hoverEffect>
-          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
-            <Flame size={22} />
-          </div>
-          <div>
-            <p className="text-xs text-slate-400 font-bold">ชั่วโมงสะสมรวม (KPI Hours)</p>
-            <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">840 ชม.</h3>
-            <span className="text-[10px] text-slate-400 font-medium">ข้อมูลรอบ 30 วัน</span>
-          </div>
-        </GlassCard>
-
-        <GlassCard className="flex items-center gap-5 border border-slate-200/50 dark:border-white/5" hoverEffect>
-          <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
-            <Activity size={22} />
-          </div>
-          <div>
-            <p className="text-xs text-slate-400 font-bold">ความถูกต้องหยิบสินค้า (Accuracy)</p>
-            <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">98.5%</h3>
-            <span className="text-[10px] text-slate-400 font-medium">อัตราการคืนของต่ำกว่า 0.2%</span>
-          </div>
-        </GlassCard>
-
-      </div>
-
-      {/* KPI Chart Visuals Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Radar KPI breakdown chart */}
-        <GlassCard className="lg:col-span-1 h-[400px] flex flex-col" delay={0.1}>
-          <div className="mb-4">
-            <h4 className="font-bold text-sm text-slate-800 dark:text-white">เรดาร์วัดขีดความสามารถ (Competency Radar)</h4>
-            <p className="text-xs text-slate-400 mt-0.5">ภาพรวมทักษะส่วนตัวเปรียบเทียบกับค่าเฉลี่ยของแผนก</p>
-          </div>
-          <div className="flex-1 w-full text-xs">
-            <ResponsiveContainer width="100%" height="90%">
-              <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-                <PolarGrid stroke="#E2E8F0" className="dark:stroke-slate-800" />
-                <PolarAngleAxis dataKey="subject" tick={{ fill: '#94A3B8', fontSize: 10 }} />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} />
-                <Radar name="พนักงานเป้าหมาย (Operator A)" dataKey="A" stroke="#F97316" fill="#F97316" fillOpacity={0.2} />
-                <Radar name="ค่าเฉลี่ยคลัง (Standard Avg)" dataKey="B" stroke="#1E3A8A" fill="#1E3A8A" fillOpacity={0.1} />
-                <Tooltip contentStyle={{ borderRadius: '12px' }} />
-                <Legend wrapperStyle={{ fontSize: 10, marginTop: 10 }} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        </GlassCard>
-
-        {/* Bar comparison chart */}
-        <GlassCard className="lg:col-span-2 h-[400px] flex flex-col" delay={0.15}>
-          <div className="mb-4">
-            <h4 className="font-bold text-sm text-slate-800 dark:text-white">ผลสัมฤทธิ์รายบุคคล (Operator KPI Performance)</h4>
-            <p className="text-xs text-slate-400 mt-0.5">การเปรียบเทียบประสิทธิผลความแม่นยำและความปลอดภัยในกลุ่มพนักงานดีเด่น</p>
-          </div>
-          <div className="flex-1 w-full text-xs">
-            <ResponsiveContainer width="100%" height="90%">
-              <BarChart data={barData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" className="dark:stroke-slate-800" />
-                <XAxis dataKey="name" tickLine={false} stroke="#94A3B8" />
-                <YAxis axisLine={false} tickLine={false} stroke="#94A3B8" />
-                <Tooltip contentStyle={{ borderRadius: '12px' }} />
-                <Legend wrapperStyle={{ fontSize: 10 }} />
-                <Bar dataKey="Efficiency" name="ประสิทธิภาพความเร็ว" fill="#1E3A8A" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Accuracy" name="ความถูกต้อง" fill="#F97316" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Safety" name="คะแนนเซฟตี้" fill="#10B981" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </GlassCard>
-
-      </div>
-
-      {/* Switcher Tabs */}
-      <div className="flex gap-4 border-b border-slate-200/50 dark:border-white/5 pb-2">
         <button 
-          onClick={() => setActiveTab('departmentKpi')}
-          className={`pb-2 px-1 text-sm font-bold transition-all relative ${
-            activeTab === 'departmentKpi' 
-              ? 'text-warehouse-orange border-b-2 border-warehouse-orange' 
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
+          onClick={openSettings}
+          className="px-4 py-2.5 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-warehouse-orange/15 transition-all"
         >
-          สรุปผล KPI แผนกคลังสินค้า (Department KPI)
-        </button>
-        <button 
-          onClick={() => setActiveTab('leaderboard')}
-          className={`pb-2 px-1 text-sm font-bold transition-all relative ${
-            activeTab === 'leaderboard' 
-              ? 'text-warehouse-orange border-b-2 border-warehouse-orange' 
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          อันดับผลงานรายบุคคล (Leaderboard)
+          <Settings size={14} />
+          <span>ตั้งเกณฑ์คะแนนสะสม (Settings)</span>
         </button>
       </div>
 
-      {activeTab === 'departmentKpi' ? (
-        <div className="space-y-6">
-          {/* Monthly KPI header card */}
-          <GlassCard className="p-6 border border-slate-200/50 dark:border-white/5 bg-slate-50/50 dark:bg-white/5">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h4 className="font-bold text-base text-slate-800 dark:text-white flex items-center gap-2">
-                  <ClipboardList className="text-warehouse-orange" size={20} />
-                  <span>ผลการดำเนินงานแผนกคลังสินค้าประจำปี 2026</span>
-                </h4>
-                <p className="text-xs text-slate-400 mt-1">ตารางคะแนนถ่วงน้ำหนัก เกรด และเป้าหมายตามแต่ละตัวชี้วัด</p>
-              </div>
-
-              {/* Month Selector */}
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <Calendar size={16} className="text-slate-400" />
-                  <span className="text-xs text-slate-400 font-bold">เลือกเดือนประเมิน:</span>
-                  <select 
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="glass-input text-xs bg-white dark:bg-warehouse-slate py-1 px-3"
-                  >
-                    {Object.keys(kpis).map(month => (
-                      <option key={month} value={month}>
-                        {month === 'June' ? 'มิถุนายน 2026' : 
-                         month === 'May' ? 'พฤษภาคม 2026' : 
-                         month === 'April' ? 'เมษายน 2026' : month}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Add Month & KPI Buttons (visible only to Admin/Staff) */}
-                {(user?.role === 'admin' || user?.role === 'staff') && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        setNewMonthName('');
-                        setNewKpiValues({});
-                        setShowAddMonthModal(true);
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-warehouse-orange text-white text-xs font-bold hover:bg-warehouse-orange/90 transition-all shadow-md shadow-warehouse-orange/10"
-                    >
-                      <Plus size={14} />
-                      <span>เพิ่มเดือน</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setAddKpiId('');
-                        setAddKpiName('');
-                        setAddKpiFormula('');
-                        setAddKpiWt('');
-                        setAddKpiTarget('');
-                        setAddKpiActual('');
-                        setAddKpiManualScore('');
-                        setAddKpiManualGrade('Auto');
-                        setShowAddKpiModal(true);
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/10"
-                    >
-                      <Plus size={14} />
-                      <span>เพิ่ม KPI</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Department Overall Grade and Score Badges */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 pt-6 border-t border-slate-200/30 dark:border-white/5">
-              <div className="flex items-center gap-4 p-4 bg-warehouse-orange/5 border border-warehouse-orange/20 rounded-2xl">
-                <div className="w-12 h-12 rounded-xl bg-warehouse-orange/15 text-warehouse-orange flex items-center justify-center font-black text-2xl shadow-inner shadow-warehouse-orange/10">
-                  {overallGradeLetter}
-                </div>
-                <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">เกรดเฉลี่ยของแผนก (Overall Grade)</p>
-                  <h5 className="text-lg font-extrabold text-slate-800 dark:text-white mt-0.5">เกรด {overallGradeLetter}</h5>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center">
-                  <Award size={24} />
-                </div>
-                <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">คะแนนถ่วงน้ำหนักเฉลี่ย (Weighted Score)</p>
-                  <h5 className="text-lg font-extrabold text-slate-800 dark:text-white mt-0.5">{finalWeightedScore.toFixed(2)} / 4.00</h5>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 p-4 bg-indigo-500/5 border border-indigo-500/20 rounded-2xl">
-                <div className="w-12 h-12 rounded-xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center">
-                  <Percent size={22} />
-                </div>
-                <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">เปอร์เซ็นต์ผลดำเนินงาน (KPI Performance %)</p>
-                  <h5 className="text-lg font-extrabold text-slate-800 dark:text-white mt-0.5">{finalScorePercentage.toFixed(1)}%</h5>
-                </div>
-              </div>
-            </div>
-          </GlassCard>
-
-          {/* Detailed KPI Table */}
-          <GlassCard className="p-0 overflow-hidden border border-slate-200/50 dark:border-white/5">
-            <div className="overflow-x-auto text-xs">
-              <table className="w-full border-collapse text-left">
-                <thead>
-                  <tr className="border-b border-slate-200/50 dark:border-white/5 text-[10px] uppercase font-bold text-slate-400 tracking-wider bg-slate-50/50 dark:bg-white/5">
-                    <th className="px-4 py-3 text-center w-12">ลำดับ</th>
-                    <th className="px-4 py-3">หัวข้อ KPI หลัก</th>
-                    <th className="px-4 py-3">สูตรการคำนวณ</th>
-                    <th className="px-4 py-3 text-center w-20">% WT</th>
-                    <th className="px-4 py-3 text-center w-24">Target</th>
-                    <th className="px-4 py-3 text-center w-24">ผลงานจริง (Actual)</th>
-                    <th className="px-4 py-3 text-center w-20">คะแนน (4.0)</th>
-                    <th className="px-4 py-3 text-center w-20">เกรด</th>
-                    {(user?.role === 'admin' || user?.role === 'staff') && (
-                      <th className="px-4 py-3 text-center w-24">จัดการ</th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200/50 dark:divide-white/5 font-semibold text-slate-700 dark:text-slate-200">
-                  {kpiItemsWithScores.map((kpi) => {
-                    const getGradeColor = (g: string) => {
-                      if (g === 'A') return 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30';
-                      if (g === 'B+') return 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/15';
-                      if (g === 'B') return 'bg-sky-500/10 text-sky-500 border border-sky-500/15';
-                      if (g === 'C+') return 'bg-amber-500/15 text-amber-500 border border-amber-500/30';
-                      if (g === 'C') return 'bg-amber-500/10 text-amber-500 border border-amber-500/15';
-                      if (g === 'D') return 'bg-rose-500/10 text-rose-500 border border-rose-500/15';
-                      return 'bg-rose-500/15 text-rose-500 border border-rose-500/30';
-                    };
-
-                    return (
-                      <tr key={kpi.id} className="hover:bg-slate-100/25 dark:hover:bg-white/5 transition-colors">
-                        <td className="px-4 py-4 text-center font-mono text-slate-400">{kpi.id}</td>
-                        <td className="px-4 py-4">
-                          <p className="font-semibold text-slate-800 dark:text-white">{kpi.name}</p>
-                        </td>
-                        <td className="px-4 py-4 text-slate-500 font-medium max-w-xs truncate animate-pulse" title={kpi.formula}>
-                          {kpi.formula}
-                        </td>
-                        <td className="px-4 py-4 text-center font-mono text-slate-400">{kpi.wt}%</td>
-                        <td className="px-4 py-4 text-center text-slate-500">{kpi.target}</td>
-                        <td className="px-4 py-4 text-center text-warehouse-orange font-mono font-bold">
-                          {kpi.actual.toFixed(kpi.unit === '%' ? 1 : 0)}{kpi.unit}
-                        </td>
-                        <td className="px-4 py-4 text-center font-mono text-slate-400">{kpi.score.toFixed(1)}</td>
-                        <td className="px-4 py-4 text-center">
-                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${getGradeColor(kpi.grade)}`}>
-                            {kpi.grade}
-                          </span>
-                        </td>
-                        {(user?.role === 'admin' || user?.role === 'staff') && (
-                          <td className="px-4 py-4 text-center">
-                            <div className="flex items-center justify-center gap-1.5">
-                              <button
-                                onClick={() => {
-                                  setEditingKpi(kpi);
-                                  setEditName(kpi.name);
-                                  setEditFormula(kpi.formula || '');
-                                  setEditWt(kpi.wt.toString());
-                                  setEditTarget(kpi.target);
-                                  setEditActual(kpi.actual.toString());
-                                  setEditManualScore(kpi.manualScore !== undefined ? kpi.manualScore.toString() : '');
-                                  setEditManualGrade(kpi.manualGrade || 'Auto');
-                                  setShowEditModal(true);
-                                }}
-                                className="text-warehouse-orange hover:text-warehouse-orange/80 transition-colors p-1 bg-warehouse-orange/10 hover:bg-warehouse-orange/20 rounded-lg inline-flex items-center justify-center"
-                                title="แก้ไข KPI และผลงาน"
-                              >
-                                <Edit3 size={14} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteKpi(kpi.id)}
-                                className="text-rose-500 hover:text-rose-600 transition-colors p-1 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg inline-flex items-center justify-center"
-                                title="ลบ KPI"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </GlassCard>
+      {/* Compare Chart */}
+      <GlassCard className="p-5">
+        <h4 className="font-bold text-xs text-slate-400 mb-4 uppercase tracking-wider">กราฟวิเคราะห์คะแนนสะสมและคะแนนประเมินของพนักงาน</h4>
+        <div className="w-full h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#475569" opacity={0.15} />
+              <XAxis dataKey="name" stroke="#94a3b8" tick={{ fontSize: 10 }} />
+              <YAxis stroke="#94a3b8" tick={{ fontSize: 10 }} />
+              <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', color: '#fff', fontSize: '11px' }} />
+              <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
+              <Bar dataKey="คะแนนสะสม" fill="#F26522" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="คะแนนประเมิน" fill="#10B981" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
-      ) : (
-        <GlassCard className="p-0 overflow-hidden border border-slate-200/50 dark:border-white/5" delay={0.2}>
-          <div className="px-6 py-4 border-b border-slate-200/50 dark:border-white/5 bg-slate-100/50 dark:bg-white/5 flex items-center justify-between">
-            <h4 className="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2">
-              <Award size={18} className="text-warehouse-orange" />
-              <span>กระดานผู้นำผลงานพนักงานดีเด่น (Leaderboard)</span>
-            </h4>
-            <span className="text-[10px] text-slate-400 font-semibold">อัปเดตแบบรายเดือน</span>
-          </div>
-          
-          <div className="overflow-x-auto text-xs">
-            <table className="w-full border-collapse text-left">
-              <thead>
-                <tr className="border-b border-slate-200/50 dark:border-white/5 text-[10px] uppercase font-bold text-slate-400 tracking-wider bg-slate-50/50 dark:bg-white/5">
-                  <th className="px-6 py-3.5 text-center w-20">อันดับ</th>
-                  <th className="px-6 py-3.5">รายชื่อพนักงาน</th>
-                  <th className="px-6 py-3.5">ตำแหน่ง</th>
-                  <th className="px-6 py-3.5 text-center">คะแนนสะสม (Points)</th>
-                  <th className="px-6 py-3.5 text-center">ดัชนีชี้วัด KPI</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200/50 dark:divide-white/5 font-semibold text-slate-700 dark:text-slate-200">
-                {leaderboard.map((emp) => (
-                  <tr key={emp.rank} className="hover:bg-slate-100/25 dark:hover:bg-white/5 transition-colors">
-                    <td className="px-6 py-4 text-center">
-                      <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold font-sans ${
-                        emp.rank === 1 ? 'bg-amber-500 text-white' :
-                        emp.rank === 2 ? 'bg-slate-300 text-slate-700' :
-                        emp.rank === 3 ? 'bg-amber-700 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-400'
-                      }`}>
-                        {emp.rank === 1 ? <Star size={12} className="fill-white" /> : emp.rank}
+      </GlassCard>
+
+      {/* Employees Performance Table */}
+      <GlassCard className="p-0 overflow-hidden border border-slate-200/50 dark:border-white/5">
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left border-collapse">
+            <thead>
+              <tr className="border-b border-slate-200/50 dark:border-white/5 bg-slate-100/50 dark:bg-white/5 text-slate-400 font-bold uppercase tracking-wider">
+                <th className="py-4 px-6">พนักงาน</th>
+                <th className="py-4 px-4 text-center">ส่งงานสำเร็จ</th>
+                <th className="py-4 px-4 text-center">หลักสูตรอบรมสำเร็จ</th>
+                <th className="py-4 px-4 text-center">ทำข้อสอบสำเร็จ</th>
+                <th className="py-4 px-4 text-center">คะแนนสะสมรวม</th>
+                <th className="py-4 px-4 text-center">คะแนนประเมิน (100)</th>
+                <th className="py-4 px-6 text-right">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-slate-600 dark:text-slate-300">
+              {employees.map(emp => {
+                const gradeInfo = getScoreGradeText(emp.evaluation_score);
+                
+                return (
+                  <tr key={emp.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="py-4 px-6 flex items-center gap-3">
+                      {emp.photo_url ? (
+                        <img 
+                          src={emp.photo_url} 
+                          alt={emp.name} 
+                          className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-white/10 bg-slate-800"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center font-bold text-slate-400 text-sm">
+                          {emp.name.charAt(0)}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-bold text-slate-700 dark:text-slate-100">{emp.name}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{emp.employee_id} • {emp.position}</p>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 text-center font-semibold text-slate-700 dark:text-slate-200">{emp.completed_tasks} เรื่อง</td>
+                    <td className="py-4 px-4 text-center font-semibold text-slate-700 dark:text-slate-200">{emp.completed_courses} เรื่อง</td>
+                    <td className="py-4 px-4 text-center font-semibold text-slate-700 dark:text-slate-200">{emp.passed_quizzes} เรื่อง</td>
+                    <td className="py-4 px-4 text-center">
+                      <span className="px-2.5 py-1 bg-warehouse-orange/10 text-warehouse-orange font-mono font-bold rounded-xl">
+                        {emp.accumulated_points} Pts
                       </span>
                     </td>
-                    <td className="px-6 py-4 flex items-center gap-3">
-                      <div>
-                        <p className="font-semibold text-slate-800 dark:text-white">{emp.name}</p>
+                    <td className="py-4 px-4 text-center">
+                      <div className="flex flex-col items-center">
+                        <span className="font-mono font-extrabold text-sm text-slate-700 dark:text-white">
+                          {emp.evaluation_score}
+                        </span>
+                        <span className={`text-[9px] font-bold mt-0.5 ${gradeInfo.color}`}>
+                          Grade {gradeInfo.grade}
+                        </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-slate-500">{emp.position}</td>
-                    <td className="px-6 py-4 text-center font-mono font-bold text-warehouse-orange">{emp.points} PTS</td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-emerald-500 font-mono font-bold">{emp.score}%</span>
+                    <td className="py-4 px-6 text-right">
+                      <button 
+                        onClick={() => openEditScore(emp)}
+                        className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 hover:border-warehouse-orange hover:text-warehouse-orange text-[10px] font-bold transition-all inline-flex items-center gap-1"
+                      >
+                        <Edit3 size={11} />
+                        <span>ปรับคะแนน (KPI)</span>
+                      </button>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </GlassCard>
-      )}
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </GlassCard>
 
-      {/* EDIT KPI ACTUAL MODAL */}
-      {showEditModal && editingKpi && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <GlassCard className="w-full max-w-md my-8 overflow-hidden border border-white/10" animate={false}>
+      {/* EDIT EVALUATION SCORE MODAL */}
+      {showScoreModal && selectedEmp && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <GlassCard className="w-full max-w-sm overflow-hidden border border-white/10" animate={false}>
             <div className="flex items-center justify-between pb-4 border-b border-slate-200/50 dark:border-white/5 mb-6">
-              <h3 className="font-bold text-base text-slate-800 dark:text-white flex items-center gap-2">
-                <Edit3 size={18} className="text-warehouse-orange" />
-                <span>แก้ไขข้อมูลตัวชี้วัด KPI ({editingKpi.id})</span>
-              </h3>
-              <button 
-                onClick={() => setShowEditModal(false)} 
-                className="text-slate-400 hover:text-slate-200"
-              >
+              <h3 className="font-bold text-sm">ปรับปรุงคะแนนประเมินปลายปี</h3>
+              <button onClick={() => setShowScoreModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                 <X size={18} />
               </button>
             </div>
             
-            <form onSubmit={handleSaveKpiEdit} className="space-y-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">ลำดับ KPI (ID)</label>
-                <input 
-                  type="text" 
-                  required 
-                  value={editId} 
-                  onChange={(e) => setEditId(e.target.value)} 
-                  className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">หัวข้อ KPI หลัก</label>
-                <input 
-                  type="text" 
-                  required 
-                  value={editName} 
-                  onChange={(e) => setEditName(e.target.value)} 
-                  className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">สูตรการคำนวณ</label>
-                <textarea 
-                  value={editFormula} 
-                  onChange={(e) => setEditFormula(e.target.value)} 
-                  rows={2}
-                  className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate py-2 resize-none" 
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">% WT (น้ำหนัก)</label>
-                  <input 
-                    type="number" 
-                    step="any"
-                    required 
-                    value={editWt} 
-                    onChange={(e) => setEditWt(e.target.value)} 
-                    className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">Target (เป้าหมาย)</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={editTarget} 
-                    onChange={(e) => setEditTarget(e.target.value)} 
-                    className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
-                  />
+            <form onSubmit={handleSaveScore} className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-2xl mb-4">
+                {selectedEmp.photo_url ? (
+                  <img src={selectedEmp.photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400 font-bold">{selectedEmp.name.charAt(0)}</div>
+                )}
+                <div>
+                  <p className="font-bold text-xs">{selectedEmp.name}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{selectedEmp.position}</p>
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">ผลงานจริง (Actual) ในเดือนนี้</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">คะแนนประเมิน (Annual Evaluation Score)</label>
                 <input 
                   type="number" 
-                  step="any"
+                  min="0" 
+                  max="100" 
                   required 
-                  value={editActual} 
-                  onChange={(e) => setEditActual(e.target.value)} 
-                  className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
+                  value={inputScore} 
+                  onChange={(e) => setInputScore(e.target.value)} 
+                  className="glass-input text-xs" 
+                  placeholder="กรอกคะแนนเต็ม 100 คะแนน" 
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-white/5">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">คะแนนสะสม (0.0 - 4.0)</label>
-                  <input 
-                    type="number" 
-                    step="0.1"
-                    min="0"
-                    max="4"
-                    value={editManualScore} 
-                    onChange={(e) => setEditManualScore(e.target.value)} 
-                    placeholder="Auto (คำนวณอัตโนมัติ)"
-                    className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">เกรดเฉลี่ย</label>
-                  <select 
-                    value={editManualGrade} 
-                    onChange={(e) => setEditManualGrade(e.target.value)}
-                    className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate"
-                  >
-                    <option value="Auto">Auto (คำนวณอัตโนมัติ)</option>
-                    <option value="A">A</option>
-                    <option value="B+">B+</option>
-                    <option value="B">B</option>
-                    <option value="C+">C+</option>
-                    <option value="C">C</option>
-                    <option value="D">D</option>
-                    <option value="E">E</option>
-                  </select>
-                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/50 dark:border-white/5">
-                <button 
-                  type="button" 
-                  onClick={() => setShowEditModal(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200/50 dark:border-white/5 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5"
-                >
-                  ยกเลิก
-                </button>
-                <button 
-                  type="submit" 
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold transition-all shadow-md shadow-warehouse-orange/15"
-                >
-                  <Save size={14} />
-                  <span>บันทึกผลงาน</span>
+                <button type="button" onClick={() => setShowScoreModal(false)} className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-xs font-semibold">ยกเลิก</button>
+                <button type="submit" className="px-4 py-2 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold flex items-center gap-1 shadow-md shadow-warehouse-orange/15">
+                  <Save size={13} />
+                  <span>บันทึกคะแนน</span>
                 </button>
               </div>
             </form>
@@ -942,253 +542,63 @@ export default function PerformancePage() {
         </div>
       )}
 
-      {/* ADD NEW KPI MODAL */}
-      {showAddKpiModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <GlassCard className="w-full max-w-md my-8 overflow-hidden border border-white/10" animate={false}>
+      {/* PERFORMANCE POINT SETTINGS MODAL */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <GlassCard className="w-full max-w-md overflow-hidden border border-white/10" animate={false}>
             <div className="flex items-center justify-between pb-4 border-b border-slate-200/50 dark:border-white/5 mb-6">
-              <h3 className="font-bold text-base text-slate-800 dark:text-white flex items-center gap-2">
-                <Plus size={18} className="text-emerald-500" />
-                <span>เพิ่มตัวชี้วัด KPI ใหม่</span>
-              </h3>
-              <button 
-                onClick={() => setShowAddKpiModal(false)} 
-                className="text-slate-400 hover:text-slate-200"
-              >
+              <h3 className="font-bold text-sm">ตั้งเกณฑ์คะแนนสะสมพนักงาน</h3>
+              <button onClick={() => setShowSettingsModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                 <X size={18} />
               </button>
             </div>
             
-            <form onSubmit={handleSaveNewKpi} className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">ลำดับ (ID)</label>
-                  <input 
-                    type="text" 
-                    required 
-                    placeholder="เช่น 1.6"
-                    value={addKpiId} 
-                    onChange={(e) => setAddKpiId(e.target.value)} 
-                    className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">หน่วย (Unit)</label>
-                  <input 
-                    type="text" 
-                    required 
-                    placeholder="เช่น % หรือ ครั้ง"
-                    value={addKpiUnit} 
-                    onChange={(e) => setAddKpiUnit(e.target.value)} 
-                    className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">หมวดหมู่</label>
-                  <select 
-                    value={addKpiCategory} 
-                    onChange={(e) => setAddKpiCategory(e.target.value)}
-                    className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate"
-                  >
-                    <option value="FIFO">FIFO</option>
-                    <option value="Delivery">Delivery</option>
-                    <option value="Quality">Quality</option>
-                    <option value="Safety">Safety</option>
-                    <option value="Cost">Cost</option>
-                    <option value="System">System</option>
-                    <option value="5S">5S</option>
-                    <option value="Improvement">Improvement</option>
-                  </select>
-                </div>
-              </div>
+            <form onSubmit={handleSaveSettings} className="space-y-4">
+              <p className="text-[11px] text-slate-400 mb-4 leading-relaxed">
+                กำหนดคะแนนที่พนักงานจะได้รับเมื่อทำแต่ละกิจกรรมสำเร็จสำเร็จ คะแนนเหล่านี้จะถูกคำนวณและสะสมโดยอัตโนมัติในทุกส่วนของเว็บ
+              </p>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">หัวข้อ KPI หลัก</label>
-                <input 
-                  type="text" 
-                  required 
-                  placeholder="เช่น ความถูกต้องในการสแกนบาร์โค้ด"
-                  value={addKpiName} 
-                  onChange={(e) => setAddKpiName(e.target.value)} 
-                  className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">สูตรการคำนวณ</label>
-                <textarea 
-                  placeholder="เช่น (จำนวนที่ถูกต้อง / จำนวนทั้งหมด) x 100"
-                  value={addKpiFormula} 
-                  onChange={(e) => setAddKpiFormula(e.target.value)} 
-                  rows={2}
-                  className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate py-2 resize-none" 
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">% WT (น้ำหนัก)</label>
-                  <input 
-                    type="number" 
-                    step="any"
-                    required 
-                    placeholder="เช่น 5"
-                    value={addKpiWt} 
-                    onChange={(e) => setAddKpiWt(e.target.value)} 
-                    className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">Target (เป้าหมาย)</label>
-                  <input 
-                    type="text" 
-                    required 
-                    placeholder="เช่น >=95%"
-                    value={addKpiTarget} 
-                    onChange={(e) => setAddKpiTarget(e.target.value)} 
-                    className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">ผลงานจริง (Actual)</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">คะแนนต่องานส่งมอบสำเร็จ (Points per Task)</label>
                 <input 
                   type="number" 
-                  step="any"
                   required 
-                  placeholder="เช่น 94.5"
-                  value={addKpiActual} 
-                  onChange={(e) => setAddKpiActual(e.target.value)} 
-                  className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
+                  value={inputPointsTask} 
+                  onChange={(e) => setInputPointsTask(e.target.value)} 
+                  className="glass-input text-xs" 
+                  placeholder="เช่น 10" 
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-white/5">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">คะแนนสะสม (0.0 - 4.0)</label>
-                  <input 
-                    type="number" 
-                    step="0.1"
-                    min="0"
-                    max="4"
-                    placeholder="Auto (คำนวณอัตโนมัติ)"
-                    value={addKpiManualScore} 
-                    onChange={(e) => setAddKpiManualScore(e.target.value)} 
-                    className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">เกรดเฉลี่ย</label>
-                  <select 
-                    value={addKpiManualGrade} 
-                    onChange={(e) => setAddKpiManualGrade(e.target.value)}
-                    className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate"
-                  >
-                    <option value="Auto">Auto (คำนวณอัตโนมัติ)</option>
-                    <option value="A">A</option>
-                    <option value="B+">B+</option>
-                    <option value="B">B</option>
-                    <option value="C+">C+</option>
-                    <option value="C">C</option>
-                    <option value="D">D</option>
-                    <option value="E">E</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/50 dark:border-white/5">
-                <button 
-                  type="button" 
-                  onClick={() => setShowAddKpiModal(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200/50 dark:border-white/5 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5"
-                >
-                  ยกเลิก
-                </button>
-                <button 
-                  type="submit" 
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/15"
-                >
-                  <Save size={14} />
-                  <span>เพิ่ม KPI</span>
-                </button>
-              </div>
-            </form>
-          </GlassCard>
-        </div>
-      )}
-
-      {/* ADD MONTHLY KPI MODAL */}
-      {showAddMonthModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <GlassCard className="w-full max-w-xl my-8 overflow-hidden border border-white/10" animate={false}>
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200/50 dark:border-white/5 mb-6">
-              <h3 className="font-bold text-base text-slate-800 dark:text-white flex items-center gap-2">
-                <Plus size={18} className="text-warehouse-orange" />
-                <span>เพิ่มข้อมูล KPI ประจำเดือน</span>
-              </h3>
-              <button 
-                onClick={() => setShowAddMonthModal(false)} 
-                className="text-slate-400 hover:text-slate-200"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            
-            <form onSubmit={handleAddMonthKpi} className="space-y-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">ชื่อเดือนประเมิน (เช่น กรกฎาคม 2026)</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">คะแนนต่อคอร์สเรียนสำเร็จ (Points per Course)</label>
                 <input 
-                  type="text" 
+                  type="number" 
                   required 
-                  value={newMonthName} 
-                  onChange={(e) => setNewMonthName(e.target.value)} 
-                  className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
-                  placeholder="กรกฎาคม 2026 หรือ July"
+                  value={inputPointsCourse} 
+                  onChange={(e) => setInputPointsCourse(e.target.value)} 
+                  className="glass-input text-xs" 
+                  placeholder="เช่น 20" 
                 />
               </div>
 
-              <div className="border-t border-slate-200/30 dark:border-white/5 pt-4">
-                <p className="text-[11px] font-extrabold text-slate-400 uppercase mb-3 tracking-wider">ระบุผลงานจริงของตัวชี้วัดทั้ง 12 ข้อ:</p>
-                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-                  {(kpis['June'] || []).map(item => (
-                    <div key={item.id} className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2 p-2 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200/30 dark:border-white/5">
-                      <div className="sm:col-span-2 text-xs">
-                        <span className="font-mono text-slate-400 font-bold mr-1">{item.id}</span>
-                        <span className="font-semibold text-slate-700 dark:text-slate-200 truncate inline-block max-w-[280px]" title={item.name}>{item.name.split(' (')[0]}</span>
-                        <span className="block text-[9px] text-slate-400 font-medium">เป้าหมาย: {item.target}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <input 
-                          type="number"
-                          step="any"
-                          required
-                          value={newKpiValues[item.id] || ''}
-                          onChange={(e) => setNewKpiValues({ ...newKpiValues, [item.id]: e.target.value })}
-                          className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate py-1 px-2 text-center"
-                          placeholder="ผลงานจริง"
-                        />
-                        <span className="text-[10px] text-slate-400 font-bold">{item.unit}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">คะแนนต่อทำควิซผ่านสำเร็จ (Points per Quiz)</label>
+                <input 
+                  type="number" 
+                  required 
+                  value={inputPointsQuiz} 
+                  onChange={(e) => setInputPointsQuiz(e.target.value)} 
+                  className="glass-input text-xs" 
+                  placeholder="เช่น 15" 
+                />
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/50 dark:border-white/5">
-                <button 
-                  type="button" 
-                  onClick={() => setShowAddMonthModal(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200/50 dark:border-white/5 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5"
-                >
-                  ยกเลิก
-                </button>
-                <button 
-                  type="submit" 
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold transition-all shadow-md shadow-warehouse-orange/15"
-                >
-                  <Plus size={14} />
-                  <span>บันทึกข้อมูลเดือนใหม่</span>
+                <button type="button" onClick={() => setShowSettingsModal(false)} className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-xs font-semibold">ยกเลิก</button>
+                <button type="submit" className="px-4 py-2 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold flex items-center gap-1 shadow-md shadow-warehouse-orange/15">
+                  <Save size={13} />
+                  <span>บันทึกตั้งค่า</span>
                 </button>
               </div>
             </form>

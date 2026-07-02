@@ -17,6 +17,7 @@ export interface User {
   start_date: string;
   photo_url: string;
   working_shift?: 'A' | 'B';
+  evaluation_score?: number;
 }
 
 export interface Skill {
@@ -180,16 +181,16 @@ export interface WarehouseDocument {
 const bcryptHash = '$2a$10$U1FNXk2W1scs2ZpblqipzuMN92V3rAAkW1UOdFSdgrCcmYjadz5O2';
 
 export const mockUsers: User[] = [
-  { id: 1, employee_id: 'EMP001', email: 'admin@warehouse.com', password_hash: bcryptHash, name: 'สมชาย แสนดี', role: 'admin', department: 'Management', position: 'Warehouse Director', warehouse_area: 'Executive Office', phone: '081-234-5678', status: 'active', supervisor_id: null, start_date: '2020-01-15', photo_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', working_shift: 'A' },
-  { id: 2, employee_id: 'EMP002', email: 'hr@warehouse.com', password_hash: bcryptHash, name: 'วิภาดา รักดี', role: 'admin', department: 'Human Resources', position: 'HR Manager', warehouse_area: 'HR Office', phone: '082-345-6789', status: 'active', supervisor_id: null, start_date: '2021-03-10', photo_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', working_shift: 'A' },
-  { id: 3, employee_id: 'EMP003', email: 'trainer@warehouse.com', password_hash: bcryptHash, name: 'นรินทร์ เก่งการ', role: 'staff', department: 'Training', position: 'Senior Trainer', warehouse_area: 'Training Center', phone: '083-456-7890', status: 'active', supervisor_id: null, start_date: '2021-06-01', photo_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', working_shift: 'A' },
-  { id: 4, employee_id: 'EMP004', email: 'supervisor1@warehouse.com', password_hash: bcryptHash, name: 'ประพันธ์ ยอดคุม', role: 'staff', department: 'Operations', position: 'Zone A Supervisor', warehouse_area: 'Zone A', phone: '084-567-8901', status: 'active', supervisor_id: 1, start_date: '2022-02-15', photo_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', working_shift: 'A' },
-  { id: 5, employee_id: 'EMP005', email: 'supervisor2@warehouse.com', password_hash: bcryptHash, name: 'สมศรี มีคุม', role: 'staff', department: 'Operations', position: 'Zone B Supervisor', warehouse_area: 'Zone B', phone: '085-678-9012', status: 'active', supervisor_id: 1, start_date: '2022-05-20', photo_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150', working_shift: 'B' },
-  { id: 6, employee_id: 'EMP006', email: 'employee1@warehouse.com', password_hash: bcryptHash, name: 'สมปอง ลุยงาน', role: 'employee', department: 'Operations', position: 'Forklift Driver', warehouse_area: 'Zone A', phone: '086-789-0123', status: 'active', supervisor_id: 4, start_date: '2023-01-10', photo_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', working_shift: 'A' },
-  { id: 7, employee_id: 'EMP007', email: 'employee2@warehouse.com', password_hash: bcryptHash, name: 'อรอนงค์ แพ็กเก่ง', role: 'employee', department: 'Operations', position: 'Packer', warehouse_area: 'Zone A', phone: '087-890-1234', status: 'active', supervisor_id: 4, start_date: '2023-04-15', photo_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', working_shift: 'A' },
-  { id: 8, employee_id: 'EMP008', email: 'employee3@warehouse.com', password_hash: bcryptHash, name: 'มานะ คัดของ', role: 'employee', department: 'Operations', position: 'Picker', warehouse_area: 'Zone B', phone: '088-901-2345', status: 'active', supervisor_id: 5, start_date: '2023-08-01', photo_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150', working_shift: 'B' },
-  { id: 9, employee_id: 'EMP009', email: 'employee4@warehouse.com', password_hash: bcryptHash, name: 'เกษม รับสินค้า', role: 'employee', department: 'Operations', position: 'Receiving Clerk', warehouse_area: 'Loading Dock', phone: '089-012-3456', status: 'active', supervisor_id: 5, start_date: '2023-10-12', photo_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150', working_shift: 'B' },
-  { id: 10, employee_id: 'EMP010', email: 'employee5@warehouse.com', password_hash: bcryptHash, name: 'จารุณี นับสต็อก', role: 'employee', department: 'Operations', position: 'Inventory Counter', warehouse_area: 'Zone B', phone: '081-111-2222', status: 'active', supervisor_id: 5, start_date: '2024-01-05', photo_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150', working_shift: 'B' }
+  { id: 1, employee_id: 'EMP001', email: 'admin@warehouse.com', password_hash: bcryptHash, name: 'สมชาย แสนดี', role: 'admin', department: 'Management', position: 'Warehouse Director', warehouse_area: 'Executive Office', phone: '081-234-5678', status: 'active', supervisor_id: null, start_date: '2020-01-15', photo_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', working_shift: 'A', evaluation_score: 98 },
+  { id: 2, employee_id: 'EMP002', email: 'hr@warehouse.com', password_hash: bcryptHash, name: 'วิภาดา รักดี', role: 'admin', department: 'Human Resources', position: 'HR Manager', warehouse_area: 'HR Office', phone: '082-345-6789', status: 'active', supervisor_id: null, start_date: '2021-03-10', photo_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', working_shift: 'A', evaluation_score: 95 },
+  { id: 3, employee_id: 'EMP003', email: 'trainer@warehouse.com', password_hash: bcryptHash, name: 'นรินทร์ เก่งการ', role: 'staff', department: 'Training', position: 'Senior Trainer', warehouse_area: 'Training Center', phone: '083-456-7890', status: 'active', supervisor_id: null, start_date: '2021-06-01', photo_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', working_shift: 'A', evaluation_score: 92 },
+  { id: 4, employee_id: 'EMP004', email: 'supervisor1@warehouse.com', password_hash: bcryptHash, name: 'ประพันธ์ ยอดคุม', role: 'staff', department: 'Operations', position: 'Zone A Supervisor', warehouse_area: 'Zone A', phone: '084-567-8901', status: 'active', supervisor_id: 1, start_date: '2022-02-15', photo_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', working_shift: 'A', evaluation_score: 96 },
+  { id: 5, employee_id: 'EMP005', email: 'supervisor2@warehouse.com', password_hash: bcryptHash, name: 'สมศรี มีคุม', role: 'staff', department: 'Operations', position: 'Zone B Supervisor', warehouse_area: 'Zone B', phone: '085-678-9012', status: 'active', supervisor_id: 1, start_date: '2022-05-20', photo_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150', working_shift: 'B', evaluation_score: 94 },
+  { id: 6, employee_id: 'EMP006', email: 'employee1@warehouse.com', password_hash: bcryptHash, name: 'สมปอง ลุยงาน', role: 'employee', department: 'Operations', position: 'Forklift Driver', warehouse_area: 'Zone A', phone: '086-789-0123', status: 'active', supervisor_id: 4, start_date: '2023-01-10', photo_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', working_shift: 'A', evaluation_score: 96 },
+  { id: 7, employee_id: 'EMP007', email: 'employee2@warehouse.com', password_hash: bcryptHash, name: 'อรอนงค์ แพ็กเก่ง', role: 'employee', department: 'Operations', position: 'Packer', warehouse_area: 'Zone A', phone: '087-890-1234', status: 'active', supervisor_id: 4, start_date: '2023-04-15', photo_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', working_shift: 'A', evaluation_score: 98 },
+  { id: 8, employee_id: 'EMP008', email: 'employee3@warehouse.com', password_hash: bcryptHash, name: 'มานะ คัดของ', role: 'employee', department: 'Operations', position: 'Picker', warehouse_area: 'Zone B', phone: '088-901-2345', status: 'active', supervisor_id: 5, start_date: '2023-08-01', photo_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150', working_shift: 'B', evaluation_score: 89 },
+  { id: 9, employee_id: 'EMP009', email: 'employee4@warehouse.com', password_hash: bcryptHash, name: 'เกษม รับสินค้า', role: 'employee', department: 'Operations', position: 'Receiving Clerk', warehouse_area: 'Loading Dock', phone: '089-012-3456', status: 'active', supervisor_id: 5, start_date: '2023-10-12', photo_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150', working_shift: 'B', evaluation_score: 87 },
+  { id: 10, employee_id: 'EMP010', email: 'employee5@warehouse.com', password_hash: bcryptHash, name: 'จารุณี นับสต็อก', role: 'employee', department: 'Operations', position: 'Inventory Counter', warehouse_area: 'Zone B', phone: '081-111-2222', status: 'active', supervisor_id: 5, start_date: '2024-01-05', photo_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150', working_shift: 'B', evaluation_score: 94 }
 ];
 
 export const mockSkills: Skill[] = [
@@ -455,4 +456,15 @@ export const mockOrgChart: OrgChartItem[] = [
   { id: 8, name: 'มานะ คัดของ', role_name: 'พนักงานหน้าลิฟท์', level_order: 5, level: 'L5', warehouse_area: 'Zone B', image_url: '' },
   { id: 9, name: 'สมศักดิ์ รักชาติ', role_name: 'พนักงานยิง Barcode', level_order: 5, level: 'L5', warehouse_area: 'Zone B', image_url: '' },
   { id: 10, name: 'อรุณ ดีเลิศ', role_name: 'พนักงานจัดเตรียมสินค้า', level_order: 5, level: 'L5', warehouse_area: 'Zone B', image_url: '' }
+];
+
+export interface PerformanceSettings {
+  id: number;
+  points_per_task: number;
+  points_per_course: number;
+  points_per_quiz: number;
+}
+
+export const mockPerformanceSettings: PerformanceSettings[] = [
+  { id: 1, points_per_task: 10, points_per_course: 20, points_per_quiz: 15 }
 ];

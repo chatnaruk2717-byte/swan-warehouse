@@ -13,6 +13,7 @@ import attendanceRouter from './routes/attendance';
 import reportsRouter from './routes/reports';
 import documentsRouter from './routes/documents';
 import orgChartRouter from './routes/orgChart';
+import performanceRouter from './routes/performance';
 
 dotenv.config();
 
@@ -49,6 +50,7 @@ app.use('/api/attendance', attendanceRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/documents', documentsRouter);
 app.use('/api/org-chart', orgChartRouter);
+app.use('/api/performance', performanceRouter);
 
 // Swagger Documentation Definition
 const swaggerDocument = {

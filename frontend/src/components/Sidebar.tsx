@@ -76,12 +76,6 @@ export const Sidebar = () => {
       roles: ['admin', 'staff', 'employee']
     },
     {
-      name: 'บันทึกเวลางาน (Attendance)',
-      path: '/hours',
-      icon: Clock,
-      roles: ['admin', 'staff', 'employee']
-    },
-    {
       name: 'ผลงานและ KPI (Performance)',
       path: '/performance',
       icon: TrendingUp,

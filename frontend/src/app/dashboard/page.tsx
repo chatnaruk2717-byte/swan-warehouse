@@ -37,7 +37,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
   const [chartData, setChartData] = useState<any>(null);
   const [myTasks, setMyTasks] = useState<any[]>([]);
-  const [attendance, setAttendance] = useState<any>(null);
+  const [perfStats, setPerfStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,9 +53,13 @@ export default function DashboardPage() {
           const chartsRes = await api.get('/api/reports/charts');
           setChartData(chartsRes.data);
         } else {
-          // Fetch today's clock status (employee)
-          const attRes = await api.get('/api/attendance/today');
-          setAttendance(attRes.data);
+          // Fetch performance stats (employee)
+          try {
+            const perfRes = await api.get('/api/performance/my-stats');
+            setPerfStats(perfRes.data);
+          } catch (err) {
+            console.error("Failed to load performance stats:", err);
+          }
 
           // Fetch personal tasks (employee)
           const tasksRes = await api.get('/api/tasks');
@@ -96,12 +100,19 @@ export default function DashboardPage() {
             ]
           });
         } else {
-          setAttendance({
-            id: 1,
-            employee_id: 6,
-            clock_in: new Date().toISOString(),
-            date: new Date().toISOString().split('T')[0],
-            status: 'present'
+          setPerfStats({
+            id: user.id,
+            employee_id: user.employee_id,
+            name: user.name,
+            photo_url: user.photo_url || '',
+            department: user.department,
+            position: user.position,
+            evaluation_score: 94,
+            completed_tasks: 2,
+            completed_courses: 1,
+            passed_quizzes: 1,
+            accumulated_points: 55,
+            settings: { points_per_task: 10, points_per_course: 20, points_per_quiz: 15 }
           });
           setMyTasks([
             { id: 1, task_name: 'ขับย้ายพาเลทพัสดุโซนสินค้าขาเข้า', category: 'Put Away', progress_percentage: 100, status: 'completed' },
@@ -127,42 +138,6 @@ export default function DashboardPage() {
       case 'qualified': return 'เชี่ยวชาญ (Qualified)';
       case 'expert': return 'ผู้เชี่ยวชาญสูงสุด (Expert)';
       default: return status;
-    }
-  };
-
-  const handleClockIn = async () => {
-    try {
-      const res = await api.post('/api/attendance/clock-in');
-      setAttendance(res.data);
-      alert('ลงชื่อเข้างานเสร็จสิ้น');
-    } catch {
-      const mockRecord = {
-        id: Date.now(),
-        employee_id: user?.id!,
-        clock_in: new Date().toISOString(),
-        date: new Date().toISOString().split('T')[0],
-        status: new Date().getHours() > 8 ? 'late' : 'present',
-        ot_hours: 0
-      };
-      setAttendance(mockRecord);
-      alert('ลงชื่อเข้างานเสร็จสิ้น (Mock)');
-    }
-  };
-
-  const handleClockOut = async () => {
-    try {
-      const res = await api.post('/api/attendance/clock-out');
-      setAttendance(res.data);
-      alert('ลงชื่อออกงานเสร็จสิ้น');
-    } catch {
-      if (!attendance) return;
-      const updated = {
-        ...attendance,
-        clock_out: new Date().toISOString(),
-        ot_hours: new Date().getHours() > 17 ? new Date().getHours() - 17 : 0
-      };
-      setAttendance(updated);
-      alert('ลงชื่อออกงานเสร็จสิ้น (Mock)');
     }
   };
 
@@ -527,24 +502,35 @@ export default function DashboardPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/35 to-transparent" />
         
-        <div className="relative z-10 w-full flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-1">
-            <h2 className="text-xl md:text-2xl font-extrabold text-white flex items-center gap-2">
-              <span>สวัสดีครับ คุณ{user.name} 🔨</span>
-            </h2>
-            <p className="text-slate-300 text-xs md:text-sm font-medium">ลงเวลาทำงาน จัดเก็บสินค้าคลัง SWAN • สภาวะการทำงานปกติ</p>
+        <div className="relative z-10 w-full flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            {perfStats?.photo_url ? (
+              <img 
+                src={perfStats.photo_url} 
+                alt={user.name} 
+                className="w-16 h-16 rounded-full object-cover border-2 border-warehouse-orange shadow-md bg-slate-800"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-warehouse-orange/20 border-2 border-warehouse-orange flex items-center justify-center text-warehouse-orange font-bold text-lg">
+                {user.name.charAt(0)}
+              </div>
+            )}
+            <div className="space-y-1">
+              <h2 className="text-xl md:text-2xl font-extrabold text-white flex items-center gap-2">
+                <span>สวัสดีครับ คุณ{user.name} 👋</span>
+              </h2>
+              <p className="text-slate-300 text-xs md:text-sm font-medium">แผนก {user.department} • ตำแหน่ง {user.position}</p>
+            </div>
           </div>
           
-          <div className="flex flex-wrap gap-3 items-center shrink-0">
-            <Link 
-              href="/hours" 
-              className="px-4 py-2.5 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/95 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-warehouse-orange/15 transition-all"
-            >
-              <Clock size={16} />
-              <span>เข้างาน/ออกงาน (Clock In/Out)</span>
-            </Link>
-            <div className="bg-white/15 backdrop-blur-md p-1.5 rounded-2xl border border-white/25 shadow-xl hidden sm:block">
-              <SwanLogo className="h-10" />
+          <div className="flex gap-4 items-center shrink-0">
+            <div className="bg-slate-950/60 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/10 shadow-xl text-center">
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">คะแนนสะสมรวม</p>
+              <p className="text-xl font-black text-warehouse-orange font-mono mt-0.5">{perfStats?.accumulated_points || 0}</p>
+            </div>
+            <div className="bg-slate-950/60 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/10 shadow-xl text-center">
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">ประเมินผลงานปลายปี</p>
+              <p className="text-xl font-black text-emerald-400 font-mono mt-0.5">{perfStats?.evaluation_score || 100} / 100</p>
             </div>
           </div>
         </div>
@@ -552,57 +538,46 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Left Column: Clock Status Card and Tasks */}
+        {/* Left Column: Performance Summary and Tasks */}
         <div className="lg:col-span-2 space-y-8">
           
-          {/* Shift Clock card */}
-          <GlassCard className="flex flex-col md:flex-row items-center justify-between gap-4 p-5" delay={0.05}>
-            <div className="flex items-center gap-4">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                attendance && !attendance.clock_out ? 'bg-emerald-500/10 text-emerald-500 pulse-green' : 'bg-slate-100 text-slate-400 dark:bg-white/5'
-              }`}>
-                <Clock size={20} />
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 font-bold">สถานะเวลางานปัจจุบัน</p>
-                <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 mt-0.5">
-                  {!attendance 
-                    ? 'ยังไม่มีการลงเวลาทำงานกะวันนี้' 
-                    : attendance.clock_out 
-                      ? 'เลิกงานแล้ว (Shift Ended)' 
-                      : 'ลงชื่อเข้าปฏิบัติงานแล้ว (Clocked In)'}
-                </h4>
-                {attendance && (
-                  <p className="text-[10px] text-slate-400 mt-0.5">
-                    เข้ากะ: {new Date(attendance.clock_in).toLocaleTimeString('th-TH')} น.
-                    {attendance.clock_out && ` • ออกกะ: ${new Date(attendance.clock_out).toLocaleTimeString('th-TH')} น.`}
-                  </p>
-                )}
-              </div>
+          {/* Performance Summary Stats Card */}
+          <GlassCard className="p-5" delay={0.05}>
+            <div className="flex items-center gap-2 mb-4">
+              <Award className="text-warehouse-orange" size={18} />
+              <h4 className="font-bold text-sm text-slate-800 dark:text-white">สรุปสถิติผลงานสะสม (Performance Summary)</h4>
             </div>
-
-            <div className="shrink-0 flex items-center gap-3">
-              {!attendance && (
-                <button 
-                  onClick={handleClockIn}
-                  className="px-4 py-2 bg-gradient-to-r from-warehouse-orange to-amber-500 text-white rounded-xl font-bold text-xs shadow-md shadow-warehouse-orange/15 transition-all hover:opacity-95"
-                >
-                  ลงเวลาเข้างาน (Clock In)
-                </button>
-              )}
-              {attendance && !attendance.clock_out && (
-                <button 
-                  onClick={handleClockOut}
-                  className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold text-xs shadow-md shadow-rose-500/10 transition-colors"
-                >
-                  ลงเวลาออกงาน (Clock Out)
-                </button>
-              )}
-              {attendance && attendance.clock_out && (
-                <span className="text-[10px] font-bold px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-400">
-                  เสร็จสิ้นงานวันนี้แล้ว
-                </span>
-              )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-3 bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-2xl flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-warehouse-orange/10 text-warehouse-orange flex items-center justify-center shrink-0">
+                  <Briefcase size={16} />
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase">งานที่ได้รับมอบหมาย</p>
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-200 mt-0.5">ส่งงานสำเร็จ {perfStats?.completed_tasks || 0} เรื่อง</p>
+                  <p className="text-[9px] text-slate-400 mt-0.5">+{ (perfStats?.completed_tasks || 0) * (perfStats?.settings?.points_per_task || 10) } คะแนนสะสม</p>
+                </div>
+              </div>
+              <div className="p-3 bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-2xl flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-warehouse-orange/10 text-warehouse-orange flex items-center justify-center shrink-0">
+                  <BookOpen size={16} />
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase">บทเรียนการอบรม</p>
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-200 mt-0.5">เข้าเรียนสำเร็จ {perfStats?.completed_courses || 0} เรื่อง</p>
+                  <p className="text-[9px] text-slate-400 mt-0.5">+{ (perfStats?.completed_courses || 0) * (perfStats?.settings?.points_per_course || 20) } คะแนนสะสม</p>
+                </div>
+              </div>
+              <div className="p-3 bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-2xl flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-warehouse-orange/10 text-warehouse-orange flex items-center justify-center shrink-0">
+                  <Award size={16} />
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase">การทดสอบประเมิน</p>
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-200 mt-0.5">สอบผ่านสำเร็จ {perfStats?.passed_quizzes || 0} เรื่อง</p>
+                  <p className="text-[9px] text-slate-400 mt-0.5">+{ (perfStats?.passed_quizzes || 0) * (perfStats?.settings?.points_per_quiz || 15) } คะแนนสะสม</p>
+                </div>
+              </div>
             </div>
           </GlassCard>
 

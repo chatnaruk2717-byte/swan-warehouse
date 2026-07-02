@@ -245,6 +245,14 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         image_url TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )`,
+
+      `CREATE TABLE IF NOT EXISTS performance_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        points_per_task INT DEFAULT 10,
+        points_per_course INT DEFAULT 20,
+        points_per_quiz INT DEFAULT 15,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )`
     ];
 
@@ -259,6 +267,20 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
     try {
       await connection.query("ALTER TABLE org_chart ADD COLUMN warehouse_area VARCHAR(100)");
     } catch (e) {}
+    try {
+      await connection.query("ALTER TABLE users ADD COLUMN evaluation_score INT DEFAULT 100");
+    } catch (e) {}
+
+    // Seed default performance settings if not exists
+    try {
+      const settingsCountRes: any = await connection.query("SELECT COUNT(*) as count FROM performance_settings");
+      const count = parseInt(settingsCountRes?.rows?.[0]?.count || settingsCountRes?.[0]?.count || '0', 10);
+      if (count === 0) {
+        await connection.query("INSERT INTO performance_settings (id, points_per_task, points_per_course, points_per_quiz) VALUES (1, 10, 20, 15)");
+      }
+    } catch (e) {
+      console.error("Error seeding performance settings:", e);
+    }
 
     console.log('MySQL schema tables created successfully.');
 

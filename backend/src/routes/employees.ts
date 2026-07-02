@@ -313,9 +313,8 @@ router.post('/import-excel', authenticateToken, requireRole(['admin']), async (r
       }
       
       const res = await query(
-        `INSERT INTO users (employee_id, email, password_hash, name, role, department, position, warehouse_area, phone, start_date)
+        `INSERT IGNORE INTO users (employee_id, email, password_hash, name, role, department, position, warehouse_area, phone, start_date)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-         ON CONFLICT (employee_id) DO NOTHING
          RETURNING id, name, employee_id`,
         [employee_id, email, defaultHash, name, role, department || 'Operations', position || 'Operator', warehouse_area || 'Zone A', phone || '', start_date || new Date()]
       );

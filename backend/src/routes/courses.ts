@@ -198,7 +198,7 @@ router.post('/enroll', authenticateToken, requireRole(['admin', 'staff']), async
     const result = await query(
       `INSERT INTO enrollments (employee_id, course_id, progress_percentage, status, assigned_by, due_date) 
        VALUES ($1, $2, 0, 'pending', $3, $4) 
-       ON CONFLICT (employee_id, course_id) DO UPDATE SET due_date = EXCLUDED.due_date
+       ON DUPLICATE KEY UPDATE due_date = VALUES(due_date)
        RETURNING *`,
       [empId, courseId, assignedBy || null, due_date || null]
     );
@@ -253,9 +253,8 @@ router.post('/lesson/:id/progress', authenticateToken, async (req: Authenticated
     // Insert or update lesson progress
     if (completed) {
       await query(
-        `INSERT INTO lesson_progress (employee_id, lesson_id, completed) 
-         VALUES ($1, $2, TRUE) 
-         ON CONFLICT (employee_id, lesson_id) DO NOTHING`,
+        `INSERT IGNORE INTO lesson_progress (employee_id, lesson_id, completed) 
+         VALUES ($1, $2, TRUE)`,
         [employeeId, lessonId]
       );
     } else {
@@ -437,9 +436,8 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
     // If passed, mark this lesson as completed!
     if (passed) {
       await query(
-        `INSERT INTO lesson_progress (employee_id, lesson_id, completed) 
-         VALUES ($1, $2, TRUE) 
-         ON CONFLICT (employee_id, lesson_id) DO NOTHING`,
+        `INSERT IGNORE INTO lesson_progress (employee_id, lesson_id, completed) 
+         VALUES ($1, $2, TRUE)`,
         [employeeId, lessonId]
       );
 

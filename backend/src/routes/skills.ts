@@ -177,13 +177,12 @@ router.post('/employee', authenticateToken, requireRole(['admin', 'staff']), asy
     const queryStr = `
       INSERT INTO employee_skills (employee_id, skill_id, level, status, certification_name, certification_url, expiration_date)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
-      ON CONFLICT (employee_id, skill_id) 
-      DO UPDATE SET 
-        level = EXCLUDED.level,
-        status = EXCLUDED.status,
-        certification_name = EXCLUDED.certification_name,
-        certification_url = EXCLUDED.certification_url,
-        expiration_date = EXCLUDED.expiration_date,
+      ON DUPLICATE KEY UPDATE 
+        level = VALUES(level),
+        status = VALUES(status),
+        certification_name = VALUES(certification_name),
+        certification_url = VALUES(certification_url),
+        expiration_date = VALUES(expiration_date),
         updated_at = NOW()
       RETURNING *
     `;

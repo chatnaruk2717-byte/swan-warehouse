@@ -84,7 +84,7 @@ router.post('/clock-in', authenticateToken, async (req: AuthenticatedRequest, re
     const result = await query(
       `INSERT INTO working_hours (employee_id, clock_in, date, status, ot_hours) 
        VALUES ($1, $2, $3, $4, 0.00) 
-       ON CONFLICT (employee_id, date) DO UPDATE SET clock_in = EXCLUDED.clock_in, status = EXCLUDED.status
+       ON DUPLICATE KEY UPDATE clock_in = VALUES(clock_in), status = VALUES(status)
        RETURNING *`,
       [userId, now, dateStr, status]
     );
@@ -358,8 +358,8 @@ router.post('/manual', authenticateToken, requireRole(['admin', 'staff']), async
     const result = await query(
       `INSERT INTO working_hours (employee_id, date, clock_in, clock_out, status, ot_hours) 
        VALUES ($1, $2, $3, $4, $5, $6) 
-       ON CONFLICT (employee_id, date) DO UPDATE 
-       SET clock_in = EXCLUDED.clock_in, clock_out = EXCLUDED.clock_out, status = EXCLUDED.status, ot_hours = EXCLUDED.ot_hours
+       ON DUPLICATE KEY UPDATE 
+       clock_in = VALUES(clock_in), clock_out = VALUES(clock_out), status = VALUES(status), ot_hours = VALUES(ot_hours)
        RETURNING *`,
       [empId, date, clock_in, clock_out || null, stat, ot]
     );
@@ -421,8 +421,8 @@ router.post('/import', authenticateToken, requireRole(['admin', 'staff']), async
       const result = await query(
         `INSERT INTO working_hours (employee_id, date, clock_in, clock_out, status, ot_hours) 
          VALUES ($1, $2, $3, $4, $5, $6) 
-         ON CONFLICT (employee_id, date) DO UPDATE 
-         SET clock_in = EXCLUDED.clock_in, clock_out = EXCLUDED.clock_out, status = EXCLUDED.status, ot_hours = EXCLUDED.ot_hours
+         ON DUPLICATE KEY UPDATE 
+         clock_in = VALUES(clock_in), clock_out = VALUES(clock_out), status = VALUES(status), ot_hours = VALUES(ot_hours)
          RETURNING *`,
         [empId, date, clock_in, clock_out || null, stat, ot]
       );

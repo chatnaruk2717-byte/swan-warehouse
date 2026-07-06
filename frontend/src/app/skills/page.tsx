@@ -48,6 +48,8 @@ export default function SkillsPage() {
     description: ''
   });
 
+  const [apiError, setApiError] = useState<string | null>(null);
+
   const [assignForm, setAssignForm] = useState({
     level: '3',
     status: 'training',
@@ -73,8 +75,10 @@ export default function SkillsPage() {
       } else if (filteredEmps.length > 0) {
         setSelectedEmpId(Number(filteredEmps[0].id));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('API error loading skill matrix, using fallback mock catalog and matrix.');
+      const errDetail = err.response ? `API Error (${err.response.status}): ${JSON.stringify(err.response.data)}` : err.message;
+      setApiError(errDetail);
       // Fallback skills catalog
       const mockSkillsList = [
         { id: 1, name: 'Forklift Operation (การขับรถโฟล์คลิฟต์)', category: 'Forklift', description: 'ทักษะการขับขี่รถยกอย่างปลอดภัย' },
@@ -328,6 +332,11 @@ export default function SkillsPage() {
 
   return (
     <div className="space-y-8 relative">
+      
+      {/* Debug Panel */}
+      <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-mono">
+        DEBUG: User ID: {user?.id} ({typeof user?.id}) | Role: {user?.role} | ERROR: {apiError || 'None'} | Total Employees: {employees.length} | Filtered Employees: {filteredEmployees.length} | Emps List: {employees.map(e => `${e.id}:${e.name}:${e.role}`).join(', ')}
+      </div>
       
       {/* Header Info */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

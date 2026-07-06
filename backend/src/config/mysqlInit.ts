@@ -39,6 +39,12 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         start_date DATE NOT NULL,
         photo_url LONGTEXT,
         working_shift VARCHAR(10) DEFAULT 'A',
+        evaluation_score INT DEFAULT 100,
+        accumulated_points INT DEFAULT 0,
+        absent_count INT DEFAULT 0,
+        leave_count INT DEFAULT 0,
+        late_count INT DEFAULT 0,
+        warning_letters INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (supervisor_id) REFERENCES users(id) ON DELETE SET NULL
@@ -269,6 +275,21 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
     } catch (e) {}
     try {
       await connection.query("ALTER TABLE users ADD COLUMN evaluation_score INT DEFAULT 100");
+    } catch (e) {}
+    try {
+      await connection.query("ALTER TABLE users ADD COLUMN accumulated_points INT DEFAULT 0");
+    } catch (e) {}
+    try {
+      await connection.query("ALTER TABLE users ADD COLUMN absent_count INT DEFAULT 0");
+    } catch (e) {}
+    try {
+      await connection.query("ALTER TABLE users ADD COLUMN leave_count INT DEFAULT 0");
+    } catch (e) {}
+    try {
+      await connection.query("ALTER TABLE users ADD COLUMN late_count INT DEFAULT 0");
+    } catch (e) {}
+    try {
+      await connection.query("ALTER TABLE users ADD COLUMN warning_letters INT DEFAULT 0");
     } catch (e) {}
 
     // Seed default performance settings if not exists

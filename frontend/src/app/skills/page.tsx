@@ -333,11 +333,6 @@ export default function SkillsPage() {
   return (
     <div className="space-y-8 relative">
       
-      {/* Debug Panel */}
-      <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-mono">
-        DEBUG: User ID: {user?.id} ({typeof user?.id}) | Role: {user?.role} | ERROR: {apiError || 'None'} | Total Employees: {employees.length} | Filtered Employees: {filteredEmployees.length} | Emps List: {employees.map(e => `${e.id}:${e.name}:${e.role}`).join(', ')}
-      </div>
-      
       {/* Header Info */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>

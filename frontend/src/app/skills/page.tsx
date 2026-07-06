@@ -69,9 +69,9 @@ export default function SkillsPage() {
       setEmployees(filteredEmps);
 
       if (user && user.role === 'employee') {
-        setSelectedEmpId(user.id);
+        setSelectedEmpId(Number(user.id));
       } else if (filteredEmps.length > 0) {
-        setSelectedEmpId(filteredEmps[0].id);
+        setSelectedEmpId(Number(filteredEmps[0].id));
       }
     } catch (err) {
       console.warn('API error loading skill matrix, using fallback mock catalog and matrix.');
@@ -97,9 +97,9 @@ export default function SkillsPage() {
       setEmployees(mockEmpList);
 
       if (user && user.role === 'employee') {
-        setSelectedEmpId(user.id);
+        setSelectedEmpId(Number(user.id));
       } else if (mockEmpList.length > 0) {
-        setSelectedEmpId(mockEmpList[0].id);
+        setSelectedEmpId(Number(mockEmpList[0].id));
       }
 
       // Fallback mock matrix
@@ -294,7 +294,7 @@ export default function SkillsPage() {
   // Filters
   const filteredEmployees = employees.filter(emp => {
     if (user?.role === 'employee') {
-      return emp.id === user.id;
+      return Number(emp.id) === Number(user.id);
     }
     return emp.name.toLowerCase().includes(search.toLowerCase()) || 
            emp.employee_id.toLowerCase().includes(search.toLowerCase());
@@ -304,13 +304,13 @@ export default function SkillsPage() {
     catFilter ? sk.category === catFilter : true
   );
 
-  const selectedEmp = employees.find(e => e.id === selectedEmpId);
+  const selectedEmp = employees.find(e => Number(e.id) === Number(selectedEmpId));
   const selectedEmpSkills = matrix.filter(
-    m => m.employee_id === selectedEmpId && (m.status === 'qualified' || m.status === 'expert')
+    m => Number(m.employee_id) === Number(selectedEmpId) && (m.status === 'qualified' || m.status === 'expert')
   );
 
   const radarData = skills.map(sk => {
-    const record = matrix.find(m => m.employee_id === selectedEmpId && m.skill_id === sk.id);
+    const record = matrix.find(m => Number(m.employee_id) === Number(selectedEmpId) && Number(m.skill_id) === Number(sk.id));
     return {
       subject: sk.name.split(' (')[0].substring(0, 15) + (sk.name.split(' (')[0].length > 15 ? '..' : ''),
       value: record ? record.level : 0,

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import './globals.css';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { ThemeProvider } from '../context/ThemeContext';
@@ -13,12 +13,35 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(
+          (registration) => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          },
+          (err) => {
+            console.log('ServiceWorker registration failed: ', err);
+          }
+        );
+      });
+    }
+  }, []);
+
   return (
     <html lang="th" className="dark">
       <head>
         <title>Warehouse Training & Skill Management System</title>
         <meta name="description" content="ระบบบริหารจัดการการฝึกอบรมและทักษะของพนักงานคลังสินค้าสำหรับองค์กรยุคใหม่" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        
+        {/* PWA Settings */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#F26522" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Swan Warehouse" />
+        <link rel="apple-touch-icon" href="/swan_square_logo.png" />
       </head>
       <body>
         <ThemeProvider>

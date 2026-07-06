@@ -86,10 +86,6 @@ router.get('/my-stats', authenticateToken, async (req: AuthenticatedRequest, res
       const completedCourses = mockStore.mockEnrollments.filter(e => e.employee_id === userId && e.status === 'completed').length;
       const passedQuizzes = mockStore.mockQuizAttempts.filter(q => q.employee_id === userId && q.passed).length;
       
-      const accumulatedPoints = (completedTasks * settings.points_per_task) + 
-                             (completedCourses * settings.points_per_course) + 
-                             (passedQuizzes * settings.points_per_quiz);
-
       return res.json({
         id: user.id,
         employee_id: user.employee_id,
@@ -97,17 +93,32 @@ router.get('/my-stats', authenticateToken, async (req: AuthenticatedRequest, res
         photo_url: user.photo_url,
         department: user.department,
         position: user.position,
+        role: user.role,
         evaluation_score: user.evaluation_score !== undefined ? user.evaluation_score : 100,
+        accumulated_points: user.accumulated_points !== undefined ? user.accumulated_points : 0,
+        absent_count: user.absent_count !== undefined ? user.absent_count : 0,
+        leave_count: user.leave_count !== undefined ? user.leave_count : 0,
+        late_count: user.late_count !== undefined ? user.late_count : 0,
+        warning_letters: user.warning_letters !== undefined ? user.warning_letters : 0,
         completed_tasks: completedTasks,
         completed_courses: completedCourses,
         passed_quizzes: passedQuizzes,
-        accumulated_points: accumulatedPoints,
         settings
       });
     }
 
     // Live SQL Queries
-    const userRes = await query('SELECT id, employee_id, name, photo_url, department, position, evaluation_score FROM users WHERE id = $1', [userId]);
+    const userRes = await query(
+      `SELECT id, employee_id, name, photo_url, department, position, role, 
+              COALESCE(evaluation_score, 100) as evaluation_score, 
+              COALESCE(accumulated_points, 0) as accumulated_points, 
+              COALESCE(absent_count, 0) as absent_count, 
+              COALESCE(leave_count, 0) as leave_count, 
+              COALESCE(late_count, 0) as late_count, 
+              COALESCE(warning_letters, 0) as warning_letters 
+       FROM users WHERE id = $1`, 
+      [userId]
+    );
     if (userRes.rows.length === 0) return res.status(404).json({ message: 'User not found' });
     const user = userRes.rows[0];
 
@@ -120,10 +131,6 @@ router.get('/my-stats', authenticateToken, async (req: AuthenticatedRequest, res
     const quizzesRes = await query("SELECT COUNT(*) as count FROM quiz_attempts WHERE employee_id = $1 AND passed = TRUE", [userId]);
     const passedQuizzes = parseInt(quizzesRes.rows[0].count, 10) || 0;
 
-    const accumulatedPoints = (completedTasks * settings.points_per_task) + 
-                           (completedCourses * settings.points_per_course) + 
-                           (passedQuizzes * settings.points_per_quiz);
-
     return res.json({
       id: user.id,
       employee_id: user.employee_id,
@@ -131,11 +138,16 @@ router.get('/my-stats', authenticateToken, async (req: AuthenticatedRequest, res
       photo_url: user.photo_url,
       department: user.department,
       position: user.position,
-      evaluation_score: user.evaluation_score !== null && user.evaluation_score !== undefined ? user.evaluation_score : 100,
+      role: user.role,
+      evaluation_score: user.evaluation_score,
+      accumulated_points: user.accumulated_points,
+      absent_count: user.absent_count,
+      leave_count: user.leave_count,
+      late_count: user.late_count,
+      warning_letters: user.warning_letters,
       completed_tasks: completedTasks,
       completed_courses: completedCourses,
       passed_quizzes: passedQuizzes,
-      accumulated_points: accumulatedPoints,
       settings
     });
 
@@ -147,22 +159,18 @@ router.get('/my-stats', authenticateToken, async (req: AuthenticatedRequest, res
 
 /**
  * GET /api/performance/employees
- * Get summary stats for all employees (Admin/Staff only)
+ * Get summary stats for all employees and staff (Admin/Staff only)
  */
 router.get('/employees', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const settings = await getPerformanceSettings();
 
     if (getMockStatus()) {
-      const list = mockStore.mockUsers.filter(u => u.role === 'employee').map(user => {
+      const list = mockStore.mockUsers.filter(u => u.role === 'employee' || u.role === 'staff').map(user => {
         const completedTasks = mockStore.mockDailyTasks.filter(t => t.employee_id === user.id && t.status === 'completed').length;
         const completedCourses = mockStore.mockEnrollments.filter(e => e.employee_id === user.id && e.status === 'completed').length;
         const passedQuizzes = mockStore.mockQuizAttempts.filter(q => q.employee_id === user.id && q.passed).length;
         
-        const accumulatedPoints = (completedTasks * settings.points_per_task) + 
-                               (completedCourses * settings.points_per_course) + 
-                               (passedQuizzes * settings.points_per_quiz);
-
         return {
           id: user.id,
           employee_id: user.employee_id,
@@ -170,17 +178,22 @@ router.get('/employees', authenticateToken, requireRole(['admin', 'staff']), asy
           photo_url: user.photo_url,
           department: user.department,
           position: user.position,
+          role: user.role,
           evaluation_score: user.evaluation_score !== undefined ? user.evaluation_score : 100,
+          accumulated_points: user.accumulated_points !== undefined ? user.accumulated_points : 0,
+          absent_count: user.absent_count !== undefined ? user.absent_count : 0,
+          leave_count: user.leave_count !== undefined ? user.leave_count : 0,
+          late_count: user.late_count !== undefined ? user.late_count : 0,
+          warning_letters: user.warning_letters !== undefined ? user.warning_letters : 0,
           completed_tasks: completedTasks,
           completed_courses: completedCourses,
-          passed_quizzes: passedQuizzes,
-          accumulated_points: accumulatedPoints
+          passed_quizzes: passedQuizzes
         };
       });
       return res.json(list);
     }
 
-    // SQL optimized query
+    // SQL optimized query to pull employee and staff roles
     const listRes = await query(`
       SELECT 
         u.id, 
@@ -189,12 +202,18 @@ router.get('/employees', authenticateToken, requireRole(['admin', 'staff']), asy
         u.photo_url, 
         u.department, 
         u.position, 
+        u.role,
         COALESCE(u.evaluation_score, 100) as evaluation_score,
+        COALESCE(u.accumulated_points, 0) as accumulated_points,
+        COALESCE(u.absent_count, 0) as absent_count,
+        COALESCE(u.leave_count, 0) as leave_count,
+        COALESCE(u.late_count, 0) as late_count,
+        COALESCE(u.warning_letters, 0) as warning_letters,
         (SELECT COUNT(*) FROM daily_tasks t WHERE t.employee_id = u.id AND t.status = 'completed') as completed_tasks,
         (SELECT COUNT(*) FROM enrollments e WHERE e.employee_id = u.id AND e.status = 'completed') as completed_courses,
         (SELECT COUNT(*) FROM quiz_attempts q WHERE q.employee_id = u.id AND q.passed = TRUE) as passed_quizzes
       FROM users u
-      WHERE u.role = 'employee'
+      WHERE u.role IN ('employee', 'staff')
       ORDER BY u.id ASC
     `);
 
@@ -202,15 +221,11 @@ router.get('/employees', authenticateToken, requireRole(['admin', 'staff']), asy
       const completed_tasks = parseInt(user.completed_tasks, 10) || 0;
       const completed_courses = parseInt(user.completed_courses, 10) || 0;
       const passed_quizzes = parseInt(user.passed_quizzes, 10) || 0;
-      const accumulated_points = (completed_tasks * settings.points_per_task) + 
-                             (completed_courses * settings.points_per_course) + 
-                             (passed_quizzes * settings.points_per_quiz);
       return {
         ...user,
         completed_tasks,
         completed_courses,
-        passed_quizzes,
-        accumulated_points
+        passed_quizzes
       };
     });
 
@@ -224,17 +239,18 @@ router.get('/employees', authenticateToken, requireRole(['admin', 'staff']), asy
 
 /**
  * PUT /api/performance/employee/:id
- * Update annual evaluation score for an employee (Admin/Staff only)
+ * Update score and attendance stats for an employee/staff (Admin/Staff only)
  */
 router.put('/employee/:id', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
   const employeeId = parseInt(req.params.id, 10);
-  const { evaluation_score } = req.body;
-
-  if (evaluation_score === undefined || isNaN(parseInt(evaluation_score, 10))) {
-    return res.status(400).json({ message: 'evaluation_score must be a valid number.' });
-  }
-
-  const score = Math.max(0, Math.min(100, parseInt(evaluation_score, 10)));
+  const { 
+    evaluation_score, 
+    accumulated_points, 
+    absent_count, 
+    leave_count, 
+    late_count, 
+    warning_letters 
+  } = req.body;
 
   try {
     if (getMockStatus()) {
@@ -242,14 +258,54 @@ router.put('/employee/:id', authenticateToken, requireRole(['admin', 'staff']), 
       if (userIndex === -1) {
         return res.status(404).json({ message: 'Employee not found.' });
       }
-      mockStore.mockUsers[userIndex].evaluation_score = score;
-      return res.json(mockStore.mockUsers[userIndex]);
+      const user = mockStore.mockUsers[userIndex];
+      if (evaluation_score !== undefined) user.evaluation_score = parseInt(evaluation_score, 10);
+      if (accumulated_points !== undefined) user.accumulated_points = parseInt(accumulated_points, 10);
+      if (absent_count !== undefined) user.absent_count = parseInt(absent_count, 10);
+      if (leave_count !== undefined) user.leave_count = parseInt(leave_count, 10);
+      if (late_count !== undefined) user.late_count = parseInt(late_count, 10);
+      if (warning_letters !== undefined) user.warning_letters = parseInt(warning_letters, 10);
+
+      return res.json(user);
     }
 
-    const result = await query(
-      'UPDATE users SET evaluation_score = $1 WHERE id = $2 RETURNING id, employee_id, name, evaluation_score',
-      [score, employeeId]
-    );
+    // Dynamic SQL update query
+    const updates: string[] = [];
+    const values: any[] = [];
+    let valIdx = 1;
+
+    if (evaluation_score !== undefined) {
+      updates.push(`evaluation_score = $${valIdx++}`);
+      values.push(parseInt(evaluation_score, 10));
+    }
+    if (accumulated_points !== undefined) {
+      updates.push(`accumulated_points = $${valIdx++}`);
+      values.push(parseInt(accumulated_points, 10));
+    }
+    if (absent_count !== undefined) {
+      updates.push(`absent_count = $${valIdx++}`);
+      values.push(parseInt(absent_count, 10));
+    }
+    if (leave_count !== undefined) {
+      updates.push(`leave_count = $${valIdx++}`);
+      values.push(parseInt(leave_count, 10));
+    }
+    if (late_count !== undefined) {
+      updates.push(`late_count = $${valIdx++}`);
+      values.push(parseInt(late_count, 10));
+    }
+    if (warning_letters !== undefined) {
+      updates.push(`warning_letters = $${valIdx++}`);
+      values.push(parseInt(warning_letters, 10));
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ message: 'No fields to update.' });
+    }
+
+    values.push(employeeId);
+    const queryStr = `UPDATE users SET ${updates.join(', ')} WHERE id = $${valIdx} RETURNING *`;
+    const result = await query(queryStr, values);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Employee not found.' });
@@ -258,7 +314,7 @@ router.put('/employee/:id', authenticateToken, requireRole(['admin', 'staff']), 
     return res.json(result.rows[0]);
 
   } catch (err: any) {
-    console.error('Error updating evaluation score:', err);
+    console.error('Error updating employee stats:', err);
     return res.status(500).json({ message: 'Database error: ' + err.message });
   }
 });

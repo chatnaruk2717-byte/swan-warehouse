@@ -184,10 +184,10 @@ router.post('/employee', authenticateToken, requireRole(['admin', 'staff']), asy
         certification_url = VALUES(certification_url),
         expiration_date = VALUES(expiration_date),
         updated_at = NOW()
-      RETURNING *
     `;
-    const result = await query(queryStr, [empId, skillId, lvl, status || 'need_training', certification_name || null, certification_url || null, expiration_date || null]);
-    return res.status(201).json(result.rows[0]);
+    await query(queryStr, [empId, skillId, lvl, status || 'need_training', certification_name || null, certification_url || null, expiration_date || null]);
+    const selectRes = await query('SELECT * FROM employee_skills WHERE employee_id = $1 AND skill_id = $2', [empId, skillId]);
+    return res.status(201).json(selectRes.rows[0]);
 
   } catch (err: any) {
     // Mock Mode Fallback

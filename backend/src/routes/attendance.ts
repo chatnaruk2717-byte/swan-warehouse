@@ -81,15 +81,14 @@ router.post('/clock-in', authenticateToken, async (req: AuthenticatedRequest, re
       throw new Error('MOCK_MODE');
     }
 
-    const result = await query(
+    await query(
       `INSERT INTO working_hours (employee_id, clock_in, date, status, ot_hours) 
        VALUES ($1, $2, $3, $4, 0.00) 
-       ON DUPLICATE KEY UPDATE clock_in = VALUES(clock_in), status = VALUES(status)
-       RETURNING *`,
+       ON DUPLICATE KEY UPDATE clock_in = VALUES(clock_in), status = VALUES(status)`,
       [userId, now, dateStr, status]
     );
-
-    return res.status(201).json(result.rows[0]);
+    const selectRes = await query('SELECT * FROM working_hours WHERE employee_id = $1 AND date = $2', [userId, dateStr]);
+    return res.status(201).json(selectRes.rows[0]);
 
   } catch (err: any) {
     // Mock Mode Fallback
@@ -355,16 +354,15 @@ router.post('/manual', authenticateToken, requireRole(['admin', 'staff']), async
       throw new Error('MOCK_MODE');
     }
 
-    const result = await query(
+    await query(
       `INSERT INTO working_hours (employee_id, date, clock_in, clock_out, status, ot_hours) 
        VALUES ($1, $2, $3, $4, $5, $6) 
        ON DUPLICATE KEY UPDATE 
-       clock_in = VALUES(clock_in), clock_out = VALUES(clock_out), status = VALUES(status), ot_hours = VALUES(ot_hours)
-       RETURNING *`,
+       clock_in = VALUES(clock_in), clock_out = VALUES(clock_out), status = VALUES(status), ot_hours = VALUES(ot_hours)`,
       [empId, date, clock_in, clock_out || null, stat, ot]
     );
-
-    return res.status(201).json(result.rows[0]);
+    const selectRes = await query('SELECT * FROM working_hours WHERE employee_id = $1 AND date = $2', [empId, date]);
+    return res.status(201).json(selectRes.rows[0]);
 
   } catch (err: any) {
     // Mock Mode Fallback
@@ -418,15 +416,15 @@ router.post('/import', authenticateToken, requireRole(['admin', 'staff']), async
         throw new Error('MOCK_MODE');
       }
 
-      const result = await query(
+      await query(
         `INSERT INTO working_hours (employee_id, date, clock_in, clock_out, status, ot_hours) 
          VALUES ($1, $2, $3, $4, $5, $6) 
          ON DUPLICATE KEY UPDATE 
-         clock_in = VALUES(clock_in), clock_out = VALUES(clock_out), status = VALUES(status), ot_hours = VALUES(ot_hours)
-         RETURNING *`,
+         clock_in = VALUES(clock_in), clock_out = VALUES(clock_out), status = VALUES(status), ot_hours = VALUES(ot_hours)`,
         [empId, date, clock_in, clock_out || null, stat, ot]
       );
-      results.push(result.rows[0]);
+      const selectRes = await query('SELECT * FROM working_hours WHERE employee_id = $1 AND date = $2', [empId, date]);
+      results.push(selectRes.rows[0]);
 
     } catch (err: any) {
       // Mock Fallback

@@ -195,15 +195,14 @@ router.post('/enroll', authenticateToken, requireRole(['admin', 'staff']), async
       throw new Error('MOCK_MODE');
     }
 
-    const result = await query(
+    await query(
       `INSERT INTO enrollments (employee_id, course_id, progress_percentage, status, assigned_by, due_date) 
        VALUES ($1, $2, 0, 'pending', $3, $4) 
-       ON DUPLICATE KEY UPDATE due_date = VALUES(due_date)
-       RETURNING *`,
+       ON DUPLICATE KEY UPDATE due_date = VALUES(due_date)`,
       [empId, courseId, assignedBy || null, due_date || null]
     );
-
-    return res.status(201).json(result.rows[0]);
+    const selectRes = await query('SELECT * FROM enrollments WHERE employee_id = $1 AND course_id = $2', [empId, courseId]);
+    return res.status(201).json(selectRes.rows[0]);
 
   } catch (err: any) {
     // Mock Mode Fallback

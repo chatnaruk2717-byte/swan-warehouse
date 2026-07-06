@@ -1,0 +1,24 @@
+{
+  "name": "Swan Warehouse Training System",
+  "short_name": "Swan Warehouse",
+  "description": "ระบบบริหารจัดการการฝึกอบรมและทักษะของพนักงานคลังสินค้า Swan",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#F26522",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/swan_square_logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/swan_square_logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

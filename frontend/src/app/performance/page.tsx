@@ -16,7 +16,8 @@ import {
   Check, 
   Trophy, 
   Star,
-  Activity
+  Activity,
+  FileText
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -49,8 +50,14 @@ export default function PerformancePage() {
   const [showScoreModal, setShowScoreModal] = useState(false);
   const [selectedEmp, setSelectedEmp] = useState<any>(null);
   
-  // Form Input States
+  // Form Input States (Updated for comprehensive edits)
   const [inputScore, setInputScore] = useState('');
+  const [inputPoints, setInputPoints] = useState('');
+  const [inputAbsent, setInputAbsent] = useState('');
+  const [inputLeave, setInputLeave] = useState('');
+  const [inputLate, setInputLate] = useState('');
+  const [inputWarning, setInputWarning] = useState('');
+
   const [inputPointsTask, setInputPointsTask] = useState('');
   const [inputPointsCourse, setInputPointsCourse] = useState('');
   const [inputPointsQuiz, setInputPointsQuiz] = useState('');
@@ -71,7 +78,7 @@ export default function PerformancePage() {
         const statsRes = await api.get('/api/performance/my-stats');
         setMyStats(statsRes.data);
       } else {
-        // Load admin list of employees
+        // Load admin list of employees and staff
         const empRes = await api.get('/api/performance/employees');
         setEmployees(empRes.data);
       }
@@ -86,20 +93,28 @@ export default function PerformancePage() {
           photo_url: user.photo_url || '',
           department: user.department,
           position: user.position,
+          role: user.role,
           evaluation_score: 95,
           completed_tasks: 4,
           completed_courses: 2,
           passed_quizzes: 3,
           accumulated_points: 125,
+          absent_count: 0,
+          leave_count: 1,
+          late_count: 2,
+          warning_letters: 0,
           settings: { points_per_task: 10, points_per_course: 20, points_per_quiz: 15 }
         });
       } else {
         setEmployees([
-          { id: 6, employee_id: 'EMP006', name: 'สมปอง ลุยงาน', department: 'Operations', position: 'Forklift Driver', photo_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', completed_tasks: 3, completed_courses: 2, passed_quizzes: 2, accumulated_points: 100, evaluation_score: 96 },
-          { id: 7, employee_id: 'EMP007', name: 'อรอนงค์ แพ็กเก่ง', department: 'Operations', position: 'Packer', photo_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', completed_tasks: 4, completed_courses: 1, passed_quizzes: 2, accumulated_points: 90, evaluation_score: 98 },
-          { id: 8, employee_id: 'EMP008', name: 'มานะ คัดของ', department: 'Operations', position: 'Picker', photo_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150', completed_tasks: 1, completed_courses: 1, passed_quizzes: 1, accumulated_points: 45, evaluation_score: 89 },
-          { id: 9, employee_id: 'EMP009', name: 'เกษม รับสินค้า', department: 'Operations', position: 'Receiving Clerk', photo_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150', completed_tasks: 2, completed_courses: 2, passed_quizzes: 0, accumulated_points: 60, evaluation_score: 87 },
-          { id: 10, employee_id: 'EMP010', name: 'จารุณี นับสต็อก', department: 'Operations', position: 'Inventory Counter', photo_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150', completed_tasks: 2, completed_courses: 1, passed_quizzes: 1, accumulated_points: 55, evaluation_score: 94 }
+          { id: 3, employee_id: 'EMP003', name: 'นรินทร์ เก่งการ', department: 'Training', position: 'Senior Trainer', role: 'staff', photo_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', completed_tasks: 2, completed_courses: 2, passed_quizzes: 1, accumulated_points: 75, evaluation_score: 92, absent_count: 0, leave_count: 1, late_count: 2, warning_letters: 0 },
+          { id: 4, employee_id: 'EMP004', name: 'ประพันธ์ ยอดคุม', department: 'Operations', position: 'Zone A Supervisor', role: 'staff', photo_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', completed_tasks: 3, completed_courses: 2, passed_quizzes: 1, accumulated_points: 85, evaluation_score: 96, absent_count: 1, leave_count: 2, late_count: 0, warning_letters: 0 },
+          { id: 5, employee_id: 'EMP005', name: 'สมศรี มีคุม', department: 'Operations', position: 'Zone B Supervisor', role: 'staff', photo_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150', completed_tasks: 2, completed_courses: 2, passed_quizzes: 2, accumulated_points: 80, evaluation_score: 94, absent_count: 0, leave_count: 3, late_count: 1, warning_letters: 0 },
+          { id: 6, employee_id: 'EMP006', name: 'สมปอง ลุยงาน', department: 'Operations', position: 'Forklift Driver', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', completed_tasks: 3, completed_courses: 2, passed_quizzes: 2, accumulated_points: 100, evaluation_score: 96, absent_count: 2, leave_count: 1, late_count: 3, warning_letters: 1 },
+          { id: 7, employee_id: 'EMP007', name: 'อรอนงค์ แพ็กเก่ง', department: 'Operations', position: 'Packer', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', completed_tasks: 4, completed_courses: 1, passed_quizzes: 2, accumulated_points: 90, evaluation_score: 98, absent_count: 0, leave_count: 2, late_count: 0, warning_letters: 0 },
+          { id: 8, employee_id: 'EMP008', name: 'มานะ คัดของ', department: 'Operations', position: 'Picker', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150', completed_tasks: 1, completed_courses: 1, passed_quizzes: 1, accumulated_points: 45, evaluation_score: 89, absent_count: 3, leave_count: 0, late_count: 4, warning_letters: 1 },
+          { id: 9, employee_id: 'EMP009', name: 'เกษม รับสินค้า', department: 'Operations', position: 'Receiving Clerk', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150', completed_tasks: 2, completed_courses: 2, passed_quizzes: 0, accumulated_points: 60, evaluation_score: 87, absent_count: 1, leave_count: 5, late_count: 1, warning_letters: 0 },
+          { id: 10, employee_id: 'EMP010', name: 'จารุณี นับสต็อก', department: 'Operations', position: 'Inventory Counter', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150', completed_tasks: 2, completed_courses: 1, passed_quizzes: 1, accumulated_points: 55, evaluation_score: 94, absent_count: 0, leave_count: 1, late_count: 0, warning_letters: 0 }
         ]);
       }
     } finally {
@@ -113,10 +128,15 @@ export default function PerformancePage() {
     }
   }, [user]);
 
-  // Open Score Modal
+  // Open Score & Stats Modal
   const openEditScore = (emp: any) => {
     setSelectedEmp(emp);
-    setInputScore(emp.evaluation_score.toString());
+    setInputScore(emp.evaluation_score !== undefined ? emp.evaluation_score.toString() : '100');
+    setInputPoints(emp.accumulated_points !== undefined ? emp.accumulated_points.toString() : '0');
+    setInputAbsent(emp.absent_count !== undefined ? emp.absent_count.toString() : '0');
+    setInputLeave(emp.leave_count !== undefined ? emp.leave_count.toString() : '0');
+    setInputLate(emp.late_count !== undefined ? emp.late_count.toString() : '0');
+    setInputWarning(emp.warning_letters !== undefined ? emp.warning_letters.toString() : '0');
     setShowScoreModal(true);
   };
 
@@ -149,37 +169,60 @@ export default function PerformancePage() {
       setSettings(res.data);
       setShowSettingsModal(false);
       alert('บันทึกกติกาตั้งค่าคะแนนสำเร็จ');
-      loadData(); // Reload summaries with new point weights
+      loadData(); 
     } catch (err: any) {
       alert('บันทึกไม่สำเร็จ: ' + (err.response?.data?.message || err.message));
     }
   };
 
-  // Save Employee Evaluation Score
+  // Save Employee Stats and Score
   const handleSaveScore = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedEmp) return;
 
     const score = parseInt(inputScore, 10);
+    const points = parseInt(inputPoints, 10);
+    const absent = parseInt(inputAbsent, 10);
+    const leave = parseInt(inputLeave, 10);
+    const late = parseInt(inputLate, 10);
+    const warning = parseInt(inputWarning, 10);
+
     if (isNaN(score) || score < 0 || score > 100) {
       alert('กรุณากรอกคะแนนประเมินระหว่าง 0 ถึง 100 คะแนน');
+      return;
+    }
+    if (isNaN(points) || isNaN(absent) || isNaN(leave) || isNaN(late) || isNaN(warning)) {
+      alert('กรุณากรอกตัวเลขข้อมูลที่ถูกต้อง');
       return;
     }
 
     try {
       const res = await api.put(`/api/performance/employee/${selectedEmp.id}`, {
-        evaluation_score: score
+        evaluation_score: score,
+        accumulated_points: points,
+        absent_count: absent,
+        leave_count: leave,
+        late_count: late,
+        warning_letters: warning
       });
       
       setEmployees(employees.map(emp => 
         emp.id === selectedEmp.id 
-          ? { ...emp, evaluation_score: res.data.evaluation_score } 
+          ? { 
+              ...emp, 
+              evaluation_score: res.data.evaluation_score,
+              accumulated_points: res.data.accumulated_points,
+              absent_count: res.data.absent_count,
+              leave_count: res.data.leave_count,
+              late_count: res.data.late_count,
+              warning_letters: res.data.warning_letters
+            } 
           : emp
       ));
       
       setShowScoreModal(false);
       setSelectedEmp(null);
-      alert('บันทึกคะแนนประเมินสำเร็จ');
+      alert('บันทึกปรับปรุงข้อมูลคะแนนและประวัติเข้างานสำเร็จ');
     } catch (err: any) {
       alert('บันทึกไม่สำเร็จ: ' + (err.response?.data?.message || err.message));
     }
@@ -215,7 +258,7 @@ export default function PerformancePage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* Left Column: Profile & Points Info */}
+          {/* Left Column: Profile, Points Info, and Attendance */}
           <div className="lg:col-span-1 space-y-6">
             
             {/* Profile Detail Card */}
@@ -236,12 +279,46 @@ export default function PerformancePage() {
               
               <div className="w-full border-t border-slate-200/50 dark:border-white/5 my-4 pt-4 text-xs space-y-2.5 text-left">
                 <div className="flex justify-between">
+                  <span className="text-slate-400">บทบาท (Role):</span>
+                  <span className="font-semibold text-slate-700 dark:text-slate-200 capitalize">{myStats.role}</span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-slate-400">แผนก (Department):</span>
                   <span className="font-semibold text-slate-700 dark:text-slate-200">{myStats.department}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">ตำแหน่ง (Position):</span>
                   <span className="font-semibold text-slate-700 dark:text-slate-200">{myStats.position}</span>
+                </div>
+              </div>
+            </GlassCard>
+
+            {/* Attendance & Warnings Discipline card */}
+            <GlassCard className="p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <Activity className="text-rose-500" size={18} />
+                <h4 className="font-bold text-sm text-slate-800 dark:text-white">การเข้างาน & วินัยปฏิบัติงาน</h4>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-center">
+                <div className="p-2.5 bg-rose-500/10 border border-rose-500/25 rounded-2xl">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase">ขาดงาน (Absent)</p>
+                  <p className="text-lg font-black text-rose-500 font-mono mt-0.5">{myStats.absent_count || 0}</p>
+                  <p className="text-[8px] text-slate-400">ครั้ง</p>
+                </div>
+                <div className="p-2.5 bg-blue-500/10 border border-blue-500/25 rounded-2xl">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase">ลา (Leave)</p>
+                  <p className="text-lg font-black text-blue-400 font-mono mt-0.5">{myStats.leave_count || 0}</p>
+                  <p className="text-[8px] text-slate-400">ครั้ง</p>
+                </div>
+                <div className="p-2.5 bg-amber-500/10 border border-amber-500/25 rounded-2xl">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase">มาสาย (Late)</p>
+                  <p className="text-lg font-black text-amber-500 font-mono mt-0.5">{myStats.late_count || 0}</p>
+                  <p className="text-[8px] text-slate-400">ครั้ง</p>
+                </div>
+                <div className="p-2.5 bg-red-500/15 border border-red-500/35 rounded-2xl">
+                  <p className="text-[10px] text-red-500 font-bold uppercase">ใบเตือน (Warning)</p>
+                  <p className="text-lg font-black text-red-600 font-mono mt-0.5">{myStats.warning_letters || 0}</p>
+                  <p className="text-[8px] text-red-500 font-bold">ใบ</p>
                 </div>
               </div>
             </GlassCard>
@@ -390,7 +467,7 @@ export default function PerformancePage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-800 dark:text-white">ระบบประเมินผลงาน & KPI พนักงานคลัง</h2>
-          <p className="text-slate-400 text-sm mt-1">จัดการคะแนนประเมินปลายปีเต็ม 100 และกำหนดอัตราส่วนคะแนนสะสมการเรียนการทำงาน</p>
+          <p className="text-slate-400 text-sm mt-1">จัดการคะแนนประเมินและตั้งค่ากฎระเบียบ ขาด/ลา/สาย/ใบเตือน พนักงานและ Staff</p>
         </div>
         <button 
           onClick={openSettings}
@@ -403,7 +480,7 @@ export default function PerformancePage() {
 
       {/* Compare Chart */}
       <GlassCard className="p-5">
-        <h4 className="font-bold text-xs text-slate-400 mb-4 uppercase tracking-wider">กราฟวิเคราะห์คะแนนสะสมและคะแนนประเมินของพนักงาน</h4>
+        <h4 className="font-bold text-xs text-slate-400 mb-4 uppercase tracking-wider">กราฟวิเคราะห์คะแนนสะสมและคะแนนประเมินของพนักงานและหัวหน้างาน</h4>
         <div className="w-full h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -419,16 +496,18 @@ export default function PerformancePage() {
         </div>
       </GlassCard>
 
-      {/* Employees Performance Table */}
+      {/* Employees & Staff Performance Table */}
       <GlassCard className="p-0 overflow-hidden border border-slate-200/50 dark:border-white/5">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-200/50 dark:border-white/5 bg-slate-100/50 dark:bg-white/5 text-slate-400 font-bold uppercase tracking-wider">
-                <th className="py-4 px-6">พนักงาน</th>
+                <th className="py-4 px-6">รายชื่อ</th>
+                <th className="py-4 px-4 text-center">บทบาท (Role)</th>
                 <th className="py-4 px-4 text-center">ส่งงานสำเร็จ</th>
-                <th className="py-4 px-4 text-center">หลักสูตรอบรมสำเร็จ</th>
-                <th className="py-4 px-4 text-center">ทำข้อสอบสำเร็จ</th>
+                <th className="py-4 px-4 text-center">หลักสูตรสำเร็จ</th>
+                <th className="py-4 px-4 text-center">ขาด/ลา/สาย</th>
+                <th className="py-4 px-4 text-center">ใบเตือน (Warning)</th>
                 <th className="py-4 px-4 text-center">คะแนนสะสมรวม</th>
                 <th className="py-4 px-4 text-center">คะแนนประเมิน (100)</th>
                 <th className="py-4 px-6 text-right">จัดการ</th>
@@ -457,9 +536,34 @@ export default function PerformancePage() {
                         <p className="text-[10px] text-slate-400 mt-0.5">{emp.employee_id} • {emp.position}</p>
                       </div>
                     </td>
+                    <td className="py-4 px-4 text-center">
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                        emp.role === 'staff' 
+                          ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' 
+                          : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                      }`}>
+                        {emp.role}
+                      </span>
+                    </td>
                     <td className="py-4 px-4 text-center font-semibold text-slate-700 dark:text-slate-200">{emp.completed_tasks} เรื่อง</td>
                     <td className="py-4 px-4 text-center font-semibold text-slate-700 dark:text-slate-200">{emp.completed_courses} เรื่อง</td>
-                    <td className="py-4 px-4 text-center font-semibold text-slate-700 dark:text-slate-200">{emp.passed_quizzes} เรื่อง</td>
+                    <td className="py-4 px-4 text-center">
+                      <div className="flex flex-col items-center">
+                        <span className="font-bold text-slate-600 dark:text-slate-300">
+                          {emp.absent_count} / {emp.leave_count} / {emp.late_count}
+                        </span>
+                        <span className="text-[9px] text-slate-400 mt-0.5">ขาด / ลา / สาย</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 text-center">
+                      {emp.warning_letters > 0 ? (
+                        <span className="px-2 py-0.5 rounded-xl bg-rose-500/20 text-rose-500 font-mono font-bold border border-rose-500/35 animate-pulse">
+                          {emp.warning_letters} ใบ
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 font-mono">-</span>
+                      )}
+                    </td>
                     <td className="py-4 px-4 text-center">
                       <span className="px-2.5 py-1 bg-warehouse-orange/10 text-warehouse-orange font-mono font-bold rounded-xl">
                         {emp.accumulated_points} Pts
@@ -481,7 +585,7 @@ export default function PerformancePage() {
                         className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 hover:border-warehouse-orange hover:text-warehouse-orange text-[10px] font-bold transition-all inline-flex items-center gap-1"
                       >
                         <Edit3 size={11} />
-                        <span>ปรับคะแนน (KPI)</span>
+                        <span>ปรับข้อมูลผลงาน</span>
                       </button>
                     </td>
                   </tr>
@@ -492,12 +596,12 @@ export default function PerformancePage() {
         </div>
       </GlassCard>
 
-      {/* EDIT EVALUATION SCORE MODAL */}
+      {/* EDIT EVALUATION SCORE & ATTENDANCE STATS MODAL */}
       {showScoreModal && selectedEmp && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <GlassCard className="w-full max-w-sm overflow-hidden border border-white/10" animate={false}>
+          <GlassCard className="w-full max-w-md overflow-hidden border border-white/10" animate={false}>
             <div className="flex items-center justify-between pb-4 border-b border-slate-200/50 dark:border-white/5 mb-6">
-              <h3 className="font-bold text-sm">ปรับปรุงคะแนนประเมินปลายปี</h3>
+              <h3 className="font-bold text-sm">ปรับปรุงผลงานและสถิติวินัย (Edit Stats)</h3>
               <button onClick={() => setShowScoreModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                 <X size={18} />
               </button>
@@ -511,22 +615,91 @@ export default function PerformancePage() {
                   <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400 font-bold">{selectedEmp.name.charAt(0)}</div>
                 )}
                 <div>
-                  <p className="font-bold text-xs">{selectedEmp.name}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">{selectedEmp.position}</p>
+                  <p className="font-bold text-xs">{selectedEmp.name} ({selectedEmp.role})</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{selectedEmp.position} • {selectedEmp.employee_id}</p>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">คะแนนประเมิน (Annual Evaluation Score)</label>
+              {/* Grid for Score and Points */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">คะแนนประเมินปลายปี (0-100)</label>
+                  <input 
+                    type="number" 
+                    min="0" 
+                    max="100" 
+                    required 
+                    value={inputScore} 
+                    onChange={(e) => setInputScore(e.target.value)} 
+                    className="glass-input text-xs" 
+                    placeholder="คะแนนเต็ม 100" 
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">คะแนนสะสม (Total Points)</label>
+                  <input 
+                    type="number" 
+                    min="0" 
+                    required 
+                    value={inputPoints} 
+                    onChange={(e) => setInputPoints(e.target.value)} 
+                    className="glass-input text-xs" 
+                    placeholder="คะแนนสะสมรวม" 
+                  />
+                </div>
+              </div>
+
+              {/* Grid for Attendance counters */}
+              <div className="grid grid-cols-3 gap-4 border-t border-slate-200/30 dark:border-white/5 pt-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[9px] font-bold text-rose-400 uppercase">ขาดงาน (ครั้ง)</label>
+                  <input 
+                    type="number" 
+                    min="0" 
+                    required 
+                    value={inputAbsent} 
+                    onChange={(e) => setInputAbsent(e.target.value)} 
+                    className="glass-input text-xs border-rose-500/20" 
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[9px] font-bold text-blue-400 uppercase">ลางาน (ครั้ง)</label>
+                  <input 
+                    type="number" 
+                    min="0" 
+                    required 
+                    value={inputLeave} 
+                    onChange={(e) => setInputLeave(e.target.value)} 
+                    className="glass-input text-xs border-blue-500/20" 
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[9px] font-bold text-amber-400 uppercase">มาสาย (ครั้ง)</label>
+                  <input 
+                    type="number" 
+                    min="0" 
+                    required 
+                    value={inputLate} 
+                    onChange={(e) => setInputLate(e.target.value)} 
+                    className="glass-input text-xs border-amber-500/20" 
+                  />
+                </div>
+              </div>
+
+              {/* Warning Letters Input */}
+              <div className="flex flex-col gap-1.5 border-t border-slate-200/30 dark:border-white/5 pt-3">
+                <label className="text-[10px] font-bold text-red-500 uppercase flex items-center gap-1">
+                  <FileText size={12} />
+                  <span>จำนวนใบเตือนที่ได้รับ (ใบ)</span>
+                </label>
                 <input 
                   type="number" 
                   min="0" 
-                  max="100" 
                   required 
-                  value={inputScore} 
-                  onChange={(e) => setInputScore(e.target.value)} 
-                  className="glass-input text-xs" 
-                  placeholder="กรอกคะแนนเต็ม 100 คะแนน" 
+                  value={inputWarning} 
+                  onChange={(e) => setInputWarning(e.target.value)} 
+                  className="glass-input text-xs border-red-500/20 text-red-500 font-bold" 
+                  placeholder="จำนวนใบเตือนสะสม" 
                 />
               </div>
 
@@ -534,7 +707,7 @@ export default function PerformancePage() {
                 <button type="button" onClick={() => setShowScoreModal(false)} className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-xs font-semibold">ยกเลิก</button>
                 <button type="submit" className="px-4 py-2 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold flex items-center gap-1 shadow-md shadow-warehouse-orange/15">
                   <Save size={13} />
-                  <span>บันทึกคะแนน</span>
+                  <span>บันทึกข้อมูล</span>
                 </button>
               </div>
             </form>

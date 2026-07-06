@@ -16,7 +16,7 @@ const getDefaultPasswordHash = async () => {
  *   get:
  *     summary: Retrieve list of all employees
  */
-router.get('/', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
+router.get('/', authenticateToken, requireRole(['admin', 'staff', 'employee']), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (getMockStatus()) {
       throw new Error('MOCK_MODE');

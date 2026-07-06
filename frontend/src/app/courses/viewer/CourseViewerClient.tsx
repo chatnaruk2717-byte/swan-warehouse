@@ -18,7 +18,7 @@ import {
   Video
 } from 'lucide-react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 const formatYoutubeUrl = (url: string) => {
   if (!url) return '';
@@ -32,7 +32,8 @@ const formatYoutubeUrl = (url: string) => {
 };
 
 export default function CourseViewerClient() {
-  const { id } = useParams();
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id');
   const router = useRouter();
   const { api, user } = useAuth();
   

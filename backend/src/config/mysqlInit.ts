@@ -10,6 +10,7 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
       try {
         await connection.query('ALTER TABLE users MODIFY COLUMN photo_url LONGTEXT');
         await connection.query('ALTER TABLE courses MODIFY COLUMN cover_image LONGTEXT');
+        await connection.query('ALTER TABLE lessons MODIFY COLUMN content_url LONGTEXT');
       } catch (err: any) {
         console.warn('Failed to alter columns to LONGTEXT:', err.message);
       }
@@ -106,7 +107,7 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         chapter_id INT NOT NULL,
         title VARCHAR(150) NOT NULL,
         content_type VARCHAR(20) NOT NULL,
-        content_url VARCHAR(255),
+        content_url LONGTEXT,
         body_text TEXT,
         sort_order INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -290,6 +291,9 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
     } catch (e) {}
     try {
       await connection.query("ALTER TABLE users ADD COLUMN warning_letters INT DEFAULT 0");
+    } catch (e) {}
+    try {
+      await connection.query("ALTER TABLE lessons MODIFY COLUMN content_url LONGTEXT");
     } catch (e) {}
 
     // Seed default performance settings if not exists

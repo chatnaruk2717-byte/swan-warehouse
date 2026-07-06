@@ -686,7 +686,7 @@ export default function CoursesPage() {
                         />
                       </div>
                       <Link 
-                        href={`/courses/${course.id}`} 
+                        href={`/courses/viewer?id=${course.id}`} 
                         className="w-full py-2 bg-warehouse-orange hover:bg-warehouse-orange/95 text-white rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1 mt-2.5 shadow-sm"
                       >
                         <Play size={10} />
@@ -712,7 +712,7 @@ export default function CoursesPage() {
                             <span>มอบหมายหลักสูตร</span>
                           </button>
                           <Link 
-                            href={`/courses/${course.id}`}
+                            href={`/courses/viewer?id=${course.id}`}
                             className="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-white rounded-xl text-xs font-bold transition-all border border-slate-200/50 dark:border-white/5 flex items-center justify-center"
                           >
                             <Play size={12} />

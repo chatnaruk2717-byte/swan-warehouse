@@ -48,7 +48,8 @@ export default function EmployeesPage() {
     supervisor_id: '',
     start_date: new Date().toISOString().split('T')[0],
     photo_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-    working_shift: 'A'
+    working_shift: 'A',
+    status: 'active'
   });
 
   const fetchEmployees = async () => {
@@ -160,7 +161,8 @@ export default function EmployeesPage() {
       supervisor_id: emp.supervisor_id ? emp.supervisor_id.toString() : '',
       start_date: emp.start_date || new Date().toISOString().split('T')[0],
       photo_url: emp.photo_url || '',
-      working_shift: emp.working_shift || 'A'
+      working_shift: emp.working_shift || 'A',
+      status: emp.status || 'active'
     });
     setShowEditModal(true);
   };
@@ -183,7 +185,8 @@ export default function EmployeesPage() {
       supervisor_id: '',
       start_date: new Date().toISOString().split('T')[0],
       photo_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-      working_shift: 'A'
+      working_shift: 'A',
+      status: 'active'
     });
     setSelectedEmp(null);
   };
@@ -494,7 +497,14 @@ export default function EmployeesPage() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5 col-span-2">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-400">สถานะพนักงาน (Status)</label>
+                  <select value={formFields.status} onChange={(e) => setFormFields({ ...formFields, status: e.target.value })} className="glass-input text-xs bg-white dark:bg-warehouse-slate">
+                    <option value="active">Active (ทำงานอยู่)</option>
+                    <option value="inactive">Inactive (ปิดใช้งาน/พักงาน)</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-400">หัวหน้างานผู้ควบคุม (Supervisor)</label>
                   <select 
                     value={formFields.supervisor_id || ''} 
@@ -616,7 +626,14 @@ export default function EmployeesPage() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5 col-span-2">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-400">สถานะพนักงาน (Status)</label>
+                  <select value={formFields.status} onChange={(e) => setFormFields({ ...formFields, status: e.target.value })} className="glass-input text-xs bg-white dark:bg-warehouse-slate">
+                    <option value="active">Active (ทำงานอยู่)</option>
+                    <option value="inactive">Inactive (ปิดใช้งาน/พักงาน)</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-400">หัวหน้างานผู้ควบคุม (Supervisor)</label>
                   <select 
                     value={formFields.supervisor_id || ''} 

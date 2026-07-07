@@ -29,7 +29,7 @@ export default function RootLayout({
   }, []);
 
   return (
-    <html lang="th" className="dark">
+    <html lang="th">
       <head>
         <title>Warehouse Training & Skill Management System</title>
         <meta name="description" content="ระบบบริหารจัดการการฝึกอบรมและทักษะของพนักงานคลังสินค้าสำหรับองค์กรยุคใหม่" />

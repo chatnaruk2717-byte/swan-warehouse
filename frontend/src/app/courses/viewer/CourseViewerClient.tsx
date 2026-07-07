@@ -49,6 +49,8 @@ export default function CourseViewerClient() {
   const [quizActive, setQuizActive] = useState<boolean>(false);
   const [showCertPopup, setShowCertPopup] = useState<boolean>(false);
   const [certId, setCertId] = useState<string>('');
+  const [currentQuizQuestions, setCurrentQuizQuestions] = useState<any[]>([]);
+  const [displayDocUrl, setDisplayDocUrl] = useState<string>('');
 
   const timerRef = useRef<any>(null);
 
@@ -211,6 +213,37 @@ export default function CourseViewerClient() {
   };
 
   useEffect(() => {
+    if (activeLesson && activeLesson.content_type === 'document' && activeLesson.content_url) {
+      if (activeLesson.content_url.startsWith('data:application/pdf')) {
+        try {
+          const arr = activeLesson.content_url.split(',');
+          const mime = arr[0].match(/:(.*?);/)?.[1] || 'application/pdf';
+          const bstr = atob(arr[1]);
+          let n = bstr.length;
+          const u8arr = new Uint8Array(n);
+          while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+          }
+          const blob = new Blob([u8arr], { type: mime });
+          const url = URL.createObjectURL(blob);
+          setDisplayDocUrl(url);
+          
+          return () => {
+            URL.revokeObjectURL(url);
+          };
+        } catch (e) {
+          console.error('Failed to parse Base64 PDF to blob', e);
+          setDisplayDocUrl(activeLesson.content_url);
+        }
+      } else {
+        setDisplayDocUrl(activeLesson.content_url);
+      }
+    } else {
+      setDisplayDocUrl('');
+    }
+  }, [activeLesson]);
+
+  useEffect(() => {
     fetchCourseData();
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -238,6 +271,7 @@ export default function CourseViewerClient() {
     setQuizScore(null);
     setQuizAnswers({});
     setQuizTimer(300);
+    setCurrentQuizQuestions([]);
   };
 
   // Toggle lesson complete checkmark
@@ -304,6 +338,17 @@ export default function CourseViewerClient() {
     setQuizAnswers({});
     setQuizScore(null);
     setQuizTimer(300); // 5 mins
+    
+    if (activeLesson?.questions && activeLesson.questions.length > 0) {
+      // Shuffle activeLesson.questions
+      const shuffled = [...activeLesson.questions].sort(() => 0.5 - Math.random());
+      // Select 50% (half of the questions, rounded up)
+      const count = Math.ceil(shuffled.length / 2);
+      const selected = shuffled.slice(0, count);
+      setCurrentQuizQuestions(selected);
+    } else {
+      setCurrentQuizQuestions([]);
+    }
   };
 
   const handleQuizSubmit = async () => {
@@ -312,7 +357,8 @@ export default function CourseViewerClient() {
 
     try {
       const res = await api.post(`/api/courses/lesson/${activeLesson.id}/quiz-submit`, {
-        answers: quizAnswers
+        answers: quizAnswers,
+        questionIds: currentQuizQuestions.map(q => q.id)
       });
       setQuizScore(res.data);
 
@@ -330,15 +376,15 @@ export default function CourseViewerClient() {
         }
       }
     } catch (err) {
-      // Mock grading
+      // Mock grading based on randomly selected subset
       let earned = 0;
-      let total = activeLesson.questions.length;
+      let total = currentQuizQuestions.length || 1;
       
       // Simulate answer key matching seeds:
       // Q1: [0], Q2: [1], Q3: [0, 1], Q4: [0], Q5: [0]
       const answerKey = { 1: [0], 2: [1], 3: [0, 1], 4: [0], 5: [0], 6: [0], 7: [1], 8: [0], 9: [1] };
 
-      activeLesson.questions.forEach((q: any) => {
+      currentQuizQuestions.forEach((q: any) => {
         const correct = answerKey[q.id as keyof typeof answerKey] || [0];
         const submitted = quizAnswers[q.id] || [];
         const isCorrect = correct.length === submitted.length && 
@@ -516,9 +562,17 @@ export default function CourseViewerClient() {
                 <GlassCard className="h-[450px] flex flex-col p-0 overflow-hidden border border-slate-200/50 dark:border-white/5">
                   <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/50 dark:border-white/5 bg-slate-100/50 dark:bg-white/5">
                     <span className="font-bold text-xs">เอกสารหลักสูตร: {activeLesson.title}</span>
-                    <a href={activeLesson.content_url} target="_blank" rel="noreferrer" className="text-xs text-warehouse-orange hover:underline font-bold">ดาวน์โหลด PDF</a>
+                    <a 
+                      href={displayDocUrl} 
+                      download={`${activeLesson.title}.pdf`}
+                      target="_blank" 
+                      rel="noreferrer" 
+                      className="text-xs text-warehouse-orange hover:underline font-bold"
+                    >
+                      ดาวน์โหลด PDF
+                    </a>
                   </div>
-                  <iframe src={activeLesson.content_url} className="w-full flex-1 border-none bg-slate-900" />
+                  <iframe src={displayDocUrl} className="w-full flex-1 border-none bg-slate-900" />
                 </GlassCard>
               )}
 
@@ -558,7 +612,7 @@ export default function CourseViewerClient() {
 
                       {/* Question loop */}
                       <div className="space-y-6 max-h-[400px] overflow-y-auto pr-1">
-                        {activeLesson.questions?.map((q: any, qIdx: number) => {
+                        {currentQuizQuestions?.map((q: any, qIdx: number) => {
                           const isCheckbox = q.question_type === 'checkbox';
                           const answers = quizAnswers[q.id] || [];
 

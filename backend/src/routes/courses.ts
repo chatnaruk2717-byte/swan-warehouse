@@ -440,7 +440,7 @@ router.post('/lesson/:id/progress', authenticateToken, async (req: Authenticated
 router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const lessonId = parseInt(req.params.id, 10);
   const employeeId = req.user?.id;
-  const { answers } = req.body; // Expecting { questionId: [selectedIndices] }
+  const { answers, questionIds } = req.body; // Expecting answers: { questionId: [selectedIndices] }, questionIds: [1, 2, 3...]
 
   if (!answers) {
     return res.status(400).json({ message: 'Quiz answers are required.' });
@@ -462,10 +462,19 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
       return res.status(404).json({ message: 'No questions found for this quiz.' });
     }
 
+    // Filter questions list if questionIds is provided from frontend (random subset)
+    const filteredQuestions = questionIds && Array.isArray(questionIds)
+      ? questions.filter(q => questionIds.includes(q.id))
+      : questions;
+
+    if (filteredQuestions.length === 0) {
+      return res.status(400).json({ message: 'Submitted question subset does not match database.' });
+    }
+
     let totalPoints = 0;
     let earnedPoints = 0;
 
-    for (const q of questions) {
+    for (const q of filteredQuestions) {
       totalPoints += q.points;
       const submitted = answers[q.id];
 

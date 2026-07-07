@@ -55,6 +55,38 @@ export default function DocumentsPage() {
 
   // PDF Viewer modal states
   const [activeViewerDoc, setActiveViewerDoc] = useState<WarehouseDocument | null>(null);
+  const [displayDocUrl, setDisplayDocUrl] = useState('');
+
+  useEffect(() => {
+    if (activeViewerDoc && activeViewerDoc.file_url) {
+      if (activeViewerDoc.file_url.startsWith('data:application/pdf')) {
+        try {
+          const arr = activeViewerDoc.file_url.split(',');
+          const mime = arr[0].match(/:(.*?);/)?.[1] || 'application/pdf';
+          const bstr = atob(arr[1]);
+          let n = bstr.length;
+          const u8arr = new Uint8Array(n);
+          while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+          }
+          const blob = new Blob([u8arr], { type: mime });
+          const url = URL.createObjectURL(blob);
+          setDisplayDocUrl(url);
+          
+          return () => {
+            URL.revokeObjectURL(url);
+          };
+        } catch (e) {
+          console.error('Failed to parse Base64 PDF to blob', e);
+          setDisplayDocUrl(activeViewerDoc.file_url);
+        }
+      } else {
+        setDisplayDocUrl(activeViewerDoc.file_url);
+      }
+    } else {
+      setDisplayDocUrl('');
+    }
+  }, [activeViewerDoc]);
 
   // Fetch documents
   const fetchDocuments = async () => {
@@ -427,7 +459,7 @@ export default function DocumentsPage() {
             
             {/* Embedded PDF iframe */}
             <iframe 
-              src={activeViewerDoc.file_url} 
+              src={displayDocUrl} 
               className="w-full flex-1 border-none bg-slate-900" 
               title={activeViewerDoc.title}
             />

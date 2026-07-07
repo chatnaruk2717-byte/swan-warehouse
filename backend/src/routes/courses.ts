@@ -500,9 +500,13 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
       }
 
       if (submitted && Array.isArray(submitted) && Array.isArray(correct)) {
+        // Safe integer conversion of all answers for comparison
+        const submittedNums = submitted.map((val: any) => parseInt(val, 10));
+        const correctNums = correct.map((val: any) => parseInt(val, 10));
+
         // Compare arrays
-        const isCorrect = correct.length === submitted.length && 
-                          correct.every((val: number) => submitted.includes(val));
+        const isCorrect = correctNums.length === submittedNums.length && 
+                          correctNums.every((val: number) => submittedNums.includes(val));
         if (isCorrect) {
           earnedPoints += q.points;
         }

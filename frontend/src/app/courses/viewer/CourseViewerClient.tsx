@@ -385,10 +385,16 @@ export default function CourseViewerClient() {
       const answerKey = { 1: [0], 2: [1], 3: [0, 1], 4: [0], 5: [0], 6: [0], 7: [1], 8: [0], 9: [1] };
 
       currentQuizQuestions.forEach((q: any) => {
-        const correct = answerKey[q.id as keyof typeof answerKey] || [0];
+        // Use q.correct_answers if available, otherwise fall back to answerKey
+        const correct = q.correct_answers || answerKey[q.id as keyof typeof answerKey] || [0];
         const submitted = quizAnswers[q.id] || [];
-        const isCorrect = correct.length === submitted.length && 
-                          correct.every(val => submitted.includes(val));
+        
+        // Convert to numbers to avoid type mismatch (string vs number)
+        const correctNums = correct.map((val: any) => parseInt(val, 10));
+        const submittedNums = submitted.map((val: any) => parseInt(val, 10));
+
+        const isCorrect = correctNums.length === submittedNums.length && 
+                          correctNums.every(val => submittedNums.includes(val));
         if (isCorrect) earned++;
       });
 

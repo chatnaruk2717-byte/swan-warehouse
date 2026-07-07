@@ -69,6 +69,7 @@ router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
     return res.json(course);
 
   } catch (err: any) {
+    console.error(`Error in GET /api/courses/${courseId}:`, err);
     // Mock Mode Fallback
     const course = mockStore.mockCourses.find(c => c.id === courseId);
     if (!course) {

@@ -55,127 +55,154 @@ export default function CourseViewerClient() {
   const fetchCourseData = async () => {
     try {
       const courseId = parseInt(id as string, 10);
+      
+      // If courseId is NaN, wait for hydration (id changes) and do not trigger load
+      if (isNaN(courseId)) {
+        return;
+      }
+
       const res = await api.get(`/api/courses/${courseId}`);
       setCourse(res.data);
 
-      // Fetch user enrollments to get certificates/progress
+      // Fetch user enrollments to get certificates/progress - isolated to prevent blocking main course view
       if (user) {
-        const enrollRes = await api.get(`/api/courses/enrollments/employee/${user.id}`);
-        const currentEnroll = enrollRes.data.find((e: any) => e.course_id === courseId);
-        
-        if (currentEnroll?.status === 'completed') {
-          setCertId(currentEnroll.certificate_id || 'CERT-SAF-00612');
+        try {
+          const enrollRes = await api.get(`/api/courses/enrollments/employee/${user.id}`);
+          const currentEnroll = enrollRes.data.find((e: any) => e.course_id === courseId);
+          
+          if (currentEnroll?.status === 'completed') {
+            setCertId(currentEnroll.certificate_id || 'CERT-SAF-00612');
+          }
+        } catch (e) {
+          console.warn('Could not fetch enrollment details, using empty fallback:', e);
         }
 
-        // Fetch completed lesson IDs
-        // Simulate or query if database is configured
-        const profileRes = await api.get(`/api/auth/profile`); // Or mock
-        // Fallback progress state matching seeds
-        if (user.id === 6 && courseId === 1) {
-          setLessonProgress([1, 2, 3, 4, 5]);
-        } else if (user.id === 7 && courseId === 1) {
-          setLessonProgress([1, 2, 3, 4, 5]);
-        } else {
-          setLessonProgress([]);
+        try {
+          // Fallback progress state matching seeds
+          if (user.id === 6 && courseId === 1) {
+            setLessonProgress([1, 2, 3, 4, 5]);
+          } else if (user.id === 7 && courseId === 1) {
+            setLessonProgress([1, 2, 3, 4, 5]);
+          } else {
+            setLessonProgress([]);
+          }
+        } catch (e) {
+          console.warn('Could not set lesson progress:', e);
         }
       }
 
       // Set initial active lesson (first lesson of first chapter)
       if (res.data.chapters?.length > 0 && res.data.chapters[0].lessons?.length > 0) {
         setActiveLesson(res.data.chapters[0].lessons[0]);
+      } else {
+        setActiveLesson(null);
       }
     } catch (err) {
-      console.warn('API error loading course structure, utilizing mock course layout.');
-      // Mock safety course with details
-      const mockCourse = {
-        id: 1,
-        name: 'Warehouse Safety & Accident Prevention (ความปลอดภัยคลังสินค้า)',
-        description: 'หลักสูตรพื้นฐานด้านความปลอดภัยคลังสินค้าและสวมใส่ชุดอุปกรณ์ป้องกันภัยส่วนบุคคล PPE',
-        duration_minutes: 120,
-        category: 'Safety',
-        instructor: 'นรินทร์ เก่งการ',
-        chapters: [
-          {
-            id: 1,
-            title: 'บทนำและกฎความปลอดภัยทั่วไป',
-            sort_order: 1,
-            lessons: [
-              { id: 1, title: 'ความปลอดภัยคือหัวใจหลัก', content_type: 'video', content_url: 'https://www.youtube.com/embed/5F7Jt5pUlyU', body_text: 'ยินดีต้อนรับเข้าสู่บทเรียนเรื่องมาตรการป้องกันอุบัติเหตุเบื้องต้นในคลังสินค้า', sort_order: 1 },
-              { id: 2, title: 'คู่มือมาตรการป้องกันอุบัติเหตุ PDF', content_type: 'document', content_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', body_text: 'โปรดศึกษาคู่มือความปลอดภัยตามมาตรฐานกรมสวัสดิการและคุ้มครองแรงงาน', sort_order: 2 }
-            ]
-          },
-          {
-            id: 2,
-            title: 'อุปกรณ์ป้องกันภัยส่วนบุคคล (PPE)',
-            sort_order: 2,
-            lessons: [
-              { id: 3, title: 'ประเภทและการใช้งานอุปกรณ์ PPE', content_type: 'video', content_url: 'https://www.youtube.com/embed/kR66aN42mCc', body_text: 'วิดีโอแนะนำการสวมใส่หน้ากาก หมวก รองเท้า และเสื้อสะท้อนแสงอย่างถูกต้อง', sort_order: 1 },
-              { id: 4, title: 'รูปภาพสรุปการแต่งกายที่ถูกต้อง', content_type: 'image', content_url: 'https://images.unsplash.com/photo-1581094288338-2314dddb7eed?w=600', body_text: 'ตัวอย่างพนักงานแต่งกายถูกต้องขณะทำงานในพื้นที่จัดเก็บสินค้าหนัก', sort_order: 2 }
-            ]
-          },
-          {
-            id: 3,
-            title: 'การทำข้อสอบประเมินความปลอดภัย',
-            sort_order: 3,
-            lessons: [
-              {
-                id: 5,
-                title: 'แบบทดสอบวัดระดับความรู้เรื่องความปลอดภัย',
-                content_type: 'quiz',
-                body_text: 'กรุณาทำข้อสอบผ่านอย่างน้อย 80% (4 ใน 5 ข้อ) เพื่อรับใบเซอร์รับรอง',
-                sort_order: 1,
-                questions: [
-                  {
-                    id: 1,
-                    question_type: 'multiple_choice',
-                    question_text: 'เมื่อเห็นสัญลักษณ์ป้ายเตือนพื้นสีเหลืองขอบดำ หมายถึงสัญลักษณ์ประเภทใด?',
-                    options: ['เตือนให้ระวัง (Warning)', 'ห้ามปฏิบัติ (Prohibition)', 'ป้ายแนะนำความปลอดภัย (Information)', 'บังคับให้ต้องปฏิบัติ (Mandatory)'],
-                    points: 1
-                  },
-                  {
-                    id: 2,
-                    question_type: 'true_false',
-                    question_text: 'รองเท้าผ้าใบธรรมดาสามารถสวมปฏิบัติงานในเขตคลังเก็บของหนักได้ หากระมัดระวังเป็นพิเศษ',
-                    options: ['ถูกต้อง', 'ไม่ถูกต้อง (ต้องใช้รองเท้าหัวเหล็กนิรภัยเท่านั้น)'],
-                    points: 1
-                  },
-                  {
-                    id: 3,
-                    question_type: 'checkbox',
-                    question_text: 'อุปกรณ์ชิ้นใดจัดอยู่ในประเภทเครื่องป้องกันหน้าและดวงตา? (เลือกได้มากกว่า 1 ข้อ)',
-                    options: ['แว่นตานิรภัย (Safety Glasses)', 'กระบังหน้ากันสะเก็ด (Face Shield)', 'หมวกนิรภัย (Hard Hat)', 'ที่อุดหู (Earplugs)'],
-                    points: 1
-                  },
-                  {
-                    id: 4,
-                    question_type: 'multiple_choice',
-                    question_text: 'หากเกิดเหตุเพลิงไหม้เบื้องต้น สิ่งแรกที่พนักงานควรทำคืออะไร?',
-                    options: ['ดึงอุปกรณ์สัญญาณแจ้งเหตุเพลิงไหม้ (Fire Alarm) หรือตะโกนเตือนภัย', 'วิ่งหนีออกจากคลังสินค้าไปที่ลานจอดรถทันที', 'โทรหาครอบครัวแจ้งสถานการณ์', 'พยายามขนสินค้าออกจากโกดัง'],
-                    points: 1
-                  },
-                  {
-                    id: 5,
-                    question_type: 'picture',
-                    question_text: 'จากภาพสัญลักษณ์ถังดับเพลิงสีแดงนี้ เหมาะสำหรับดับเพลิงประเภทใดเป็นหลัก?',
-                    media_url: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=300',
-                    options: ['Class A (ไม้, กระดาษ, พลาสติก)', 'Class D (โลหะติดไฟ)', 'Class K (น้ำมันทำอาหาร)', 'ประเภทแก๊สติดไฟเท่านั้น'],
-                    points: 1
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      };
-      setCourse(mockCourse);
+      console.error('API error loading course structure:', err);
       
-      // Default Active
-      setActiveLesson(mockCourse.chapters[0].lessons[0]);
+      const courseId = parseInt(id as string, 10);
       
-      if (user?.id === 6) {
-        setLessonProgress([1, 2, 3, 4, 5]);
-        setCertId('CERT-SAF-00612');
+      // ONLY fall back to mockCourse if this is the default course ID 1 (or NaN/initial mount)
+      if (courseId === 1 || isNaN(courseId)) {
+        // Mock safety course with details
+        const mockCourse = {
+          id: 1,
+          name: 'Warehouse Safety & Accident Prevention (ความปลอดภัยคลังสินค้า)',
+          description: 'หลักสูตรพื้นฐานด้านความปลอดภัยคลังสินค้าและสวมใส่ชุดอุปกรณ์ป้องกันภัยส่วนบุคคล PPE',
+          duration_minutes: 120,
+          category: 'Safety',
+          instructor: 'นรินทร์ เก่งการ',
+          chapters: [
+            {
+              id: 1,
+              title: 'บทนำและกฎความปลอดภัยทั่วไป',
+              sort_order: 1,
+              lessons: [
+                { id: 1, title: 'ความปลอดภัยคือหัวใจหลัก', content_type: 'video', content_url: 'https://www.youtube.com/embed/5F7Jt5pUlyU', body_text: 'ยินดีต้อนรับเข้าสู่บทเรียนเรื่องมาตรการป้องกันอุบัติเหตุเบื้องต้นในคลังสินค้า', sort_order: 1 },
+                { id: 2, title: 'คู่มือมาตรการป้องกันอุบัติเหตุ PDF', content_type: 'document', content_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', body_text: 'โปรดศึกษาคู่มือความปลอดภัยตามมาตรฐานกรมสวัสดิการและคุ้มครองแรงงาน', sort_order: 2 }
+              ]
+            },
+            {
+              id: 2,
+              title: 'อุปกรณ์ป้องกันภัยส่วนบุคคล (PPE)',
+              sort_order: 2,
+              lessons: [
+                { id: 3, title: 'ประเภทและการใช้งานอุปกรณ์ PPE', content_type: 'video', content_url: 'https://www.youtube.com/embed/kR66aN42mCc', body_text: 'วิดีโอแนะนำการสวมใส่หน้ากาก หมวก รองเท้า และเสื้อสะท้อนแสงอย่างถูกต้อง', sort_order: 1 },
+                { id: 4, title: 'รูปภาพสรุปการแต่งกายที่ถูกต้อง', content_type: 'image', content_url: 'https://images.unsplash.com/photo-1581094288338-2314dddb7eed?w=600', body_text: 'ตัวอย่างพนักงานแต่งกายถูกต้องขณะทำงานในพื้นที่จัดเก็บสินค้าหนัก', sort_order: 2 }
+              ]
+            },
+            {
+              id: 3,
+              title: 'การทำข้อสอบประเมินความปลอดภัย',
+              sort_order: 3,
+              lessons: [
+                {
+                  id: 5,
+                  title: 'แบบทดสอบวัดระดับความรู้เรื่องความปลอดภัย',
+                  content_type: 'quiz',
+                  body_text: 'กรุณาทำข้อสอบผ่านอย่างน้อย 80% (4 ใน 5 ข้อ) เพื่อรับใบเซอร์รับรอง',
+                  sort_order: 1,
+                  questions: [
+                    {
+                      id: 1,
+                      question_type: 'multiple_choice',
+                      question_text: 'เมื่อเห็นสัญลักษณ์ป้ายเตือนพื้นสีเหลืองขอบดำ หมายถึงสัญลักษณ์ประเภทใด?',
+                      options: ['เตือนให้ระวัง (Warning)', 'ห้ามปฏิบัติ (Prohibition)', 'ป้ายแนะนำความปลอดภัย (Information)', 'บังคับให้ต้องปฏิบัติ (Mandatory)'],
+                      points: 1
+                    },
+                    {
+                      id: 2,
+                      question_type: 'true_false',
+                      question_text: 'รองเท้าผ้าใบธรรมดาสามารถสวมปฏิบัติงานในเขตคลังเก็บของหนักได้ หากระมัดระวังเป็นพิเศษ',
+                      options: ['ถูกต้อง', 'ไม่ถูกต้อง (ต้องใช้รองเท้าหัวเหล็กนิรภัยเท่านั้น)'],
+                      points: 1
+                    },
+                    {
+                      id: 3,
+                      question_type: 'checkbox',
+                      question_text: 'อุปกรณ์ชิ้นใดจัดอยู่ในประเภทเครื่องป้องกันหน้าและดวงตา? (เลือกได้มากกว่า 1 ข้อ)',
+                      options: ['แว่นตานิรภัย (Safety Glasses)', 'กระบังหน้ากันสะเก็ด (Face Shield)', 'หมวกนิรภัย (Hard Hat)', 'ที่อุดหู (Earplugs)'],
+                      points: 1
+                    },
+                    {
+                      id: 4,
+                      question_type: 'multiple_choice',
+                      question_text: 'หากเกิดเหตุเพลิงไหม้เบื้องต้น สิ่งแรกที่พนักงานควรทำคืออะไร?',
+                      options: ['ดึงอุปกรณ์สัญญาณแจ้งเหตุเพลิงไหม้ (Fire Alarm) หรือตะโกนเตือนภัย', 'วิ่งหนีออกจากคลังสินค้าไปที่ลานจอดรถทันที', 'โทรหาครอบครัวแจ้งสถานการณ์', 'พยายามขนสินค้าออกจากโกดัง'],
+                      points: 1
+                    },
+                    {
+                      id: 5,
+                      question_type: 'picture',
+                      question_text: 'จากภาพสัญลักษณ์ถังดับเพลิงสีแดงนี้ เหมาะสำหรับดับเพลิงประเภทใดเป็นหลัก?',
+                      media_url: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=300',
+                      options: ['Class A (ไม้, กระดาษ, พลาสติก)', 'Class D (โลหะติดไฟ)', 'Class K (น้ำมันทำอาหาร)', 'ประเภทแก๊สติดไฟเท่านั้น'],
+                      points: 1
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        };
+        setCourse(mockCourse);
+        setActiveLesson(mockCourse.chapters[0].lessons[0]);
+        
+        if (user?.id === 6) {
+          setLessonProgress([1, 2, 3, 4, 5]);
+          setCertId('CERT-SAF-00612');
+        } else {
+          setLessonProgress([]);
+        }
       } else {
+        // For custom courses, set an error course structure to inform the user instead of displaying safety details
+        setCourse({
+          id: courseId,
+          name: 'ไม่พบเนื้อหาหลักสูตร (Course Not Found)',
+          description: 'ไม่สามารถโหลดวิชาเรียนนี้ได้จากเซิร์ฟเวอร์ กรุณาตรวจสอบว่ามีบทเรียนและเนื้อหาย่อยอยู่ครบในคลังบทเรียนหรือติดต่อผู้ควบคุมระบบ',
+          chapters: []
+        });
+        setActiveLesson(null);
         setLessonProgress([]);
       }
     } finally {

@@ -6,11 +6,15 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
     // Check if users table already exists to avoid re-initializing
     const [tables] = await connection.query("SHOW TABLES LIKE 'users'");
     if (Array.isArray(tables) && tables.length > 0) {
-      console.log('Tables already exist. Ensuring photo_url and cover_image are LONGTEXT.');
+      console.log('Tables already exist. Ensuring all required columns are LONGTEXT.');
       try {
         await connection.query('ALTER TABLE users MODIFY COLUMN photo_url LONGTEXT');
         await connection.query('ALTER TABLE courses MODIFY COLUMN cover_image LONGTEXT');
         await connection.query('ALTER TABLE lessons MODIFY COLUMN content_url LONGTEXT');
+        await connection.query('ALTER TABLE questions MODIFY COLUMN media_url LONGTEXT');
+        await connection.query('ALTER TABLE documents MODIFY COLUMN file_url LONGTEXT NOT NULL');
+        await connection.query('ALTER TABLE daily_tasks MODIFY COLUMN proof_file LONGTEXT');
+        console.log('Successfully verified/altered all required columns to LONGTEXT.');
       } catch (err: any) {
         console.warn('Failed to alter columns to LONGTEXT:', err.message);
       }

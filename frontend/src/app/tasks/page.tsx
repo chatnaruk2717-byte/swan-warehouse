@@ -57,7 +57,13 @@ export default function TasksPage() {
 
       if (user && user.role !== 'employee') {
         const empRes = await api.get('/api/employees');
-        setEmployees(empRes.data);
+        const filtered = empRes.data.filter((e: any) => 
+          (e.role === 'employee' || e.role === 'staff') && 
+          e.department !== 'Management' && 
+          e.position !== 'Management' && 
+          !(e.position || '').includes('Management')
+        );
+        setEmployees(filtered);
       }
     } catch (err) {
       console.warn('API error loading tasks, fallback to mock lists.');
@@ -74,7 +80,6 @@ export default function TasksPage() {
       } else {
         setTasks(mockTasksList);
         setEmployees([
-          { id: 1, employee_id: 'EMP001', name: 'สมชาย แสนดี', role: 'admin' },
           { id: 4, employee_id: 'EMP004', name: 'ประพันธ์ ยอดคุม', role: 'staff' },
           { id: 5, employee_id: 'EMP005', name: 'สมศรี มีคุม', role: 'staff' },
           { id: 6, employee_id: 'EMP006', name: 'สมปอง ลุยงาน', role: 'employee' },

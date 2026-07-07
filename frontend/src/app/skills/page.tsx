@@ -67,7 +67,7 @@ export default function SkillsPage() {
       setMatrix(matrixRes.data);
 
       const empRes = await api.get('/api/employees');
-      const filteredEmps = empRes.data.filter((e: any) => e.role === 'employee');
+      const filteredEmps = empRes.data.filter((e: any) => (e.role === 'employee' || e.role === 'staff') && e.department !== 'Management');
       setEmployees(filteredEmps);
 
       if (user && user.role === 'employee') {
@@ -90,13 +90,15 @@ export default function SkillsPage() {
       ];
       setSkills(mockSkillsList);
 
-      // Fallback mock employees
+      // Fallback mock employees including staff
       const mockEmpList = [
-        { id: 6, employee_id: 'EMP006', name: 'สมปอง ลุยงาน', department: 'Operations', position: 'Forklift Driver' },
-        { id: 7, employee_id: 'EMP007', name: 'อรอนงค์ แพ็กเก่ง', department: 'Operations', position: 'Packer' },
-        { id: 8, employee_id: 'EMP008', name: 'มานะ คัดของ', department: 'Operations', position: 'Picker' },
-        { id: 9, employee_id: 'EMP009', name: 'เกษม รับสินค้า', department: 'Operations', position: 'Receiving Clerk' },
-        { id: 10, employee_id: 'EMP010', name: 'จารุณี นับสต็อก', department: 'Operations', position: 'Inventory Counter' }
+        { id: 4, employee_id: 'EMP004', name: 'ประพันธ์ ยอดคุม', department: 'Operations', position: 'Zone A Supervisor', role: 'staff' },
+        { id: 5, employee_id: 'EMP005', name: 'สมศรี มีคุม', department: 'Operations', position: 'Zone B Supervisor', role: 'staff' },
+        { id: 6, employee_id: 'EMP006', name: 'สมปอง ลุยงาน', department: 'Operations', position: 'Forklift Driver', role: 'employee' },
+        { id: 7, employee_id: 'EMP007', name: 'อรอนงค์ แพ็กเก่ง', department: 'Operations', position: 'Packer', role: 'employee' },
+        { id: 8, employee_id: 'EMP008', name: 'มานะ คัดของ', department: 'Operations', position: 'Picker', role: 'employee' },
+        { id: 9, employee_id: 'EMP009', name: 'เกษม รับสินค้า', department: 'Operations', position: 'Receiving Clerk', role: 'employee' },
+        { id: 10, employee_id: 'EMP010', name: 'จารุณี นับสต็อก', department: 'Operations', position: 'Inventory Counter', role: 'employee' }
       ];
       setEmployees(mockEmpList);
 

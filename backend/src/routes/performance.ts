@@ -166,7 +166,7 @@ router.get('/employees', authenticateToken, requireRole(['admin', 'staff']), asy
     const settings = await getPerformanceSettings();
 
     if (getMockStatus()) {
-      const list = mockStore.mockUsers.filter(u => u.role === 'employee' || u.role === 'staff').map(user => {
+      const list = mockStore.mockUsers.filter(u => (u.role === 'employee' || u.role === 'staff') && u.department !== 'Management').map(user => {
         const completedTasks = mockStore.mockDailyTasks.filter(t => t.employee_id === user.id && t.status === 'completed').length;
         const completedCourses = mockStore.mockEnrollments.filter(e => e.employee_id === user.id && e.status === 'completed').length;
         const passedQuizzes = mockStore.mockQuizAttempts.filter(q => q.employee_id === user.id && q.passed).length;
@@ -213,7 +213,7 @@ router.get('/employees', authenticateToken, requireRole(['admin', 'staff']), asy
         (SELECT COUNT(*) FROM enrollments e WHERE e.employee_id = u.id AND e.status = 'completed') as completed_courses,
         (SELECT COUNT(*) FROM quiz_attempts q WHERE q.employee_id = u.id AND q.passed = TRUE) as passed_quizzes
       FROM users u
-      WHERE u.role IN ('employee', 'staff')
+      WHERE u.role IN ('employee', 'staff') AND u.department != 'Management'
       ORDER BY u.id ASC
     `);
 

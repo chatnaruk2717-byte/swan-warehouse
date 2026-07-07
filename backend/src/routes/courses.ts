@@ -175,6 +175,62 @@ router.get('/enrollments/employee/:id', authenticateToken, async (req: Authentic
 
 /**
  * @swagger
+ * /api/courses/enrollments/course/:id:
+ *   get:
+ *     summary: Retrieve enrollments/learners for a specific course
+ */
+router.get('/enrollments/course/:id', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
+  const courseId = parseInt(req.params.id, 10);
+  try {
+    if (getMockStatus()) {
+      throw new Error('MOCK_MODE');
+    }
+
+    const enrollQuery = `
+      SELECT 
+        e.id,
+        e.employee_id,
+        u.name as employee_name,
+        u.employee_id as emp_code,
+        u.department,
+        u.position,
+        e.progress_percentage,
+        e.status,
+        e.completed_at,
+        e.due_date
+      FROM enrollments e
+      JOIN users u ON e.employee_id = u.id
+      WHERE e.course_id = $1 AND (u.role = 'employee' OR u.role = 'staff') AND u.department != 'Management'
+      ORDER BY e.progress_percentage DESC, u.name ASC
+    `;
+    const result = await query(enrollQuery, [courseId]);
+    return res.json(result.rows);
+
+  } catch (err: any) {
+    // Mock Mode Fallback
+    const list = mockStore.mockEnrollments
+      .filter(e => e.course_id === courseId)
+      .map(e => {
+        const emp = mockStore.mockUsers.find(u => u.id === e.employee_id);
+        return {
+          id: e.id,
+          employee_id: e.employee_id,
+          employee_name: emp ? emp.name : 'Unknown',
+          emp_code: emp ? emp.employee_id : 'N/A',
+          department: emp ? emp.department : 'N/A',
+          position: emp ? emp.position : 'N/A',
+          progress_percentage: e.progress_percentage,
+          status: e.status,
+          completed_at: e.completed_at || null,
+          due_date: e.due_date || null
+        };
+      });
+    return res.json(list);
+  }
+});
+
+/**
+ * @swagger
  * /api/courses/enroll:
  *   post:
  *     summary: Assign a course to an employee

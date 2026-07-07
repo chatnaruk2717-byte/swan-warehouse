@@ -14,9 +14,11 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         await connection.query('ALTER TABLE questions MODIFY COLUMN media_url LONGTEXT');
         await connection.query('ALTER TABLE documents MODIFY COLUMN file_url LONGTEXT NOT NULL');
         await connection.query('ALTER TABLE daily_tasks MODIFY COLUMN proof_file LONGTEXT');
-        console.log('Successfully verified/altered all required columns to LONGTEXT.');
+        await connection.query('ALTER TABLE org_chart MODIFY COLUMN image_url LONGTEXT');
+        await connection.query('ALTER TABLE org_chart ADD COLUMN display_order INT DEFAULT 0').catch(() => {});
+        console.log('Successfully verified/altered all required columns to LONGTEXT and display_order.');
       } catch (err: any) {
-        console.warn('Failed to alter columns to LONGTEXT:', err.message);
+        console.warn('Failed to alter columns:', err.message);
       }
       return;
     }
@@ -253,7 +255,8 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         level_order INT NOT NULL,
         level VARCHAR(50),
         warehouse_area VARCHAR(100),
-        image_url TEXT,
+        image_url LONGTEXT,
+        display_order INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )`,
@@ -507,6 +510,14 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
 
     await connection.query('ALTER TABLE daily_tasks MODIFY COLUMN proof_file LONGTEXT').catch((e) => {
       console.warn('Altering daily_tasks.proof_file failed (might already be LONGTEXT):', e.message);
+    });
+
+    await connection.query('ALTER TABLE org_chart MODIFY COLUMN image_url LONGTEXT').catch((e) => {
+      console.warn('Altering org_chart.image_url failed (might already be LONGTEXT):', e.message);
+    });
+
+    await connection.query('ALTER TABLE org_chart ADD COLUMN display_order INT DEFAULT 0').catch((e) => {
+      console.warn('Altering org_chart.display_order failed:', e.message);
     });
 
     console.log('MySQL database initialized and seeded successfully.');

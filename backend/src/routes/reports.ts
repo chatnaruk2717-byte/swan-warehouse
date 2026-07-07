@@ -16,22 +16,40 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['admin', 'staff']
       throw new Error('MOCK_MODE');
     }
 
+    // Filter condition to exclude Management positions/departments
+    const nonMgmtCond = "role = 'employee' AND department != 'Management' AND position != 'Management' AND position NOT LIKE '%Management%'";
+
     // 1. Total Employees
-    const empCountRes = await query("SELECT COUNT(id) FROM users WHERE role = 'employee'");
+    const empCountRes = await query(`SELECT COUNT(id) FROM users WHERE ${nonMgmtCond}`);
     const totalEmployees = parseInt(empCountRes.rows[0].count, 10);
 
     // 2. Average Training Completion %
-    const avgProgressRes = await query("SELECT AVG(progress_percentage) FROM enrollments");
+    const avgProgressRes = await query(`
+      SELECT AVG(e.progress_percentage) 
+      FROM enrollments e 
+      JOIN users u ON e.employee_id = u.id 
+      WHERE u.${nonMgmtCond}
+    `);
     const avgTrainingCompletion = Math.round(parseFloat(avgProgressRes.rows[0].avg) || 0);
 
     // 3. Average Quiz Score
-    const avgScoreRes = await query("SELECT AVG(score) FROM quiz_attempts WHERE passed = TRUE");
+    const avgScoreRes = await query(`
+      SELECT AVG(qa.score) 
+      FROM quiz_attempts qa 
+      JOIN users u ON qa.employee_id = u.id 
+      WHERE qa.passed = TRUE AND u.${nonMgmtCond}
+    `);
     const avgQuizScore = Math.round(parseFloat(avgScoreRes.rows[0].avg) || 0);
 
     // 4. Overall Skill Coverage (percentage of qualified/expert skills out of total possible skills)
     const totalSkillsRes = await query("SELECT COUNT(id) FROM skills");
     const totalSkillsCount = parseInt(totalSkillsRes.rows[0].count, 10);
-    const qualifiedSkillsRes = await query("SELECT COUNT(id) FROM employee_skills WHERE status IN ('qualified', 'expert')");
+    const qualifiedSkillsRes = await query(`
+      SELECT COUNT(es.id) 
+      FROM employee_skills es 
+      JOIN users u ON es.employee_id = u.id 
+      WHERE es.status IN ('qualified', 'expert') AND u.${nonMgmtCond}
+    `);
     const qualifiedSkillsCount = parseInt(qualifiedSkillsRes.rows[0].count, 10);
     
     // Skill coverage = qualified skills / (total employees * total skills)
@@ -39,7 +57,12 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['admin', 'staff']
     const skillCoverage = possibleSkills > 0 ? Math.round((qualifiedSkillsCount / possibleSkills) * 100) : 0;
 
     // 5. Task completion stats
-    const tasksRes = await query("SELECT COUNT(id) as total, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed FROM daily_tasks");
+    const tasksRes = await query(`
+      SELECT COUNT(t.id) as total, SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) as completed 
+      FROM daily_tasks t 
+      JOIN users u ON t.employee_id = u.id 
+      WHERE u.${nonMgmtCond}
+    `);
     const totalTasks = parseInt(tasksRes.rows[0].total, 10) || 0;
     const completedTasks = parseInt(tasksRes.rows[0].completed, 10) || 0;
 
@@ -54,7 +77,7 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['admin', 'staff']
         t.status 
       FROM daily_tasks t
       JOIN users u ON t.employee_id = u.id
-      WHERE t.status != 'completed'
+      WHERE t.status != 'completed' AND u.${nonMgmtCond}
       ORDER BY t.due_date ASC
       LIMIT 10
     `;
@@ -73,7 +96,7 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['admin', 'staff']
       FROM enrollments e
       JOIN users u ON e.employee_id = u.id
       JOIN courses c ON e.course_id = c.id
-      WHERE e.status != 'completed'
+      WHERE e.status != 'completed' AND u.${nonMgmtCond}
       ORDER BY e.due_date ASC
       LIMIT 10
     `;
@@ -95,24 +118,32 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['admin', 'staff']
 
   } catch (err: any) {
     // Mock Mode Fallback
-    const employees = mockStore.mockUsers.filter(u => u.role === 'employee');
+    const employees = mockStore.mockUsers.filter(u => 
+      u.role === 'employee' && 
+      u.department !== 'Management' && 
+      u.position !== 'Management' && 
+      !u.position.includes('Management')
+    );
     const totalEmployees = employees.length;
+    const empIds = employees.map(u => u.id);
 
-    const enrollments = mockStore.mockEnrollments;
+    const enrollments = mockStore.mockEnrollments.filter(e => empIds.includes(e.employee_id));
     const totalProgress = enrollments.reduce((sum, e) => sum + e.progress_percentage, 0);
     const avgTrainingCompletion = enrollments.length > 0 ? Math.round(totalProgress / enrollments.length) : 0;
 
-    const quizAttempts = mockStore.mockQuizAttempts;
+    const quizAttempts = mockStore.mockQuizAttempts.filter(qa => empIds.includes(qa.employee_id));
     const passedAttempts = quizAttempts.filter(q => q.passed);
     const totalScore = passedAttempts.reduce((sum, q) => sum + q.score, 0);
     const avgQuizScore = passedAttempts.length > 0 ? Math.round(totalScore / passedAttempts.length) : 0;
 
     const totalSkillsCount = mockStore.mockSkills.length;
-    const qualifiedSkillsCount = mockStore.mockEmployeeSkills.filter(es => es.status === 'qualified' || es.status === 'expert').length;
+    const qualifiedSkillsCount = mockStore.mockEmployeeSkills.filter(es => 
+      empIds.includes(es.employee_id) && (es.status === 'qualified' || es.status === 'expert')
+    ).length;
     const possibleSkills = totalEmployees * totalSkillsCount;
     const skillCoverage = possibleSkills > 0 ? Math.round((qualifiedSkillsCount / possibleSkills) * 100) : 0;
 
-    const dailyTasks = mockStore.mockDailyTasks;
+    const dailyTasks = mockStore.mockDailyTasks.filter(t => empIds.includes(t.employee_id));
     const totalTasks = dailyTasks.length;
     const completedTasks = dailyTasks.filter(t => t.status === 'completed').length;
 
@@ -180,29 +211,45 @@ router.get('/charts', authenticateToken, async (req: AuthenticatedRequest, res: 
       throw new Error('MOCK_MODE');
     }
 
-    // 1. Department comparison (Avg Score vs Attendance Rate)
+    const nonMgmtCond = "role = 'employee' AND department != 'Management' AND position != 'Management' AND position NOT LIKE '%Management%'";
+
+    // 1. Department comparison
     const deptDataQuery = `
       SELECT 
         u.department, 
-        ROUND(AVG(e.progress_percentage), 1) as avg_progress,
+        ROUND(AVG(COALESCE(e.progress_percentage, 0)), 1) as avg_progress,
         COUNT(DISTINCT u.id) as employee_count
       FROM users u
       LEFT JOIN enrollments e ON u.id = e.employee_id
-      WHERE u.role = 'employee'
+      WHERE u.${nonMgmtCond}
       GROUP BY u.department
     `;
     const deptResult = await query(deptDataQuery);
 
-    // 2. Skill status counts (Need Training, Training, Qualified, Expert)
+    // 2. Skill status counts
     const skillStatusQuery = `
-      SELECT status, COUNT(*) as count 
-      FROM employee_skills 
-      GROUP BY status
+      SELECT es.status, COUNT(*) as count 
+      FROM employee_skills es
+      JOIN users u ON es.employee_id = u.id
+      WHERE u.${nonMgmtCond}
+      GROUP BY es.status
     `;
     const skillStatusResult = await query(skillStatusQuery);
 
-    // 3. Monthly training completion rates (Trends over last 6 months)
-    // Return static-formatted trends since timestamp manipulation depends on database current date
+    // 3. Position comparison
+    const positionDataQuery = `
+      SELECT 
+        u.position, 
+        ROUND(AVG(COALESCE(e.progress_percentage, 0)), 1) as avg_progress,
+        COUNT(DISTINCT u.id) as employee_count
+      FROM users u
+      LEFT JOIN enrollments e ON u.id = e.employee_id
+      WHERE u.${nonMgmtCond}
+      GROUP BY u.position
+    `;
+    const positionResult = await query(positionDataQuery);
+
+    // 4. Monthly training completion rates (Trends over last 6 months)
     const monthlyTrends = [
       { month: 'ม.ค.', completed: 40, enrolled: 80 },
       { month: 'ก.พ.', completed: 50, enrolled: 95 },
@@ -215,15 +262,24 @@ router.get('/charts', authenticateToken, async (req: AuthenticatedRequest, res: 
     return res.json({
       departmentStats: deptResult.rows,
       skillStatusDistribution: skillStatusResult.rows,
+      positionStats: positionResult.rows,
       monthlyTrends
     });
 
   } catch (err: any) {
     // Mock Mode Fallback
     // 1. Department stats
+    const employees = mockStore.mockUsers.filter(u => 
+      u.role === 'employee' && 
+      u.department !== 'Management' && 
+      u.position !== 'Management' && 
+      !u.position.includes('Management')
+    );
+    const empIds = employees.map(u => u.id);
+
     const departments = ['Operations', 'Receiving', 'Packing', 'Picking', 'Inventory'];
     const departmentStats = departments.map(dept => {
-      const deptEmployees = mockStore.mockUsers.filter(u => u.role === 'employee' && u.department === dept);
+      const deptEmployees = employees.filter(u => u.department === dept);
       const deptEmpIds = deptEmployees.map(u => u.id);
       
       const deptEnrollments = mockStore.mockEnrollments.filter(e => deptEmpIds.includes(e.employee_id));
@@ -239,15 +295,24 @@ router.get('/charts', authenticateToken, async (req: AuthenticatedRequest, res: 
 
     // 2. Skill status distribution
     const statusCounts = { need_training: 0, training: 0, qualified: 0, expert: 0 };
-    mockStore.mockEmployeeSkills.forEach(es => {
-      statusCounts[es.status]++;
-    });
+    mockStore.mockEmployeeSkills
+      .filter(es => empIds.includes(es.employee_id))
+      .forEach(es => {
+        statusCounts[es.status]++;
+      });
     const skillStatusDistribution = Object.entries(statusCounts).map(([status, count]) => ({
       status,
       count
     }));
 
-    // 3. Monthly Trends
+    // 3. Position stats (Mock)
+    const positionStats = [
+      { position: 'เจ้าหน้าที่', avg_progress: 85.0, employee_count: 3 },
+      { position: 'พนักงานขับรถยก', avg_progress: 72.5, employee_count: 5 },
+      { position: 'พนักงานหน้าลิฟท์', avg_progress: 90.0, employee_count: 2 }
+    ];
+
+    // 4. Monthly Trends
     const monthlyTrends = [
       { month: 'ม.ค.', completed: 35, enrolled: 75 },
       { month: 'ก.พ.', completed: 45, enrolled: 90 },
@@ -260,6 +325,7 @@ router.get('/charts', authenticateToken, async (req: AuthenticatedRequest, res: 
     return res.json({
       departmentStats,
       skillStatusDistribution,
+      positionStats,
       monthlyTrends
     });
   }

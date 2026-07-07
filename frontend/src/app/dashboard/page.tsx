@@ -90,6 +90,11 @@ export default function DashboardPage() {
               { status: 'qualified', count: 6 },
               { status: 'expert', count: 3 }
             ],
+            positionStats: [
+              { position: 'เจ้าหน้าที่', avg_progress: 85.0, employee_count: 3 },
+              { position: 'พนักงานขับรถยก', avg_progress: 72.5, employee_count: 5 },
+              { position: 'พนักงานหน้าลิฟท์', avg_progress: 90.0, employee_count: 2 }
+            ],
             monthlyTrends: [
               { month: 'ม.ค.', completed: 35, enrolled: 75 },
               { month: 'ก.พ.', completed: 45, enrolled: 90 },
@@ -313,10 +318,10 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* 3. Department Comparison (Bar Chart) */}
-          <GlassCard className="lg:col-span-2 flex flex-col h-[360px]" delay={0.35}>
+          <GlassCard className="flex flex-col h-[360px]" delay={0.35}>
             <div className="mb-6">
               <h4 className="font-bold text-sm text-slate-800 dark:text-white">ความสำเร็จการอบรมแยกตามแผนก (Department Progress)</h4>
-              <p className="text-xs text-slate-400 mt-0.5">คะแนนความคืบหน้าการฝึกอบรมเฉลี่ยเป็นเปอร์เซ็นต์แยกรายแผนกคลังสินค้า</p>
+              <p className="text-xs text-slate-400 mt-0.5">ความก้าวหน้าการอบรมเฉลี่ยแยกตามแผนก</p>
             </div>
             <div className="flex-1 w-full text-xs">
               <ResponsiveContainer width="100%" height="90%">
@@ -328,6 +333,47 @@ export default function DashboardPage() {
                   <Bar dataKey="avg_progress" name="ความคืบหน้าอบรมเฉลี่ย (%)" radius={[8, 8, 0, 0]}>
                     {chartData?.departmentStats?.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#1E3A8A' : '#F97316'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </GlassCard>
+
+          {/* 3.5. Position Comparison (Bar Chart) - NEW */}
+          <GlassCard className="flex flex-col h-[360px]" delay={0.38}>
+            <div className="mb-6">
+              <h4 className="font-bold text-sm text-slate-800 dark:text-white">ความสำเร็จการอบรมแยกตามตำแหน่ง (Position Progress)</h4>
+              <p className="text-xs text-slate-400 mt-0.5">ความก้าวหน้าการอบรมเฉลี่ยของกลุ่มพนักงานปฏิบัติงานหลัก</p>
+            </div>
+            <div className="flex-1 w-full text-xs">
+              <ResponsiveContainer width="100%" height="90%">
+                <BarChart data={chartData?.positionStats} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" className="dark:stroke-slate-800" />
+                  <XAxis 
+                    dataKey="position" 
+                    tickLine={false} 
+                    stroke="#94A3B8" 
+                    tickFormatter={(tick) => {
+                      const thaiName: Record<string, string> = {
+                        'Forklift Driver': 'พนักงานขับรถยก',
+                        'Lift Operator': 'พนักงานหน้าลิฟท์',
+                        'Elevator Operator': 'พนักงานหน้าลิฟท์',
+                        'Officer': 'เจ้าหน้าที่',
+                        'Staff': 'เจ้าหน้าที่',
+                        'Packer': 'พนักงานแพ็กของ',
+                        'Picker': 'พนักงานคัดของ',
+                        'Receiving Clerk': 'พนักงานรับสินค้า',
+                        'Inventory Counter': 'พนักงานนับสต็อก'
+                      };
+                      return thaiName[tick] || tick;
+                    }}
+                  />
+                  <YAxis axisLine={false} tickLine={false} stroke="#94A3B8" />
+                  <Tooltip contentStyle={{ borderRadius: '12px' }} />
+                  <Bar dataKey="avg_progress" name="ความคืบหน้าอบรมเฉลี่ย (%)" radius={[8, 8, 0, 0]}>
+                    {chartData?.positionStats?.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#10B981' : '#F59E0B'} />
                     ))}
                   </Bar>
                 </BarChart>

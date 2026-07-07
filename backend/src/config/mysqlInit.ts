@@ -149,7 +149,7 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         lesson_id INT NOT NULL,
         question_type VARCHAR(20) NOT NULL DEFAULT 'multiple_choice',
         question_text TEXT NOT NULL,
-        media_url VARCHAR(255),
+        media_url LONGTEXT,
         options JSON NOT NULL,
         correct_answers JSON NOT NULL,
         points INT DEFAULT 1,
@@ -492,6 +492,10 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
       (9, 'สมศักดิ์ รักชาติ', 'พนักงานยิง Barcode', 5, 'L5', 'Zone B', ''),
       (10, 'อรุณ ดีเลิศ', 'พนักงานจัดเตรียมสินค้า', 5, 'L5', 'Zone B', '')
     `);
+
+    await connection.query('ALTER TABLE questions MODIFY COLUMN media_url LONGTEXT').catch((e) => {
+      console.warn('Altering questions.media_url failed (might already be LONGTEXT):', e.message);
+    });
 
     console.log('MySQL database initialized and seeded successfully.');
 

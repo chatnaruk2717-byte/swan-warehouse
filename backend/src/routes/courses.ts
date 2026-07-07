@@ -59,7 +59,18 @@ router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
             ? 'id, question_type, question_text, media_url, options, correct_answers, points'
             : 'id, question_type, question_text, media_url, options, points';
           const questionsResult = await query(`SELECT ${selectFields} FROM questions WHERE lesson_id = $1`, [lesson.id]);
-          lesson.questions = questionsResult.rows;
+          
+          // Parse JSON columns if returned as strings
+          lesson.questions = questionsResult.rows.map((q: any) => {
+            const parsedQ = { ...q };
+            if (typeof parsedQ.options === 'string') {
+              try { parsedQ.options = JSON.parse(parsedQ.options); } catch (e) { parsedQ.options = []; }
+            }
+            if (typeof parsedQ.correct_answers === 'string') {
+              try { parsedQ.correct_answers = JSON.parse(parsedQ.correct_answers); } catch (e) { parsedQ.correct_answers = []; }
+            }
+            return parsedQ;
+          });
         }
       }
       chapter.lessons = lessons;
@@ -478,9 +489,18 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
       totalPoints += q.points;
       const submitted = answers[q.id];
 
-      if (submitted && Array.isArray(submitted)) {
+      let correct = q.correct_answers;
+      if (typeof correct === 'string') {
+        try {
+          correct = JSON.parse(correct);
+        } catch (e) {
+          console.error('Failed to parse correct_answers JSON:', correct, e);
+          correct = [];
+        }
+      }
+
+      if (submitted && Array.isArray(submitted) && Array.isArray(correct)) {
         // Compare arrays
-        const correct = q.correct_answers; // array of indices
         const isCorrect = correct.length === submitted.length && 
                           correct.every((val: number) => submitted.includes(val));
         if (isCorrect) {
@@ -838,7 +858,7 @@ router.post('/chapters/:id/lessons', authenticateToken, requireRole(['admin', 's
  */
 router.post('/lessons/:id/questions', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
   const lessonId = parseInt(req.params.id, 10);
-  const { question_text, question_type, options, correct_answers, points } = req.body;
+  const { question_text, question_type, media_url, options, correct_answers, points } = req.body;
 
   if (!question_text || !options || !correct_answers) {
     return res.status(400).json({ message: 'question_text, options, and correct_answers are required.' });
@@ -850,10 +870,10 @@ router.post('/lessons/:id/questions', authenticateToken, requireRole(['admin', '
     }
 
     const result = await query(
-      `INSERT INTO questions (lesson_id, question_text, question_type, options, correct_answers, points) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
+      `INSERT INTO questions (lesson_id, question_text, question_type, media_url, options, correct_answers, points) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) 
        RETURNING *`,
-      [lessonId, question_text, question_type || 'multiple_choice', JSON.stringify(options), JSON.stringify(correct_answers), parseInt(points, 10) || 1]
+      [lessonId, question_text, question_type || 'multiple_choice', media_url || null, JSON.stringify(options), JSON.stringify(correct_answers), parseInt(points, 10) || 1]
     );
     return res.status(201).json(result.rows[0]);
 
@@ -864,6 +884,7 @@ router.post('/lessons/:id/questions', authenticateToken, requireRole(['admin', '
       lesson_id: lessonId,
       question_type: (question_type || 'multiple_choice') as any,
       question_text,
+      media_url: media_url || null,
       options,
       correct_answers,
       points: parseInt(points, 10) || 1

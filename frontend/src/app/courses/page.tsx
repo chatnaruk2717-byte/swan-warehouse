@@ -73,6 +73,7 @@ export default function CoursesPage() {
   });
   const [newQuestionForm, setNewQuestionForm] = useState({
     question_text: '',
+    media_url: '',
     option1: '',
     option2: '',
     option3: '',
@@ -302,6 +303,7 @@ export default function CoursesPage() {
     const payload = {
       question_text: newQuestionForm.question_text,
       question_type: 'multiple_choice',
+      media_url: newQuestionForm.media_url || null,
       options,
       correct_answers: [correctIndex],
       points: 1
@@ -318,13 +320,14 @@ export default function CoursesPage() {
         return les;
       }));
       alert('บันทึกคำถามข้อสอบเสร็จสิ้น');
-      setNewQuestionForm({ question_text: '', option1: '', option2: '', option3: '', option4: '', correct_index: '0' });
+      setNewQuestionForm({ question_text: '', media_url: '', option1: '', option2: '', option3: '', option4: '', correct_index: '0' });
     } catch {
       const mockQ = {
         id: Date.now(),
         lesson_id: activeLessonId,
         question_type: 'multiple_choice',
         question_text: newQuestionForm.question_text,
+        media_url: newQuestionForm.media_url || null,
         options,
         correct_answers: [correctIndex],
         points: 1
@@ -339,7 +342,7 @@ export default function CoursesPage() {
         return les;
       }));
       alert('บันทึกคำถามข้อสอบเสร็จสิ้น (Mock)');
-      setNewQuestionForm({ question_text: '', option1: '', option2: '', option3: '', option4: '', correct_index: '0' });
+      setNewQuestionForm({ question_text: '', media_url: '', option1: '', option2: '', option3: '', option4: '', correct_index: '0' });
     }
   };
 
@@ -1269,6 +1272,9 @@ export default function CoursesPage() {
                         <div key={q.id || idx} className="p-3 bg-white dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-xl flex items-start justify-between gap-4 text-xs">
                           <div className="min-w-0">
                             <p className="font-bold text-slate-800 dark:text-white truncate">ข้อ {idx + 1}: {q.question_text}</p>
+                            {q.media_url && (
+                              <img src={q.media_url} alt="Question attach" className="w-12 h-12 rounded-lg object-cover border border-slate-200 dark:border-white/10 mt-1.5" />
+                            )}
                             <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1.5 text-[10px] text-slate-400 font-medium">
                               {q.options?.map((opt: string, oIdx: number) => {
                                 const isCorrect = q.correct_answers?.includes(oIdx);
@@ -1310,6 +1316,42 @@ export default function CoursesPage() {
                           className="w-full glass-input text-[11px] py-1.5 px-2.5" 
                           placeholder="ข้อใดคือข้อควรปฏิบัติในการเข้าคลังสินค้า..." 
                         />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] font-bold text-slate-400">รูปภาพประกอบคำถาม (ถ้ามี - อัปโหลดจากเครื่อง)</label>
+                        <div className="flex items-center gap-3">
+                          <label className="cursor-pointer px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 transition-all text-[9px] font-bold flex items-center gap-1.5 bg-white dark:bg-white/5 text-slate-700 dark:text-slate-300">
+                            <Upload size={12} className="text-warehouse-orange" />
+                            <span>{newQuestionForm.media_url ? 'เปลี่ยนรูปภาพประกอบ' : 'เลือกรูปภาพประกอบ'}</span>
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              className="hidden" 
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    setNewQuestionForm({ ...newQuestionForm, media_url: reader.result as string });
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                          </label>
+                          {newQuestionForm.media_url && (
+                            <div className="flex items-center gap-2">
+                              <img src={newQuestionForm.media_url} alt="Question preview" className="w-8 h-8 rounded-lg object-cover border border-slate-200 dark:border-white/10" />
+                              <button 
+                                type="button" 
+                                onClick={() => setNewQuestionForm({ ...newQuestionForm, media_url: '' })}
+                                className="text-rose-500 hover:text-rose-600 text-[9px] font-bold"
+                              >
+                                ลบรูปภาพ
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <input 

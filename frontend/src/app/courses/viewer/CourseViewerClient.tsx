@@ -625,21 +625,21 @@ export default function CourseViewerClient() {
                                 <img src={q.media_url} alt="Question media" className="w-full max-w-xs rounded-xl object-cover border border-slate-200/50 dark:border-white/5" />
                               )}
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                                {q.options.map((opt: string, optIdx: number) => {
-                                  const isSelected = answers.includes(optIdx);
+                                {(q.shuffledOptions || q.options.map((opt: string, idx: number) => ({ text: opt, originalIndex: idx }))).map((opt: any) => {
+                                  const isSelected = answers.includes(opt.originalIndex);
 
                                   return (
                                     <button
-                                      key={optIdx}
+                                      key={opt.originalIndex}
                                       type="button"
-                                      onClick={() => handleQuizSelection(q.id, optIdx, isCheckbox)}
+                                      onClick={() => handleQuizSelection(q.id, opt.originalIndex, isCheckbox)}
                                       className={`w-full text-left p-3.5 rounded-xl border transition-all ${
                                         isSelected 
                                           ? 'border-warehouse-orange bg-warehouse-orange/5 text-warehouse-orange font-semibold' 
                                           : 'border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/5 hover:border-slate-300 dark:hover:border-white/10'
                                       }`}
                                     >
-                                      <span>{opt}</span>
+                                      <span>{opt.text}</span>
                                     </button>
                                   );
                                 })}

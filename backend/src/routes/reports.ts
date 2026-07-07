@@ -20,12 +20,12 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['admin', 'staff']
     const nonMgmtCond = "role = 'employee' AND department != 'Management' AND position != 'Management' AND position NOT LIKE '%Management%'";
 
     // 1. Total Employees
-    const empCountRes = await query(`SELECT COUNT(id) FROM users WHERE ${nonMgmtCond}`);
+    const empCountRes = await query(`SELECT COUNT(id) AS count FROM users WHERE ${nonMgmtCond}`);
     const totalEmployees = parseInt(empCountRes.rows[0].count, 10);
 
     // 2. Average Training Completion %
     const avgProgressRes = await query(`
-      SELECT AVG(e.progress_percentage) 
+      SELECT AVG(e.progress_percentage) AS avg
       FROM enrollments e 
       JOIN users u ON e.employee_id = u.id 
       WHERE u.${nonMgmtCond}
@@ -34,7 +34,7 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['admin', 'staff']
 
     // 3. Average Quiz Score
     const avgScoreRes = await query(`
-      SELECT AVG(qa.score) 
+      SELECT AVG(qa.score) AS avg
       FROM quiz_attempts qa 
       JOIN users u ON qa.employee_id = u.id 
       WHERE qa.passed = TRUE AND u.${nonMgmtCond}
@@ -42,10 +42,10 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['admin', 'staff']
     const avgQuizScore = Math.round(parseFloat(avgScoreRes.rows[0].avg) || 0);
 
     // 4. Overall Skill Coverage (percentage of qualified/expert skills out of total possible skills)
-    const totalSkillsRes = await query("SELECT COUNT(id) FROM skills");
+    const totalSkillsRes = await query("SELECT COUNT(id) AS count FROM skills");
     const totalSkillsCount = parseInt(totalSkillsRes.rows[0].count, 10);
     const qualifiedSkillsRes = await query(`
-      SELECT COUNT(es.id) 
+      SELECT COUNT(es.id) AS count
       FROM employee_skills es 
       JOIN users u ON es.employee_id = u.id 
       WHERE es.status IN ('qualified', 'expert') AND u.${nonMgmtCond}

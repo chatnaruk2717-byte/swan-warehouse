@@ -16,8 +16,8 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['admin', 'staff']
       throw new Error('MOCK_MODE');
     }
 
-    // Filter condition to exclude Management positions/departments and mock seeded employees
-    const nonMgmtCond = "(role = 'employee' OR role = 'staff') AND department != 'Management' AND position != 'Management' AND position NOT LIKE '%Management%' AND employee_id NOT IN ('EMP003', 'EMP004', 'EMP005', 'EMP006', 'EMP007', 'EMP008', 'EMP009', 'EMP010')";
+    // Filter condition to exclude Management positions/departments, including employee and staff roles
+    const nonMgmtCond = "(role = 'employee' OR role = 'staff') AND department != 'Management' AND position != 'Management' AND position NOT LIKE '%Management%'";
 
     // 1. Total Employees
     const empCountRes = await query(`SELECT COUNT(id) AS count FROM users WHERE ${nonMgmtCond}`);
@@ -122,8 +122,7 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['admin', 'staff']
       (u.role === 'employee' || u.role === 'staff') && 
       u.department !== 'Management' && 
       u.position !== 'Management' && 
-      !u.position.includes('Management') &&
-      !['EMP003', 'EMP004', 'EMP005', 'EMP006', 'EMP007', 'EMP008', 'EMP009', 'EMP010'].includes(u.employee_id)
+      !u.position.includes('Management')
     );
     const totalEmployees = employees.length;
     const empIds = employees.map(u => u.id);
@@ -212,7 +211,7 @@ router.get('/charts', authenticateToken, async (req: AuthenticatedRequest, res: 
       throw new Error('MOCK_MODE');
     }
 
-    const nonMgmtCond = "(role = 'employee' OR role = 'staff') AND department != 'Management' AND position != 'Management' AND position NOT LIKE '%Management%' AND employee_id NOT IN ('EMP003', 'EMP004', 'EMP005', 'EMP006', 'EMP007', 'EMP008', 'EMP009', 'EMP010')";
+    const nonMgmtCond = "(role = 'employee' OR role = 'staff') AND department != 'Management' AND position != 'Management' AND position NOT LIKE '%Management%'";
 
     // 1. Department comparison
     const deptDataQuery = `

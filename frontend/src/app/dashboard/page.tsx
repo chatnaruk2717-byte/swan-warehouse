@@ -212,7 +212,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">พนักงานทั้งหมด</p>
-              <h3 className="text-2xl font-black font-sans text-slate-800 dark:text-white mt-0.5">{stats?.totalEmployees || 128} คน</h3>
+              <h3 className="text-2xl font-black font-sans text-slate-800 dark:text-white mt-0.5">{stats?.totalEmployees ?? 0} คน</h3>
               <span className="text-[9px] text-emerald-500 font-bold flex items-center gap-0.5 mt-1">
                 <span>↑ 12 คน</span> <span className="text-slate-400 dark:text-slate-500 font-medium">จากเดือนที่แล้ว</span>
               </span>
@@ -225,7 +225,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">อบรมที่เข้าร่วมทั้งหมด</p>
-              <h3 className="text-2xl font-black font-sans text-slate-800 dark:text-white mt-0.5">{stats?.avgTrainingCompletion || 76}%</h3>
+              <h3 className="text-2xl font-black font-sans text-slate-800 dark:text-white mt-0.5">{stats?.avgTrainingCompletion ?? 0}%</h3>
               <span className="text-[9px] text-emerald-500 font-bold flex items-center gap-0.5 mt-1">
                 <span>↑ 8%</span> <span className="text-slate-400 dark:text-slate-500 font-medium">จากเดือนที่แล้ว</span>
               </span>
@@ -238,7 +238,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">ทักษะเฉลี่ยองค์กร</p>
-              <h3 className="text-2xl font-black font-sans text-slate-800 dark:text-white mt-0.5">{stats?.avgQuizScore || 72}%</h3>
+              <h3 className="text-2xl font-black font-sans text-slate-800 dark:text-white mt-0.5">{stats?.avgQuizScore ?? 0}%</h3>
               <span className="text-[9px] text-emerald-500 font-bold flex items-center gap-0.5 mt-1">
                 <span>↑ 5%</span> <span className="text-slate-400 dark:text-slate-500 font-medium">จากเดือนที่แล้ว</span>
               </span>
@@ -251,7 +251,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">อัตราผ่านการอบรม Skill</p>
-              <h3 className="text-2xl font-black font-sans text-slate-800 dark:text-white mt-0.5">{stats?.skillCoverage || 89}%</h3>
+              <h3 className="text-2xl font-black font-sans text-slate-800 dark:text-white mt-0.5">{stats?.skillCoverage ?? 0}%</h3>
               <span className="text-[9px] text-emerald-500 font-bold flex items-center gap-0.5 mt-1">
                 <span>↑ 10%</span> <span className="text-slate-400 dark:text-slate-500 font-medium">จากเดือนที่แล้ว</span>
               </span>

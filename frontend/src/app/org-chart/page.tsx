@@ -87,11 +87,13 @@ export default function OrgChartPage() {
         const maxDisplayOrder = targetLevelItems.reduce((max, item) => (item.display_order || 0) > max ? (item.display_order || 0) : max, 0);
 
         const levelLabels: { [key: number]: string } = {
-          1: 'Manager',
-          2: 'Assistant Manager',
-          3: 'Department Head',
-          4: 'Supervisor',
-          5: 'Staff'
+          1: 'L1',
+          2: 'L2',
+          3: 'L3',
+          4: 'L4',
+          5: 'L5',
+          6: 'L6',
+          7: 'L7'
         };
 
         await api.put(`/api/org-chart/${draggedItem.id}`, {
@@ -126,11 +128,13 @@ export default function OrgChartPage() {
       const maxDisplayOrder = targetLevelItems.reduce((max, item) => (item.display_order || 0) > max ? (item.display_order || 0) : max, 0);
 
       const levelLabels: { [key: number]: string } = {
-        1: 'Manager',
-        2: 'Assistant Manager',
-        3: 'Department Head',
-        4: 'Supervisor',
-        5: 'Staff'
+        1: 'L1',
+        2: 'L2',
+        3: 'L3',
+        4: 'L4',
+        5: 'L5',
+        6: 'L6',
+        7: 'L7'
       };
 
       await api.put(`/api/org-chart/${draggedItem.id}`, {
@@ -269,11 +273,13 @@ export default function OrgChartPage() {
   };
 
   // Group items by level
-  const managers = orgItems.filter(item => item.level_order === 1);
-  const assistants = orgItems.filter(item => item.level_order === 2);
-  const departmentHeads = orgItems.filter(item => item.level_order === 3);
-  const supervisors = orgItems.filter(item => item.level_order === 4);
-  const staffMembers = orgItems.filter(item => item.level_order === 5);
+  const deptManagers = orgItems.filter(item => item.level_order === 1); // 1. ผู้จัดการฝ่าย
+  const sectManagers = orgItems.filter(item => item.level_order === 2); // 2. ผู้จัดการแผนก
+  const departmentHeads = orgItems.filter(item => item.level_order === 3); // 3. หัวหน้าแผนก
+  const supervisors = orgItems.filter(item => item.level_order === 4); // 4. หัวหน้างาน
+  const officers = orgItems.filter(item => item.level_order === 5); // 5. เจ้าหน้าที่
+  const forkliftDrivers = orgItems.filter(item => item.level_order === 6); // 6. พนักงานขับรถยก
+  const liftOperators = orgItems.filter(item => item.level_order === 7); // 7. พนักงานหน้าลิฟท์
 
   const isAdmin = user?.role === 'admin';
 
@@ -373,8 +379,8 @@ export default function OrgChartPage() {
       ) : (
         <div className="relative flex flex-col items-center gap-8 py-6 overflow-x-auto min-w-full">
           
-          {/* Level 1: Managers */}
-          {(managers.length > 0 || isAdmin) && (
+          {/* Level 1: ผู้จัดการฝ่าย */}
+          {(deptManagers.length > 0 || isAdmin) && (
             <div 
               onDragOver={handleDragOver}
               onDrop={(e) => handleDropToLevel(e, 1)}
@@ -382,24 +388,24 @@ export default function OrgChartPage() {
                 draggedItem && draggedItem.level_order !== 1 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
               }`}
             >
-              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-2 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">1. ผู้จัดการแผนก (Manager)</span>}
-              {managers.length > 0 ? (
+              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-2 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">1. ผู้จัดการฝ่าย (Department Manager)</span>}
+              {deptManagers.length > 0 ? (
                 <div className="flex flex-wrap justify-center gap-6">
-                  {managers.map(item => renderMemberCard(item))}
+                  {deptManagers.map(item => renderMemberCard(item))}
                 </div>
               ) : (
                 <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-3.5 rounded-2xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
-                  ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "ผู้จัดการแผนก"
+                  ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "ผู้จัดการฝ่าย"
                 </div>
               )}
-              {(assistants.length > 0 || departmentHeads.length > 0 || supervisors.length > 0 || staffMembers.length > 0 || isAdmin) && (
+              {(sectManagers.length > 0 || departmentHeads.length > 0 || supervisors.length > 0 || officers.length > 0 || forkliftDrivers.length > 0 || liftOperators.length > 0 || isAdmin) && (
                 <div className="w-0.5 h-8 bg-slate-300 dark:bg-white/10 mt-4"></div>
               )}
             </div>
           )}
 
-          {/* Level 2: Assistant Managers */}
-          {(assistants.length > 0 || isAdmin) && (
+          {/* Level 2: ผู้จัดการแผนก */}
+          {(sectManagers.length > 0 || isAdmin) && (
             <div 
               onDragOver={handleDragOver}
               onDrop={(e) => handleDropToLevel(e, 2)}
@@ -407,23 +413,23 @@ export default function OrgChartPage() {
                 draggedItem && draggedItem.level_order !== 2 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
               }`}
             >
-              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-2 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">2. ผู้ช่วยผู้จัดการ (Assistant Manager)</span>}
-              {assistants.length > 0 ? (
+              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-2 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">2. ผู้จัดการแผนก (Section Manager)</span>}
+              {sectManagers.length > 0 ? (
                 <div className="flex flex-wrap justify-center gap-6">
-                  {assistants.map(item => renderMemberCard(item))}
+                  {sectManagers.map(item => renderMemberCard(item))}
                 </div>
               ) : (
                 <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-3.5 rounded-2xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
-                  ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "ผู้ช่วยผู้จัดการ"
+                  ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "ผู้จัดการแผนก"
                 </div>
               )}
-              {(departmentHeads.length > 0 || supervisors.length > 0 || staffMembers.length > 0 || isAdmin) && (
+              {(departmentHeads.length > 0 || supervisors.length > 0 || officers.length > 0 || forkliftDrivers.length > 0 || liftOperators.length > 0 || isAdmin) && (
                 <div className="w-0.5 h-8 bg-slate-300 dark:bg-white/10 mt-4"></div>
               )}
             </div>
           )}
 
-          {/* Level 3: Department Heads */}
+          {/* Level 3: หัวหน้าแผนก */}
           {(departmentHeads.length > 0 || isAdmin) && (
             <div 
               onDragOver={handleDragOver}
@@ -432,7 +438,7 @@ export default function OrgChartPage() {
                 draggedItem && draggedItem.level_order !== 3 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
               }`}
             >
-              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-2 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">3. หัวหน้าแผนก (Department Head)</span>}
+              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-2 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">3. หัวหน้าแผนก (Section Head)</span>}
               {departmentHeads.length > 0 ? (
                 <div className="flex flex-wrap justify-center gap-6">
                   {departmentHeads.map(item => renderMemberCard(item))}
@@ -442,13 +448,13 @@ export default function OrgChartPage() {
                   ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "หัวหน้าแผนก"
                 </div>
               )}
-              {(supervisors.length > 0 || staffMembers.length > 0 || isAdmin) && (
+              {(supervisors.length > 0 || officers.length > 0 || forkliftDrivers.length > 0 || liftOperators.length > 0 || isAdmin) && (
                 <div className="w-0.5 h-8 bg-slate-300 dark:bg-white/10 mt-4"></div>
               )}
             </div>
           )}
 
-          {/* Level 4: Supervisors */}
+          {/* Level 4: หัวหน้างาน */}
           {(supervisors.length > 0 || isAdmin) && (
             <div 
               onDragOver={handleDragOver}
@@ -467,14 +473,14 @@ export default function OrgChartPage() {
                   ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "หัวหน้างาน"
                 </div>
               )}
-              {(staffMembers.length > 0 || isAdmin) && (
+              {(officers.length > 0 || forkliftDrivers.length > 0 || liftOperators.length > 0 || isAdmin) && (
                 <div className="w-0.5 h-8 bg-slate-300 dark:bg-white/10 mt-4"></div>
               )}
             </div>
           )}
 
-          {/* Level 5: Staff Members / Operators Grid */}
-          {(staffMembers.length > 0 || isAdmin) && (
+          {/* Level 5: เจ้าหน้าที่ */}
+          {(officers.length > 0 || isAdmin) && (
             <div 
               onDragOver={handleDragOver}
               onDrop={(e) => handleDropToLevel(e, 5)}
@@ -482,14 +488,64 @@ export default function OrgChartPage() {
                 draggedItem && draggedItem.level_order !== 5 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
               }`}
             >
-              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-2 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">5. พนักงานผู้ปฏิบัติการ (Staff / Operators)</span>}
-              {staffMembers.length > 0 ? (
+              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-2 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">5. เจ้าหน้าที่ (Officer / Staff)</span>}
+              {officers.length > 0 ? (
                 <div className="flex flex-wrap justify-center gap-6 max-w-6xl">
-                  {staffMembers.map((item) => renderMemberCard(item))}
+                  {officers.map((item) => renderMemberCard(item))}
                 </div>
               ) : (
                 <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-3.5 rounded-2xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
-                  ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "พนักงานผู้ปฏิบัติการ"
+                  ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "เจ้าหน้าที่"
+                </div>
+              )}
+              {(forkliftDrivers.length > 0 || liftOperators.length > 0 || isAdmin) && (
+                <div className="w-0.5 h-8 bg-slate-300 dark:bg-white/10 mt-4"></div>
+              )}
+            </div>
+          )}
+
+          {/* Level 6: พนักงานขับรถยก */}
+          {(forkliftDrivers.length > 0 || isAdmin) && (
+            <div 
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDropToLevel(e, 6)}
+              className={`flex flex-col items-center relative w-full p-4 rounded-3xl transition-all duration-300 ${
+                draggedItem && draggedItem.level_order !== 6 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
+              }`}
+            >
+              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-2 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">6. พนักงานขับรถยก (Forklift Driver)</span>}
+              {forkliftDrivers.length > 0 ? (
+                <div className="flex flex-wrap justify-center gap-6 max-w-6xl">
+                  {forkliftDrivers.map((item) => renderMemberCard(item))}
+                </div>
+              ) : (
+                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-3.5 rounded-2xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
+                  ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "พนักงานขับรถยก"
+                </div>
+              )}
+              {(liftOperators.length > 0 || isAdmin) && (
+                <div className="w-0.5 h-8 bg-slate-300 dark:bg-white/10 mt-4"></div>
+              )}
+            </div>
+          )}
+
+          {/* Level 7: พนักงานหน้าลิฟท์ */}
+          {(liftOperators.length > 0 || isAdmin) && (
+            <div 
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDropToLevel(e, 7)}
+              className={`flex flex-col items-center relative w-full p-4 rounded-3xl transition-all duration-300 ${
+                draggedItem && draggedItem.level_order !== 7 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
+              }`}
+            >
+              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-2 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">7. พนักงานหน้าลิฟท์ (Lift Operator)</span>}
+              {liftOperators.length > 0 ? (
+                <div className="flex flex-wrap justify-center gap-6 max-w-6xl">
+                  {liftOperators.map((item) => renderMemberCard(item))}
+                </div>
+              ) : (
+                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-3.5 rounded-2xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
+                  ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "พนักงานหน้าลิฟท์"
                 </div>
               )}
             </div>
@@ -531,11 +587,13 @@ export default function OrgChartPage() {
                   onChange={(e) => setFormState(prev => ({ ...prev, level_order: parseInt(e.target.value, 10) }))}
                   className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate"
                 >
-                  <option value={1}>1. ผู้จัดการแผนก (Manager)</option>
-                  <option value={2}>2. ผู้ช่วยผู้จัดการ (Assistant Manager)</option>
-                  <option value={3}>3. หัวหน้าแผนก (Department Head)</option>
+                  <option value={1}>1. ผู้จัดการฝ่าย (Department Manager)</option>
+                  <option value={2}>2. ผู้จัดการแผนก (Section Manager)</option>
+                  <option value={3}>3. หัวหน้าแผนก (Section Head)</option>
                   <option value={4}>4. หัวหน้างาน (Supervisor)</option>
-                  <option value={5}>5. พนักงานผู้ปฏิบัติการ (Staff / Operators)</option>
+                  <option value={5}>5. เจ้าหน้าที่ (Officer / Staff)</option>
+                  <option value={6}>6. พนักงานขับรถยก (Forklift Driver)</option>
+                  <option value={7}>7. พนักงานหน้าลิฟท์ (Lift Operator)</option>
                 </select>
               </div>
 

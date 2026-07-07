@@ -209,7 +209,27 @@ router.post('/:id/approve', authenticateToken, requireRole(['admin', 'staff']), 
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Task not found.' });
     }
-    return res.json(result.rows[0]);
+
+    const task = result.rows[0];
+    
+    // Auto-save proof_file to warehouse documents if present on approval
+    if (task.proof_file) {
+      try {
+        const empRes = await query('SELECT name FROM users WHERE id = $1', [task.employee_id]);
+        const uploaderName = empRes.rows.length > 0 ? empRes.rows[0].name : 'Employee';
+        
+        await query(
+          `INSERT INTO documents (title, category, file_url, uploaded_by) 
+           VALUES ($1, $2, $3, $4)`,
+          [task.task_name, task.category, task.proof_file, `${uploaderName} (ส่งงาน)`]
+        );
+        console.log(`Automatically copied task proof to documents: ${task.task_name}`);
+      } catch (docErr: any) {
+        console.error('Failed to auto-copy task proof to documents table:', docErr.message);
+      }
+    }
+
+    return res.json(task);
 
   } catch (err: any) {
     // Mock Mode Fallback
@@ -222,6 +242,22 @@ router.post('/:id/approve', authenticateToken, requireRole(['admin', 'staff']), 
     task.supervisor_approved = true;
     task.approved_by = supervisorId;
     task.approved_at = new Date().toISOString();
+
+    // Auto-save to mockDocuments
+    if (task.proof_file) {
+      const emp = mockStore.mockUsers.find(u => u.id === task.employee_id);
+      const uploaderName = emp ? emp.name : 'Employee';
+      const newDocId = (mockStore.mockDocuments || []).reduce((max, d) => d.id > max ? d.id : max, 0) + 1;
+      
+      mockStore.mockDocuments.push({
+        id: newDocId,
+        title: task.task_name,
+        category: task.category as any,
+        file_url: task.proof_file,
+        uploaded_by: `${uploaderName} (ส่งงาน)`,
+        uploaded_at: new Date().toISOString()
+      });
+    }
 
     return res.json(task);
   }

@@ -180,7 +180,7 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         approved_by INT,
         approved_at TIMESTAMP NULL,
         due_date DATE NOT NULL,
-        proof_file TEXT,
+        proof_file LONGTEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (employee_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -237,7 +237,7 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         id INT AUTO_INCREMENT PRIMARY KEY,
         title VARCHAR(200) NOT NULL,
         category VARCHAR(50) NOT NULL,
-        file_url TEXT NOT NULL,
+        file_url LONGTEXT NOT NULL,
         uploaded_by VARCHAR(100) NOT NULL,
         uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`,
@@ -495,6 +495,14 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
 
     await connection.query('ALTER TABLE questions MODIFY COLUMN media_url LONGTEXT').catch((e) => {
       console.warn('Altering questions.media_url failed (might already be LONGTEXT):', e.message);
+    });
+
+    await connection.query('ALTER TABLE documents MODIFY COLUMN file_url LONGTEXT NOT NULL').catch((e) => {
+      console.warn('Altering documents.file_url failed (might already be LONGTEXT):', e.message);
+    });
+
+    await connection.query('ALTER TABLE daily_tasks MODIFY COLUMN proof_file LONGTEXT').catch((e) => {
+      console.warn('Altering daily_tasks.proof_file failed (might already be LONGTEXT):', e.message);
     });
 
     console.log('MySQL database initialized and seeded successfully.');

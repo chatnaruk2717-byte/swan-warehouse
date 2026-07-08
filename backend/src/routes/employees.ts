@@ -26,6 +26,7 @@ router.get('/', authenticateToken, requireRole(['admin', 'staff', 'employee']), 
       `SELECT u.*, s.name as supervisor_name 
        FROM users u 
        LEFT JOIN users s ON u.supervisor_id = s.id 
+       WHERE u.employee_id NOT IN ('EMP001', 'EMP002', 'EMP003', 'EMP004', 'EMP005', 'EMP006', 'EMP007', 'EMP008', 'EMP009', 'EMP010')
        ORDER BY u.employee_id ASC`
     );
     
@@ -39,16 +40,18 @@ router.get('/', authenticateToken, requireRole(['admin', 'staff', 'employee']), 
 
   } catch (err: any) {
     // Mock Mode Fallback
-    const list = mockStore.mockUsers.map(user => {
-      const supervisor = mockStore.mockUsers.find(u => u.id === user.supervisor_id);
-      const copy = {
-        ...user,
-        supervisor_name: supervisor ? supervisor.name : null
-      };
-      // @ts-ignore
-      delete copy.password_hash;
-      return copy;
-    });
+    const list = mockStore.mockUsers
+      .filter(user => !['EMP001', 'EMP002', 'EMP003', 'EMP004', 'EMP005', 'EMP006', 'EMP007', 'EMP008', 'EMP009', 'EMP010'].includes(user.employee_id))
+      .map(user => {
+        const supervisor = mockStore.mockUsers.find(u => u.id === user.supervisor_id);
+        const copy = {
+          ...user,
+          supervisor_name: supervisor ? supervisor.name : null
+        };
+        // @ts-ignore
+        delete copy.password_hash;
+        return copy;
+      });
     return res.json(list);
   }
 });

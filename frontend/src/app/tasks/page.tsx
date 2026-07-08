@@ -67,26 +67,8 @@ export default function TasksPage() {
       }
     } catch (err) {
       console.warn('API error loading tasks, fallback to mock lists.');
-      // Mock daily tasks matching seeds
-      const mockTasksList = [
-        { id: 1, employee_id: 6, employee_name: 'สมปอง ลุยงาน', emp_code: 'EMP006', task_name: 'ขับย้ายพาเลทพัสดุโซนสินค้าขาเข้า', category: 'Put Away', description: 'ย้ายพาเลทนำเข้าจากตู้คอนเทนเนอร์ 15 พาเลท ไปจัดวางชั้น A4 ถึง A12', status: 'completed', progress_percentage: 100, supervisor_approved: true, approved_by_name: 'ประพันธ์ ยอดคุม', due_date: '2026-06-29' },
-        { id: 2, employee_id: 6, employee_name: 'สมปอง ลุยงาน', emp_code: 'EMP006', task_name: 'ตรวจสอบสภาพรถยกไฟฟ้า Forklift #04', category: 'Forklift', description: 'ทำเช็กลิสต์ ตรวจแบตและเติมน้ำกลั่น', status: 'completed', progress_percentage: 100, supervisor_approved: true, approved_by_name: 'ประพันธ์ ยอดคุม', due_date: '2026-06-29' },
-        { id: 3, employee_id: 7, employee_name: 'อรอนงค์ แพ็กเก่ง', emp_code: 'EMP007', task_name: 'แพ็กกล่องสินค้าออเดอร์ด่วนแคมเปญ 7.7', category: 'Packing', description: 'เร่งห่อหุ้มกันกระแทก 120 ออเดอร์', status: 'in_progress', progress_percentage: 65, supervisor_approved: false, due_date: '2026-06-29' },
-        { id: 4, employee_id: 8, employee_name: 'มานะ คัดของ', emp_code: 'EMP008', task_name: 'หยิบสินค้าอุปโภคบริโภคตามใบสั่งซื้อ Zone B', category: 'Picking', description: 'หยิบตาม RF Scanner 80 รายการ', status: 'in_progress', progress_percentage: 40, supervisor_approved: false, due_date: '2026-06-29' }
-      ];
-      
-      if (user?.role === 'employee') {
-        setTasks(mockTasksList.filter(t => t.employee_id === user.id));
-      } else {
-        setTasks(mockTasksList);
-        setEmployees([
-          { id: 4, employee_id: 'EMP004', name: 'ประพันธ์ ยอดคุม', role: 'staff' },
-          { id: 5, employee_id: 'EMP005', name: 'สมศรี มีคุม', role: 'staff' },
-          { id: 6, employee_id: 'EMP006', name: 'สมปอง ลุยงาน', role: 'employee' },
-          { id: 7, employee_id: 'EMP007', name: 'อรอนงค์ แพ็กเก่ง', role: 'employee' },
-          { id: 8, employee_id: 'EMP008', name: 'มานะ คัดของ', role: 'employee' }
-        ]);
-      }
+      setTasks([]);
+      setEmployees([]);
     } finally {
       setLoading(false);
     }

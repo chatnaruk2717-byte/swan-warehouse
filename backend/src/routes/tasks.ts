@@ -28,6 +28,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
         FROM daily_tasks t 
         JOIN users u ON t.employee_id = u.id 
         WHERE t.employee_id = $1 
+          AND u.employee_id NOT IN ('EMP001', 'EMP002', 'EMP003', 'EMP004', 'EMP005', 'EMP006', 'EMP007', 'EMP008', 'EMP009', 'EMP010')
         ORDER BY t.due_date DESC, t.id DESC
       `;
       params = [userId];
@@ -36,6 +37,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
         SELECT t.*, u.name as employee_name, u.employee_id as emp_code
         FROM daily_tasks t 
         JOIN users u ON t.employee_id = u.id 
+        WHERE u.employee_id NOT IN ('EMP001', 'EMP002', 'EMP003', 'EMP004', 'EMP005', 'EMP006', 'EMP007', 'EMP008', 'EMP009', 'EMP010')
         ORDER BY t.due_date DESC, t.id DESC
       `;
     }
@@ -48,7 +50,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
     if (userRole === 'employee') {
       const list = mockStore.mockDailyTasks
         .filter(t => t.employee_id === userId)
-        .filter(t => mockStore.mockUsers.some(u => u.id === t.employee_id))
+        .filter(t => mockStore.mockUsers.some(u => u.id === t.employee_id && !['EMP001', 'EMP002', 'EMP003', 'EMP004', 'EMP005', 'EMP006', 'EMP007', 'EMP008', 'EMP009', 'EMP010'].includes(u.employee_id)))
         .map(t => {
           const emp = mockStore.mockUsers.find(u => u.id === t.employee_id);
           return { ...t, employee_name: emp ? emp.name : 'Unknown' };
@@ -56,7 +58,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
       return res.json(list);
     } else {
       const list = mockStore.mockDailyTasks
-        .filter(t => mockStore.mockUsers.some(u => u.id === t.employee_id))
+        .filter(t => mockStore.mockUsers.some(u => u.id === t.employee_id && !['EMP001', 'EMP002', 'EMP003', 'EMP004', 'EMP005', 'EMP006', 'EMP007', 'EMP008', 'EMP009', 'EMP010'].includes(u.employee_id)))
         .map(t => {
           const emp = mockStore.mockUsers.find(u => u.id === t.employee_id);
           return {

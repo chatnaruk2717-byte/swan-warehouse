@@ -16,11 +16,11 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['admin', 'staff']
       throw new Error('MOCK_MODE');
     }
 
-    // Filter condition to exclude Management positions/departments, including employee and staff roles
-    const nonMgmtCond = "(role = 'employee' OR role = 'staff') AND department != 'Management' AND position != 'Management' AND position NOT LIKE '%Management%'";
+    const userCond = "(role = 'employee' OR role = 'staff') AND department != 'Management' AND position != 'Management' AND position NOT LIKE '%Management%' AND employee_id NOT IN ('EMP001', 'EMP002', 'EMP003', 'EMP004', 'EMP005', 'EMP006', 'EMP007', 'EMP008', 'EMP009', 'EMP010')";
+    const uCond = "(u.role = 'employee' OR u.role = 'staff') AND u.department != 'Management' AND u.position != 'Management' AND u.position NOT LIKE '%Management%' AND u.employee_id NOT IN ('EMP001', 'EMP002', 'EMP003', 'EMP004', 'EMP005', 'EMP006', 'EMP007', 'EMP008', 'EMP009', 'EMP010')";
 
     // 1. Total Employees
-    const empCountRes = await query(`SELECT COUNT(id) AS count FROM users WHERE ${nonMgmtCond}`);
+    const empCountRes = await query(`SELECT COUNT(id) AS count FROM users WHERE ${userCond}`);
     const totalEmployees = parseInt(empCountRes.rows[0].count, 10);
 
     // 2. Average Training Completion %
@@ -28,7 +28,7 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['admin', 'staff']
       SELECT AVG(e.progress_percentage) AS avg
       FROM enrollments e 
       JOIN users u ON e.employee_id = u.id 
-      WHERE u.${nonMgmtCond}
+      WHERE ${uCond}
     `);
     const avgTrainingCompletion = Math.round(parseFloat(avgProgressRes.rows[0].avg) || 0);
 
@@ -37,7 +37,7 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['admin', 'staff']
       SELECT AVG(qa.score) AS avg
       FROM quiz_attempts qa 
       JOIN users u ON qa.employee_id = u.id 
-      WHERE qa.passed = TRUE AND u.${nonMgmtCond}
+      WHERE qa.passed = TRUE AND ${uCond}
     `);
     const avgQuizScore = Math.round(parseFloat(avgScoreRes.rows[0].avg) || 0);
 
@@ -48,7 +48,7 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['admin', 'staff']
       SELECT COUNT(es.id) AS count
       FROM employee_skills es 
       JOIN users u ON es.employee_id = u.id 
-      WHERE es.status IN ('qualified', 'expert') AND u.${nonMgmtCond}
+      WHERE es.status IN ('qualified', 'expert') AND ${uCond}
     `);
     const qualifiedSkillsCount = parseInt(qualifiedSkillsRes.rows[0].count, 10);
     
@@ -61,7 +61,7 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['admin', 'staff']
       SELECT COUNT(t.id) as total, SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) as completed 
       FROM daily_tasks t 
       JOIN users u ON t.employee_id = u.id 
-      WHERE u.${nonMgmtCond}
+      WHERE ${uCond}
     `);
     const totalTasks = parseInt(tasksRes.rows[0].total, 10) || 0;
     const completedTasks = parseInt(tasksRes.rows[0].completed, 10) || 0;
@@ -77,7 +77,7 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['admin', 'staff']
         t.status 
       FROM daily_tasks t
       JOIN users u ON t.employee_id = u.id
-      WHERE t.status != 'completed' AND u.${nonMgmtCond}
+      WHERE t.status != 'completed' AND ${uCond}
       ORDER BY t.due_date ASC
       LIMIT 10
     `;
@@ -96,7 +96,7 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['admin', 'staff']
       FROM enrollments e
       JOIN users u ON e.employee_id = u.id
       JOIN courses c ON e.course_id = c.id
-      WHERE e.status != 'completed' AND u.${nonMgmtCond}
+      WHERE e.status != 'completed' AND ${uCond}
       ORDER BY e.due_date ASC
       LIMIT 10
     `;
@@ -122,7 +122,8 @@ router.get('/dashboard-stats', authenticateToken, requireRole(['admin', 'staff']
       (u.role === 'employee' || u.role === 'staff') && 
       u.department !== 'Management' && 
       u.position !== 'Management' && 
-      !u.position.includes('Management')
+      !u.position.includes('Management') &&
+      !['EMP001', 'EMP002', 'EMP003', 'EMP004', 'EMP005', 'EMP006', 'EMP007', 'EMP008', 'EMP009', 'EMP010'].includes(u.employee_id)
     );
     const totalEmployees = employees.length;
     const empIds = employees.map(u => u.id);
@@ -211,7 +212,7 @@ router.get('/charts', authenticateToken, async (req: AuthenticatedRequest, res: 
       throw new Error('MOCK_MODE');
     }
 
-    const nonMgmtCond = "(role = 'employee' OR role = 'staff') AND department != 'Management' AND position != 'Management' AND position NOT LIKE '%Management%'";
+    const uCond = "(u.role = 'employee' OR u.role = 'staff') AND u.department != 'Management' AND u.position != 'Management' AND u.position NOT LIKE '%Management%' AND u.employee_id NOT IN ('EMP001', 'EMP002', 'EMP003', 'EMP004', 'EMP005', 'EMP006', 'EMP007', 'EMP008', 'EMP009', 'EMP010')";
 
     // 1. Department comparison
     const deptDataQuery = `
@@ -221,7 +222,7 @@ router.get('/charts', authenticateToken, async (req: AuthenticatedRequest, res: 
         COUNT(DISTINCT u.id) as employee_count
       FROM users u
       LEFT JOIN enrollments e ON u.id = e.employee_id
-      WHERE u.${nonMgmtCond}
+      WHERE ${uCond}
       GROUP BY u.department
     `;
     const deptResult = await query(deptDataQuery);
@@ -231,7 +232,7 @@ router.get('/charts', authenticateToken, async (req: AuthenticatedRequest, res: 
       SELECT es.status, COUNT(*) as count 
       FROM employee_skills es
       JOIN users u ON es.employee_id = u.id
-      WHERE u.${nonMgmtCond}
+      WHERE ${uCond}
       GROUP BY es.status
     `;
     const skillStatusResult = await query(skillStatusQuery);
@@ -244,7 +245,7 @@ router.get('/charts', authenticateToken, async (req: AuthenticatedRequest, res: 
         COUNT(DISTINCT u.id) as employee_count
       FROM users u
       LEFT JOIN enrollments e ON u.id = e.employee_id
-      WHERE u.${nonMgmtCond}
+      WHERE ${uCond}
       GROUP BY u.position
     `;
     const positionResult = await query(positionDataQuery);

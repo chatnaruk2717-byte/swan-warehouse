@@ -247,7 +247,7 @@ router.get('/enrollments/course/:id', authenticateToken, requireRole(['admin', '
  *   post:
  *     summary: Assign a course to an employee
  */
-router.post('/enroll', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/enroll', authenticateToken, requireRole(['admin', 'staff', 'employee']), async (req: AuthenticatedRequest, res: Response) => {
   const { employee_id, course_id, due_date } = req.body;
   const assignedBy = req.user?.id;
 
@@ -257,6 +257,11 @@ router.post('/enroll', authenticateToken, requireRole(['admin', 'staff']), async
 
   const empId = parseInt(employee_id, 10);
   const courseId = parseInt(course_id, 10);
+
+  // If the user has role 'employee', they can only enroll themselves
+  if (req.user?.role === 'employee' && empId !== req.user.id) {
+    return res.status(403).json({ message: 'Employees can only enroll themselves.' });
+  }
 
   try {
     if (getMockStatus()) {

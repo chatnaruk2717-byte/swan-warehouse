@@ -10,4 +10,7 @@
 - [x] Add drag-and-drop support to org chart for interactive rearrangement of nodes (level changes and horizontal reordering).
 - [x] Compile, build, deploy, and verify everything works.
 - [x] Create missing `performance_settings` database table in production during startup checks to fix empty Employee Performance page.
+- [x] Render learning progress list dynamically in the employee dashboard from the database.
+- [x] Automatically create course enrollment row when a user completes a lesson or submits a quiz, to correctly calculate completed course statistics.
+
 

@@ -38,6 +38,7 @@ export default function DashboardPage() {
   const [chartData, setChartData] = useState<any>(null);
   const [myTasks, setMyTasks] = useState<any[]>([]);
   const [perfStats, setPerfStats] = useState<any>(null);
+  const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -64,6 +65,14 @@ export default function DashboardPage() {
           // Fetch personal tasks (employee)
           const tasksRes = await api.get('/api/tasks');
           setMyTasks(tasksRes.data.slice(0, 4));
+
+          // Fetch enrolled courses
+          try {
+            const enrollRes = await api.get(`/api/courses/enrollments/employee/${user.id}`);
+            setEnrolledCourses(enrollRes.data);
+          } catch (err) {
+            console.error("Failed to load enrolled courses:", err);
+          }
         }
       } catch (err) {
         console.warn('Dashboard data fetch failed, using fallback mock states.');
@@ -123,6 +132,10 @@ export default function DashboardPage() {
             { id: 1, task_name: 'ขับย้ายพาเลทพัสดุโซนสินค้าขาเข้า', category: 'Put Away', progress_percentage: 100, status: 'completed' },
             { id: 2, task_name: 'ตรวจสอบสภาพรถยกไฟฟ้า Forklift #04', category: 'Forklift', progress_percentage: 100, status: 'completed' },
             { id: 3, task_name: 'สแกนเช็คสต็อกสินค้าด้วย RF Scanner', category: 'RF Scanner', progress_percentage: 50, status: 'in_progress' }
+          ]);
+          setEnrolledCourses([
+            { id: 1, course_name: 'การขับรถยก Forklift และความปลอดภัย', progress_percentage: 50 },
+            { id: 2, course_name: 'ความปลอดภัยและ PPE คลังสินค้า', progress_percentage: 100 }
           ]);
         }
       } finally {
@@ -699,25 +712,30 @@ export default function DashboardPage() {
             </h4>
             
             <div className="space-y-5">
-              <div>
-                <div className="flex justify-between text-xs font-semibold mb-2">
-                  <span className="text-slate-700 dark:text-slate-200 truncate pr-2">การขับรถยก Forklift และความปลอดภัย</span>
-                  <span className="text-warehouse-orange font-bold font-mono">50%</span>
-                </div>
-                <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
-                  <div className="bg-warehouse-orange h-full rounded-full transition-all duration-500" style={{ width: '50%' }} />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-xs font-semibold mb-2">
-                  <span className="text-slate-700 dark:text-slate-200 truncate pr-2">ความปลอดภัยและ PPE คลังสินค้า</span>
-                  <span className="text-emerald-500 font-bold font-mono">100%</span>
-                </div>
-                <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
-                  <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: '100%' }} />
-                </div>
-              </div>
+              {enrolledCourses.map((c) => {
+                const isCompleted = c.progress_percentage === 100;
+                return (
+                  <div key={c.id}>
+                    <div className="flex justify-between text-xs font-semibold mb-2">
+                      <span className="text-slate-700 dark:text-slate-200 truncate pr-2" title={c.course_name}>
+                        {c.course_name}
+                      </span>
+                      <span className={`font-bold font-mono ${isCompleted ? 'text-emerald-500' : 'text-warehouse-orange'}`}>
+                        {c.progress_percentage}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-emerald-500' : 'bg-warehouse-orange'}`} 
+                        style={{ width: `${c.progress_percentage}%` }} 
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+              {enrolledCourses.length === 0 && (
+                <p className="text-xs text-slate-400 py-6 text-center">ไม่มีข้อมูลการเรียนรู้ที่กำลังศึกษา</p>
+              )}
 
               <Link 
                 href="/courses" 

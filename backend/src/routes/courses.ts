@@ -343,6 +343,13 @@ router.post('/lesson/:id/progress', authenticateToken, async (req: Authenticated
 
     if (courseRes.rows.length > 0) {
       const courseId = courseRes.rows[0].id;
+
+      // Ensure enrollment exists!
+      await query(
+        `INSERT IGNORE INTO enrollments (employee_id, course_id, progress_percentage, status, assigned_by, due_date) 
+         VALUES ($1, $2, 0, 'in_progress', NULL, DATE_ADD(CURRENT_DATE(), INTERVAL 30 DAY))`,
+        [employeeId, courseId]
+      );
       
       // Count total lessons
       const totalLessonsRes = await query(
@@ -425,8 +432,20 @@ router.post('/lesson/:id/progress', authenticateToken, async (req: Authenticated
     const done = completedCourseLessons.length;
     const percent = total > 0 ? Math.round((done / total) * 100) : 0;
 
-    const enrollment = mockStore.mockEnrollments.find(e => e.employee_id === employeeId && e.course_id === courseId);
-    if (enrollment) {
+    let enrollment = mockStore.mockEnrollments.find(e => e.employee_id === employeeId && e.course_id === courseId);
+    if (!enrollment) {
+      enrollment = {
+        id: mockStore.mockEnrollments.length + 1,
+        employee_id: employeeId!,
+        course_id: courseId,
+        progress_percentage: percent,
+        status: percent === 100 ? 'completed' : 'in_progress',
+        assigned_by: null,
+        assigned_at: new Date().toISOString(),
+        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      };
+      mockStore.mockEnrollments.push(enrollment);
+    } else {
       enrollment.progress_percentage = percent;
       enrollment.status = percent === 100 ? 'completed' : 'in_progress';
       if (percent === 100) {
@@ -558,6 +577,13 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
 
       if (courseRes.rows.length > 0) {
         const courseId = courseRes.rows[0].id;
+
+        // Ensure enrollment exists!
+        await query(
+          `INSERT IGNORE INTO enrollments (employee_id, course_id, progress_percentage, status, assigned_by, due_date) 
+           VALUES ($1, $2, 0, 'in_progress', NULL, DATE_ADD(CURRENT_DATE(), INTERVAL 30 DAY))`,
+          [employeeId, courseId]
+        );
         
         // Count total lessons
         const totalLessonsRes = await query(
@@ -688,8 +714,20 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
         });
 
         const percent = Math.round((completedCourseLessons.length / allCourseLessons.length) * 100);
-        const enrollment = mockStore.mockEnrollments.find(e => e.employee_id === employeeId && e.course_id === courseId);
-        if (enrollment) {
+        let enrollment = mockStore.mockEnrollments.find(e => e.employee_id === employeeId && e.course_id === courseId);
+        if (!enrollment) {
+          enrollment = {
+            id: mockStore.mockEnrollments.length + 1,
+            employee_id: employeeId!,
+            course_id: courseId,
+            progress_percentage: percent,
+            status: percent === 100 ? 'completed' : 'in_progress',
+            assigned_by: null,
+            assigned_at: new Date().toISOString(),
+            due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          };
+          mockStore.mockEnrollments.push(enrollment);
+        } else {
           enrollment.progress_percentage = percent;
           enrollment.status = percent === 100 ? 'completed' : 'in_progress';
           if (percent === 100) {

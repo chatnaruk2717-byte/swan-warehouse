@@ -509,10 +509,13 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
       console.log(`[QuizSubmit Debug] Question ${q.id} submitted:`, submitted, `IsArray:`, Array.isArray(submitted));
       console.log(`[QuizSubmit Debug] Question ${q.id} correct:`, correct, `IsArray:`, Array.isArray(correct));
 
-      if (submitted && Array.isArray(submitted) && Array.isArray(correct)) {
+      const submittedArr = Array.isArray(submitted) ? submitted : (submitted !== undefined ? [submitted] : []);
+      const correctArr = Array.isArray(correct) ? correct : (correct !== undefined ? [correct] : []);
+
+      if (submittedArr.length > 0 && correctArr.length > 0) {
         // Safe integer conversion of all answers for comparison
-        const submittedNums = submitted.map((val: any) => parseInt(val, 10));
-        const correctNums = correct.map((val: any) => parseInt(val, 10));
+        const submittedNums = submittedArr.map((val: any) => parseInt(val, 10));
+        const correctNums = correctArr.map((val: any) => parseInt(val, 10));
         console.log(`[QuizSubmit Debug] Question ${q.id} submittedNums:`, submittedNums, `correctNums:`, correctNums);
 
         // Compare arrays
@@ -523,7 +526,7 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
           earnedPoints += q.points;
         }
       } else {
-        console.log(`[QuizSubmit Debug] Question ${q.id} comparison skipped (missing submitted or correct is not array)`);
+        console.log(`[QuizSubmit Debug] Question ${q.id} comparison skipped (missing submitted or correct is empty)`);
       }
     }
 
@@ -602,28 +605,43 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
       return res.status(404).json({ message: 'No questions found for this quiz (Mock).' });
     }
 
+    const filteredQuestions = questionIds && Array.isArray(questionIds)
+      ? quizQuestions.filter(q => questionIds.includes(q.id))
+      : quizQuestions;
+
+    if (filteredQuestions.length === 0) {
+      return res.status(400).json({ message: 'Submitted question subset does not match mock database.' });
+    }
+
     let totalPoints = 0;
     let earnedPoints = 0;
 
     console.log(`[QuizSubmit Mock Debug] Lesson ID: ${lessonId}, Employee ID: ${employeeId}`);
     console.log(`[QuizSubmit Mock Debug] Submitted answers:`, JSON.stringify(answers));
 
-    for (const q of quizQuestions) {
+    for (const q of filteredQuestions) {
       totalPoints += q.points;
       const submitted = answers[q.id];
       const correct = q.correct_answers;
 
       console.log(`[QuizSubmit Mock Debug] Question ${q.id} submitted:`, submitted, `correct:`, correct);
 
-      if (submitted && Array.isArray(submitted)) {
-        const isCorrect = correct.length === submitted.length && 
-                          correct.every(val => submitted.includes(val));
+      const submittedArr = Array.isArray(submitted) ? submitted : (submitted !== undefined ? [submitted] : []);
+      const correctArr = Array.isArray(correct) ? correct : (correct !== undefined ? [correct] : []);
+
+      if (submittedArr.length > 0 && correctArr.length > 0) {
+        const submittedNums = submittedArr.map((val: any) => parseInt(val, 10));
+        const correctNums = correctArr.map((val: any) => parseInt(val, 10));
+        console.log(`[QuizSubmit Mock Debug] Question ${q.id} submittedNums:`, submittedNums, `correctNums:`, correctNums);
+
+        const isCorrect = correctNums.length === submittedNums.length && 
+                          correctNums.every((val: number) => submittedNums.includes(val));
         console.log(`[QuizSubmit Mock Debug] Question ${q.id} isCorrect:`, isCorrect);
         if (isCorrect) {
           earnedPoints += q.points;
         }
       } else {
-        console.log(`[QuizSubmit Mock Debug] Question ${q.id} submitted is missing or not array`);
+        console.log(`[QuizSubmit Mock Debug] Question ${q.id} submitted is missing or correct is empty`);
       }
     }
 

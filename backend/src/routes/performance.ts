@@ -4,6 +4,38 @@ import { authenticateToken, requireRole, AuthenticatedRequest } from '../middlew
 
 const router = Router();
 
+router.get('/temp-debug-perf', async (req: any, res: any) => {
+  try {
+    const listRes = await query(`
+      SELECT 
+        u.id, 
+        u.employee_id, 
+        u.name, 
+        u.photo_url, 
+        u.department, 
+        u.position, 
+        u.role,
+        COALESCE(u.evaluation_score, 100) as evaluation_score,
+        COALESCE(u.accumulated_points, 0) as accumulated_points,
+        COALESCE(u.absent_count, 0) as absent_count,
+        COALESCE(u.leave_count, 0) as leave_count,
+        COALESCE(u.late_count, 0) as late_count,
+        COALESCE(u.warning_letters, 0) as warning_letters,
+        (SELECT COUNT(*) FROM daily_tasks t WHERE t.employee_id = u.id AND t.status = 'completed') as completed_tasks,
+        (SELECT COUNT(*) FROM enrollments e WHERE e.employee_id = u.id AND e.status = 'completed') as completed_courses,
+        (SELECT COUNT(*) FROM quiz_attempts q WHERE q.employee_id = u.id AND q.passed = TRUE) as passed_quizzes
+      FROM users u
+      WHERE u.role IN ('employee', 'staff') 
+        AND u.department != 'Management'
+        AND u.employee_id NOT IN ('EMP001', 'EMP002', 'EMP003', 'EMP004', 'EMP005', 'EMP006', 'EMP007', 'EMP008', 'EMP009', 'EMP010')
+      ORDER BY u.id ASC
+    `);
+    return res.json(listRes.rows);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // Helper to get current performance settings
 async function getPerformanceSettings() {
   if (getMockStatus()) {

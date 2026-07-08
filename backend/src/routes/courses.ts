@@ -485,31 +485,45 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
     let totalPoints = 0;
     let earnedPoints = 0;
 
+    console.log(`[QuizSubmit Debug] Lesson ID: ${lessonId}, Employee ID: ${employeeId}`);
+    console.log(`[QuizSubmit Debug] Submitted answers keys:`, Object.keys(answers));
+    console.log(`[QuizSubmit Debug] Submitted answers payload:`, JSON.stringify(answers));
+
     for (const q of filteredQuestions) {
       totalPoints += q.points;
       const submitted = answers[q.id];
 
       let correct = q.correct_answers;
+      console.log(`[QuizSubmit Debug] Question ${q.id} raw correct_answers:`, correct, `Type:`, typeof correct);
+
       if (typeof correct === 'string') {
         try {
           correct = JSON.parse(correct);
+          console.log(`[QuizSubmit Debug] Question ${q.id} parsed correct_answers:`, correct);
         } catch (e) {
           console.error('Failed to parse correct_answers JSON:', correct, e);
           correct = [];
         }
       }
 
+      console.log(`[QuizSubmit Debug] Question ${q.id} submitted:`, submitted, `IsArray:`, Array.isArray(submitted));
+      console.log(`[QuizSubmit Debug] Question ${q.id} correct:`, correct, `IsArray:`, Array.isArray(correct));
+
       if (submitted && Array.isArray(submitted) && Array.isArray(correct)) {
         // Safe integer conversion of all answers for comparison
         const submittedNums = submitted.map((val: any) => parseInt(val, 10));
         const correctNums = correct.map((val: any) => parseInt(val, 10));
+        console.log(`[QuizSubmit Debug] Question ${q.id} submittedNums:`, submittedNums, `correctNums:`, correctNums);
 
         // Compare arrays
         const isCorrect = correctNums.length === submittedNums.length && 
                           correctNums.every((val: number) => submittedNums.includes(val));
+        console.log(`[QuizSubmit Debug] Question ${q.id} isCorrect result:`, isCorrect);
         if (isCorrect) {
           earnedPoints += q.points;
         }
+      } else {
+        console.log(`[QuizSubmit Debug] Question ${q.id} comparison skipped (missing submitted or correct is not array)`);
       }
     }
 
@@ -591,17 +605,25 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
     let totalPoints = 0;
     let earnedPoints = 0;
 
+    console.log(`[QuizSubmit Mock Debug] Lesson ID: ${lessonId}, Employee ID: ${employeeId}`);
+    console.log(`[QuizSubmit Mock Debug] Submitted answers:`, JSON.stringify(answers));
+
     for (const q of quizQuestions) {
       totalPoints += q.points;
       const submitted = answers[q.id];
+      const correct = q.correct_answers;
+
+      console.log(`[QuizSubmit Mock Debug] Question ${q.id} submitted:`, submitted, `correct:`, correct);
 
       if (submitted && Array.isArray(submitted)) {
-        const correct = q.correct_answers;
         const isCorrect = correct.length === submitted.length && 
                           correct.every(val => submitted.includes(val));
+        console.log(`[QuizSubmit Mock Debug] Question ${q.id} isCorrect:`, isCorrect);
         if (isCorrect) {
           earnedPoints += q.points;
         }
+      } else {
+        console.log(`[QuizSubmit Mock Debug] Question ${q.id} submitted is missing or not array`);
       }
     }
 

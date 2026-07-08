@@ -55,8 +55,19 @@ export const query = async (text: string, params?: any[]) => {
   const isDelete = text.trim().toUpperCase().startsWith('DELETE');
   const hasReturning = /RETURNING\s+/i.test(text);
 
-  let formattedText = text.replace(/\$\d+/g, '?');
-  let finalParams = params || [];
+  // Parse PG-style $1, $2, ... placeholders in order of appearance
+  const matches = text.match(/\$\d+/g) || [];
+  const finalParams: any[] = [];
+  const origParams = params || [];
+
+  if (origParams.length > 0) {
+    for (const match of matches) {
+      const paramIndex = parseInt(match.slice(1), 10) - 1;
+      finalParams.push(origParams[paramIndex]);
+    }
+  }
+
+  const formattedText = text.replace(/\$\d+/g, '?');
 
   if (hasReturning) {
     // Extract table name
@@ -89,7 +100,7 @@ export const query = async (text: string, params?: any[]) => {
         // Match all postgres placeholders like $1, $2 inside the WHERE clause
         const placeholders = whereClause.match(/\$\d+/g);
         const mappedParams = placeholders 
-          ? placeholders.map(p => finalParams[parseInt(p.slice(1), 10) - 1]) 
+          ? placeholders.map(p => origParams[parseInt(p.slice(1), 10) - 1]) 
           : [];
           
         const selectWhere = whereClause.replace(/\$\d+/g, '?');

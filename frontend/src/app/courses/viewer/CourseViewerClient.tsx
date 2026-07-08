@@ -375,8 +375,14 @@ export default function CourseViewerClient() {
           setShowCertPopup(true);
         }
       }
-    } catch (err) {
-      // Mock grading based on randomly selected subset
+    } catch (err: any) {
+      console.error('Quiz submission error:', err);
+      if (err.response) {
+        alert(`เกิดข้อผิดพลาดในการประเมินผลคะแนนจากเซิร์ฟเวอร์: ${err.response.data?.message || err.message}`);
+        return;
+      }
+      
+      // Mock grading based on randomly selected subset (Local offline mode)
       let earned = 0;
       let total = currentQuizQuestions.length || 1;
       

@@ -5,6 +5,15 @@ import { authenticateToken, requireRole, AuthenticatedRequest } from '../middlew
 
 const router = Router();
 
+router.get('/temp-debug-users', async (req: any, res: any) => {
+  try {
+    const result = await query('SELECT id, employee_id, name, role, department, position FROM users');
+    return res.json(result.rows);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // Helper to encrypt password (default to 'password123')
 const getDefaultPasswordHash = async () => {
   return '$2a$10$U1FNXk2W1scs2ZpblqipzuMN92V3rAAkW1UOdFSdgrCcmYjadz5O2';

@@ -16,7 +16,16 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         await connection.query('ALTER TABLE daily_tasks MODIFY COLUMN proof_file LONGTEXT');
         await connection.query('ALTER TABLE org_chart MODIFY COLUMN image_url LONGTEXT');
         await connection.query('ALTER TABLE org_chart ADD COLUMN display_order INT DEFAULT 0').catch(() => {});
-        console.log('Successfully verified/altered all required columns to LONGTEXT and display_order.');
+        
+        // Add performance columns if missing
+        await connection.query('ALTER TABLE users ADD COLUMN evaluation_score INT DEFAULT 100').catch(() => {});
+        await connection.query('ALTER TABLE users ADD COLUMN accumulated_points INT DEFAULT 0').catch(() => {});
+        await connection.query('ALTER TABLE users ADD COLUMN absent_count INT DEFAULT 0').catch(() => {});
+        await connection.query('ALTER TABLE users ADD COLUMN leave_count INT DEFAULT 0').catch(() => {});
+        await connection.query('ALTER TABLE users ADD COLUMN late_count INT DEFAULT 0').catch(() => {});
+        await connection.query('ALTER TABLE users ADD COLUMN warning_letters INT DEFAULT 0').catch(() => {});
+        
+        console.log('Successfully verified/altered all required columns to LONGTEXT, display_order, and performance stats.');
       } catch (err: any) {
         console.warn('Failed to alter columns:', err.message);
       }

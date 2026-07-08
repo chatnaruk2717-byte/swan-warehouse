@@ -84,38 +84,10 @@ export default function PerformancePage() {
       }
     } catch (err) {
       console.error('Error loading performance data:', err);
-      // Fallback mocks
       if (user?.role === 'employee') {
-        setMyStats({
-          id: user.id,
-          employee_id: user.employee_id,
-          name: user.name,
-          photo_url: user.photo_url || '',
-          department: user.department,
-          position: user.position,
-          role: user.role,
-          evaluation_score: 95,
-          completed_tasks: 4,
-          completed_courses: 2,
-          passed_quizzes: 3,
-          accumulated_points: 125,
-          absent_count: 0,
-          leave_count: 1,
-          late_count: 2,
-          warning_letters: 0,
-          settings: { points_per_task: 10, points_per_course: 20, points_per_quiz: 15 }
-        });
+        setMyStats(null);
       } else {
-        setEmployees([
-          { id: 3, employee_id: 'EMP003', name: 'นรินทร์ เก่งการ', department: 'Training', position: 'Senior Trainer', role: 'staff', photo_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', completed_tasks: 2, completed_courses: 2, passed_quizzes: 1, accumulated_points: 75, evaluation_score: 92, absent_count: 0, leave_count: 1, late_count: 2, warning_letters: 0 },
-          { id: 4, employee_id: 'EMP004', name: 'ประพันธ์ ยอดคุม', department: 'Operations', position: 'Zone A Supervisor', role: 'staff', photo_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', completed_tasks: 3, completed_courses: 2, passed_quizzes: 1, accumulated_points: 85, evaluation_score: 96, absent_count: 1, leave_count: 2, late_count: 0, warning_letters: 0 },
-          { id: 5, employee_id: 'EMP005', name: 'สมศรี มีคุม', department: 'Operations', position: 'Zone B Supervisor', role: 'staff', photo_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150', completed_tasks: 2, completed_courses: 2, passed_quizzes: 2, accumulated_points: 80, evaluation_score: 94, absent_count: 0, leave_count: 3, late_count: 1, warning_letters: 0 },
-          { id: 6, employee_id: 'EMP006', name: 'สมปอง ลุยงาน', department: 'Operations', position: 'Forklift Driver', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', completed_tasks: 3, completed_courses: 2, passed_quizzes: 2, accumulated_points: 100, evaluation_score: 96, absent_count: 2, leave_count: 1, late_count: 3, warning_letters: 1 },
-          { id: 7, employee_id: 'EMP007', name: 'อรอนงค์ แพ็กเก่ง', department: 'Operations', position: 'Packer', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', completed_tasks: 4, completed_courses: 1, passed_quizzes: 2, accumulated_points: 90, evaluation_score: 98, absent_count: 0, leave_count: 2, late_count: 0, warning_letters: 0 },
-          { id: 8, employee_id: 'EMP008', name: 'มานะ คัดของ', department: 'Operations', position: 'Picker', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150', completed_tasks: 1, completed_courses: 1, passed_quizzes: 1, accumulated_points: 45, evaluation_score: 89, absent_count: 3, leave_count: 0, late_count: 4, warning_letters: 1 },
-          { id: 9, employee_id: 'EMP009', name: 'เกษม รับสินค้า', department: 'Operations', position: 'Receiving Clerk', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150', completed_tasks: 2, completed_courses: 2, passed_quizzes: 0, accumulated_points: 60, evaluation_score: 87, absent_count: 1, leave_count: 5, late_count: 1, warning_letters: 0 },
-          { id: 10, employee_id: 'EMP010', name: 'จารุณี นับสต็อก', department: 'Operations', position: 'Inventory Counter', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150', completed_tasks: 2, completed_courses: 1, passed_quizzes: 1, accumulated_points: 55, evaluation_score: 94, absent_count: 0, leave_count: 1, late_count: 0, warning_letters: 0 }
-        ]);
+        setEmployees([]);
       }
     } finally {
       setLoading(false);

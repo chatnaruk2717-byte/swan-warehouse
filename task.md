@@ -13,6 +13,8 @@
 - [x] Render learning progress list dynamically in the employee dashboard from the database.
 - [x] Automatically create course enrollment row when a user completes a lesson or submits a quiz, to correctly calculate completed course statistics.
 - [x] Fix course self-enrollment permission on backend API to allow employee role (with self ID security checks), so course learners show up correctly.
+- [x] Implement month deletion feature on the department KPIs dashboard and persist the states in localStorage.
+
 
 
 

@@ -290,6 +290,29 @@ export default function KpisPage() {
     { name: 'จารุณี', Efficiency: 90, Accuracy: 95, Safety: 100 }
   ];
 
+  // Load from localStorage on client side mount
+  useEffect(() => {
+    const savedKpis = localStorage.getItem('swan_kpis');
+    if (savedKpis) {
+      try {
+        const parsed = JSON.parse(savedKpis);
+        if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+          setKpis(parsed);
+          // Set selectedMonth to the first key of the loaded kpis
+          const firstMonth = Object.keys(parsed)[0];
+          setSelectedMonth(firstMonth);
+        }
+      } catch (e) {
+        console.error('Failed to parse saved KPIs:', e);
+      }
+    }
+  }, []);
+
+  // Save to localStorage when kpis change
+  useEffect(() => {
+    localStorage.setItem('swan_kpis', JSON.stringify(kpis));
+  }, [kpis]);
+
   useEffect(() => {
     // Simulate API call for leaderboard
     setTimeout(() => {
@@ -398,7 +421,7 @@ export default function KpisPage() {
     e.preventDefault();
     if (!newMonthName.trim()) return;
 
-    const template = kpis['June'] || [];
+    const template = kpis['June'] || Object.values(kpis)[0] || [];
     const newMonthData = template.map(item => {
       const inputVal = newKpiValues[item.id] || '0';
       return {
@@ -415,6 +438,24 @@ export default function KpisPage() {
     setShowAddMonthModal(false);
     setNewMonthName('');
     setNewKpiValues({});
+  };
+
+  const handleDeleteMonth = () => {
+    if (Object.keys(kpis).length <= 1) {
+      alert('ไม่สามารถลบเดือนทั้งหมดได้ ต้องมีอย่างน้อย 1 เดือน');
+      return;
+    }
+    const monthLabel = selectedMonth === 'June' ? 'มิถุนายน 2026' : 
+                       selectedMonth === 'May' ? 'พฤษภาคม 2026' : 
+                       selectedMonth === 'April' ? 'เมษายน 2026' : selectedMonth;
+
+    if (window.confirm(`คุณต้องการลบเดือน "${monthLabel}" และข้อมูล KPI ทั้งหมดในเดือนนี้ใช่หรือไม่?`)) {
+      const remainingMonths = Object.keys(kpis).filter(m => m !== selectedMonth);
+      const newKpis = { ...kpis };
+      delete newKpis[selectedMonth];
+      setKpis(newKpis);
+      setSelectedMonth(remainingMonths[0]);
+    }
   };
 
   if (loading) {
@@ -606,6 +647,14 @@ export default function KpisPage() {
                     >
                       <Plus size={14} />
                       <span>เพิ่มเดือน</span>
+                    </button>
+                    <button
+                      onClick={handleDeleteMonth}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition-all shadow-md shadow-rose-600/10"
+                      title="ลบเดือนปัจจุบัน"
+                    >
+                      <Trash2 size={14} />
+                      <span>ลบเดือน</span>
                     </button>
                     <button
                       onClick={() => {

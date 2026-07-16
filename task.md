@@ -16,6 +16,7 @@
 - [x] Implement month deletion feature on the department KPIs dashboard and persist the states in localStorage.
 - [x] Change fractional pallet KPI units to pallets and issue KPI unit to cases, with automatic grading and browser migration logic.
 - [x] Add target unit dropdown selection menu in the Edit KPI modal.
+- [x] Replace static Radar and Bar charts with dynamic monthly trend graph in Performance KPI dashboard.
 
 
 

@@ -462,11 +462,11 @@ export default function DocumentsPage() {
                   href={displayDocUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white p-1.5 rounded-lg bg-slate-100 dark:bg-white/5 transition-colors flex items-center gap-1.5 text-xs font-bold"
+                  className="text-warehouse-orange hover:text-warehouse-orange/80 p-2 rounded-xl bg-warehouse-orange/10 border border-warehouse-orange/20 transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0"
                   title="เปิดในหน้าต่างใหม่ (Open in new window)"
                 >
                   <ExternalLink size={14} />
-                  <span className="hidden sm:inline">เปิดหน้าต่างใหม่</span>
+                  <span>เปิดอ่าน PDF เต็มจอ</span>
                 </a>
                 <button 
                   onClick={() => setActiveViewerDoc(null)}

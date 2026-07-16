@@ -584,13 +584,12 @@ export default function CourseViewerClient() {
                     <span className="font-bold text-xs">เอกสารหลักสูตร: {activeLesson.title}</span>
                     <a 
                       href={displayDocUrl} 
-                      download={`${activeLesson.title}.pdf`}
                       target="_blank" 
                       rel="noreferrer" 
-                      className="text-xs text-warehouse-orange hover:underline font-bold flex items-center gap-1"
+                      className="text-xs text-warehouse-orange hover:text-warehouse-orange/80 font-bold flex items-center gap-1.5 bg-warehouse-orange/10 border border-warehouse-orange/20 px-3 py-1.5 rounded-xl transition-all"
                     >
                       <ExternalLink size={12} />
-                      <span>เปิดอ่าน / ดาวน์โหลด PDF</span>
+                      <span>เปิดอ่าน PDF เต็มจอ</span>
                     </a>
                   </div>
                   {isMobile ? (

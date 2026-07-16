@@ -25,6 +25,10 @@ interface OrgChartItem {
   level?: string;
   warehouse_area?: string;
   image_url: string;
+  display_order?: number;
+  parent_id?: number | null;
+  photo_size?: string;
+  photo_shape?: string;
 }
 
 export default function OrgChartPage() {
@@ -161,13 +165,26 @@ export default function OrgChartPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  const [formState, setFormState] = useState({
+  const [formState, setFormState] = useState<{
+    name: string;
+    role_name: string;
+    level_order: number;
+    level: string;
+    warehouse_area: string;
+    image_url: string;
+    parent_id: string;
+    photo_size: string;
+    photo_shape: string;
+  }>({
     name: '',
     role_name: '',
     level_order: 5,
     level: '',
     warehouse_area: '',
-    image_url: ''
+    image_url: '',
+    parent_id: '',
+    photo_size: 'md',
+    photo_shape: 'circle'
   });
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -217,7 +234,10 @@ export default function OrgChartPage() {
       level_order: 5,
       level: '',
       warehouse_area: '',
-      image_url: ''
+      image_url: '',
+      parent_id: '',
+      photo_size: 'md',
+      photo_shape: 'circle'
     });
     setUploadedFileName('');
     setShowFormModal(true);
@@ -232,7 +252,10 @@ export default function OrgChartPage() {
       level_order: item.level_order,
       level: item.level || '',
       warehouse_area: item.warehouse_area || '',
-      image_url: item.image_url
+      image_url: item.image_url,
+      parent_id: item.parent_id !== undefined && item.parent_id !== null ? item.parent_id.toString() : '',
+      photo_size: item.photo_size || 'md',
+      photo_shape: item.photo_shape || 'circle'
     });
     setUploadedFileName(item.image_url ? 'มีรูปภาพพนักงานเดิม' : '');
     setShowFormModal(true);
@@ -284,64 +307,109 @@ export default function OrgChartPage() {
   const isAdmin = user?.role === 'admin';
 
   // Render a single member card
-  const renderMemberCard = (item: OrgChartItem) => (
-    <div 
-      key={item.id} 
-      className="relative group flex flex-col items-center"
-      draggable={isAdmin}
-      onDragStart={(e) => handleDragStart(e, item)}
-      onDragOver={handleDragOver}
-      onDrop={(e) => handleDrop(e, item)}
-    >
-      <div className={`w-56 p-4 rounded-2xl bg-white dark:bg-warehouse-slate border border-slate-200/60 dark:border-white/5 shadow-lg shadow-slate-100/50 dark:shadow-none flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-emerald-500/30 ${
-        isAdmin ? 'cursor-grab active:cursor-grabbing' : ''
-      } ${draggedItem?.id === item.id ? 'opacity-40 border-dashed border-emerald-500/50' : ''}`}>
-        
-        {/* Profile Image / Initial */}
-        <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-emerald-500 bg-emerald-50 dark:bg-white/5 flex items-center justify-center mb-3 shadow-inner">
-          {item.image_url ? (
-            <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
-          ) : (
-            <User size={36} className="text-emerald-600 dark:text-emerald-400" />
+  const renderMemberCard = (item: OrgChartItem) => {
+    // Find parent/supervisor name
+    const parentNode = orgItems.find(p => p.id === item.parent_id);
+
+    // Frame Shape and Size settings
+    const shapeClass = item.photo_shape === 'rounded' 
+      ? 'rounded-2xl' 
+      : item.photo_shape === 'circle' || !item.photo_shape
+      ? 'rounded-full'
+      : ''; // hexagon uses clipPath style
+
+    const sizeClass = item.photo_size === 'sm'
+      ? 'w-14 h-14'
+      : item.photo_size === 'lg'
+      ? 'w-24 h-24'
+      : 'w-18 h-18'; // default md
+
+    const clipStyle = item.photo_shape === 'hexagon'
+      ? { clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }
+      : undefined;
+
+    // Card border glow color based on level
+    const levelGlowClass = item.level_order === 1
+      ? 'border-amber-400/50 hover:border-amber-400 shadow-amber-500/5 dark:shadow-none'
+      : item.level_order === 2 || item.level_order === 3
+      ? 'border-emerald-500/35 hover:border-emerald-500 shadow-emerald-500/5 dark:shadow-none'
+      : 'border-slate-200/60 dark:border-white/5 hover:border-warehouse-orange/30';
+
+    return (
+      <div 
+        key={item.id} 
+        className="relative group flex flex-col items-center"
+        draggable={isAdmin}
+        onDragStart={(e) => handleDragStart(e, item)}
+        onDragOver={handleDragOver}
+        onDrop={(e) => handleDrop(e, item)}
+      >
+        <div className={`w-52 p-3.5 rounded-2xl bg-white dark:bg-warehouse-slate border shadow-md flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${levelGlowClass} ${
+          isAdmin ? 'cursor-grab active:cursor-grabbing' : ''
+        } ${draggedItem?.id === item.id ? 'opacity-40 border-dashed border-emerald-500/50' : ''}`}>
+          
+          {/* Profile Image / Initial */}
+          <div 
+            style={clipStyle}
+            className={`${sizeClass} ${shapeClass} overflow-hidden border-2 border-emerald-500 bg-emerald-50 dark:bg-white/5 flex items-center justify-center mb-2.5 shadow-md`}
+          >
+            {item.image_url ? (
+              <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+            ) : (
+              <User size={item.photo_size === 'sm' ? 24 : item.photo_size === 'lg' ? 44 : 32} className="text-emerald-600 dark:text-emerald-400" />
+            )}
+          </div>
+
+          {/* Member Details */}
+          <h5 className="font-bold text-xs sm:text-sm text-slate-800 dark:text-white leading-snug">{item.name}</h5>
+          <p className="text-[9px] font-extrabold text-warehouse-orange mt-1 px-2 py-0.5 rounded-full bg-warehouse-orange/5 border border-warehouse-orange/15 max-w-full truncate">
+            {item.role_name} {item.level ? `(${item.level})` : ''}
+          </p>
+
+          {/* Warehouse Zone */}
+          {item.warehouse_area && (
+            <p className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1">
+              <span>โซนคลัง:</span>
+              <span className="text-slate-600 dark:text-slate-300 font-bold">{item.warehouse_area}</span>
+            </p>
+          )}
+
+          {/* Supervisor / Reports To Link */}
+          {parentNode && (
+            <div className="mt-2 w-full pt-1.5 border-t border-slate-100 dark:border-white/5 flex flex-col items-center">
+              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">รายงานต่อ (Reports To)</span>
+              <span className="text-[9px] font-bold text-slate-600 dark:text-slate-200 mt-0.5 max-w-full truncate flex items-center gap-0.5">
+                <UserCheck size={10} className="text-emerald-500" />
+                {parentNode.name}
+              </span>
+            </div>
+          )}
+
+          {/* Admin actions overlay */}
+          {isAdmin && (
+            <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-900/10 backdrop-blur-md p-1 rounded-lg">
+              <button 
+                type="button"
+                onClick={() => handleOpenEditModal(item)}
+                className="p-1 hover:bg-white/20 text-slate-700 dark:text-white rounded transition-colors"
+                title="แก้ไข"
+              >
+                <Edit size={12} />
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleDelete(item.id, item.name)}
+                className="p-1 hover:bg-rose-500/20 text-rose-500 rounded transition-colors"
+                title="ลบ"
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
           )}
         </div>
-
-        {/* Member Details */}
-        <h5 className="font-bold text-sm text-slate-800 dark:text-white leading-snug">{item.name}</h5>
-        <p className="text-[10px] font-bold text-warehouse-orange mt-1 px-2.5 py-0.5 rounded-full bg-warehouse-orange/5 border border-warehouse-orange/15 max-w-full truncate">
-          {item.role_name} {item.level ? `(${item.level})` : ''}
-        </p>
-
-        {/* Warehouse Zone */}
-        {item.warehouse_area && (
-          <p className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 mt-1.5 flex items-center gap-1">
-            <span>โซนคลัง:</span>
-            <span className="text-slate-600 dark:text-slate-300 font-bold">{item.warehouse_area}</span>
-          </p>
-        )}
-
-        {/* Admin actions overlay */}
-        {isAdmin && (
-          <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-900/10 backdrop-blur-md p-1 rounded-lg">
-            <button 
-              onClick={() => handleOpenEditModal(item)}
-              className="p-1 hover:bg-white/20 text-slate-700 dark:text-white rounded transition-colors"
-              title="แก้ไข"
-            >
-              <Edit size={12} />
-            </button>
-            <button 
-              onClick={() => handleDelete(item.id, item.name)}
-              className="p-1 hover:bg-rose-500/20 text-rose-500 rounded transition-colors"
-              title="ลบ"
-            >
-              <Trash2 size={12} />
-            </button>
-          </div>
-        )}
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl min-h-screen">
@@ -377,29 +445,29 @@ export default function OrgChartPage() {
           <p className="text-xs text-slate-400 font-bold">กำลังโหลดผังองค์กร...</p>
         </div>
       ) : (
-        <div className="relative flex flex-col items-center gap-8 py-6 overflow-x-auto min-w-full">
+        <div className="relative flex flex-col items-center gap-3 py-2 overflow-x-auto min-w-full">
           
           {/* Level 1: ผู้จัดการฝ่าย */}
           {(deptManagers.length > 0 || isAdmin) && (
             <div 
               onDragOver={handleDragOver}
               onDrop={(e) => handleDropToLevel(e, 1)}
-              className={`flex flex-col items-center relative w-full p-4 rounded-3xl transition-all duration-300 ${
+              className={`flex flex-col items-center relative w-full p-2 rounded-2xl transition-all duration-300 ${
                 draggedItem && draggedItem.level_order !== 1 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
               }`}
             >
-              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-2 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">1. ผู้จัดการฝ่าย (Department Manager)</span>}
+              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-1 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">1. ผู้จัดการฝ่าย (Department Manager)</span>}
               {deptManagers.length > 0 ? (
-                <div className="flex flex-wrap justify-center gap-6">
+                <div className="flex flex-wrap justify-center gap-4">
                   {deptManagers.map(item => renderMemberCard(item))}
                 </div>
               ) : (
-                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-3.5 rounded-2xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
+                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
                   ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "ผู้จัดการฝ่าย"
                 </div>
               )}
               {(sectManagers.length > 0 || departmentHeads.length > 0 || supervisors.length > 0 || officers.length > 0 || forkliftDrivers.length > 0 || liftOperators.length > 0 || isAdmin) && (
-                <div className="w-0.5 h-8 bg-slate-300 dark:bg-white/10 mt-4"></div>
+                <div className="w-0.5 h-6 bg-slate-300 dark:bg-white/10 mt-2"></div>
               )}
             </div>
           )}
@@ -409,22 +477,22 @@ export default function OrgChartPage() {
             <div 
               onDragOver={handleDragOver}
               onDrop={(e) => handleDropToLevel(e, 2)}
-              className={`flex flex-col items-center relative w-full p-4 rounded-3xl transition-all duration-300 ${
+              className={`flex flex-col items-center relative w-full p-2 rounded-2xl transition-all duration-300 ${
                 draggedItem && draggedItem.level_order !== 2 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
               }`}
             >
-              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-2 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">2. ผู้จัดการแผนก (Section Manager)</span>}
+              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-1 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">2. ผู้จัดการแผนก (Section Manager)</span>}
               {sectManagers.length > 0 ? (
-                <div className="flex flex-wrap justify-center gap-6">
+                <div className="flex flex-wrap justify-center gap-4">
                   {sectManagers.map(item => renderMemberCard(item))}
                 </div>
               ) : (
-                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-3.5 rounded-2xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
+                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
                   ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "ผู้จัดการแผนก"
                 </div>
               )}
               {(departmentHeads.length > 0 || supervisors.length > 0 || officers.length > 0 || forkliftDrivers.length > 0 || liftOperators.length > 0 || isAdmin) && (
-                <div className="w-0.5 h-8 bg-slate-300 dark:bg-white/10 mt-4"></div>
+                <div className="w-0.5 h-6 bg-slate-300 dark:bg-white/10 mt-2"></div>
               )}
             </div>
           )}
@@ -434,22 +502,22 @@ export default function OrgChartPage() {
             <div 
               onDragOver={handleDragOver}
               onDrop={(e) => handleDropToLevel(e, 3)}
-              className={`flex flex-col items-center relative w-full p-4 rounded-3xl transition-all duration-300 ${
+              className={`flex flex-col items-center relative w-full p-2 rounded-2xl transition-all duration-300 ${
                 draggedItem && draggedItem.level_order !== 3 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
               }`}
             >
-              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-2 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">3. หัวหน้าแผนก (Section Head)</span>}
+              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-1 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">3. หัวหน้าแผนก (Section Head)</span>}
               {departmentHeads.length > 0 ? (
-                <div className="flex flex-wrap justify-center gap-6">
+                <div className="flex flex-wrap justify-center gap-4">
                   {departmentHeads.map(item => renderMemberCard(item))}
                 </div>
               ) : (
-                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-3.5 rounded-2xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
+                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
                   ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "หัวหน้าแผนก"
                 </div>
               )}
               {(supervisors.length > 0 || officers.length > 0 || forkliftDrivers.length > 0 || liftOperators.length > 0 || isAdmin) && (
-                <div className="w-0.5 h-8 bg-slate-300 dark:bg-white/10 mt-4"></div>
+                <div className="w-0.5 h-6 bg-slate-300 dark:bg-white/10 mt-2"></div>
               )}
             </div>
           )}
@@ -459,22 +527,22 @@ export default function OrgChartPage() {
             <div 
               onDragOver={handleDragOver}
               onDrop={(e) => handleDropToLevel(e, 4)}
-              className={`flex flex-col items-center relative w-full p-4 rounded-3xl transition-all duration-300 ${
+              className={`flex flex-col items-center relative w-full p-2 rounded-2xl transition-all duration-300 ${
                 draggedItem && draggedItem.level_order !== 4 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
               }`}
             >
-              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-2 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">4. หัวหน้างาน (Supervisor)</span>}
+              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-1 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">4. หัวหน้างาน (Supervisor)</span>}
               {supervisors.length > 0 ? (
-                <div className="flex flex-wrap justify-center gap-6">
+                <div className="flex flex-wrap justify-center gap-4">
                   {supervisors.map(item => renderMemberCard(item))}
                 </div>
               ) : (
-                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-3.5 rounded-2xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
+                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
                   ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "หัวหน้างาน"
                 </div>
               )}
               {(officers.length > 0 || forkliftDrivers.length > 0 || liftOperators.length > 0 || isAdmin) && (
-                <div className="w-0.5 h-8 bg-slate-300 dark:bg-white/10 mt-4"></div>
+                <div className="w-0.5 h-6 bg-slate-300 dark:bg-white/10 mt-2"></div>
               )}
             </div>
           )}
@@ -484,22 +552,22 @@ export default function OrgChartPage() {
             <div 
               onDragOver={handleDragOver}
               onDrop={(e) => handleDropToLevel(e, 5)}
-              className={`flex flex-col items-center relative w-full p-4 rounded-3xl transition-all duration-300 ${
+              className={`flex flex-col items-center relative w-full p-2 rounded-2xl transition-all duration-300 ${
                 draggedItem && draggedItem.level_order !== 5 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
               }`}
             >
-              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-2 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">5. เจ้าหน้าที่ (Officer / Staff)</span>}
+              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-1 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">5. เจ้าหน้าที่ (Officer / Staff)</span>}
               {officers.length > 0 ? (
-                <div className="flex flex-wrap justify-center gap-6 max-w-6xl">
+                <div className="flex flex-wrap justify-center gap-4 max-w-6xl">
                   {officers.map((item) => renderMemberCard(item))}
                 </div>
               ) : (
-                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-3.5 rounded-2xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
+                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
                   ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "เจ้าหน้าที่"
                 </div>
               )}
               {(forkliftDrivers.length > 0 || liftOperators.length > 0 || isAdmin) && (
-                <div className="w-0.5 h-8 bg-slate-300 dark:bg-white/10 mt-4"></div>
+                <div className="w-0.5 h-6 bg-slate-300 dark:bg-white/10 mt-2"></div>
               )}
             </div>
           )}
@@ -509,22 +577,22 @@ export default function OrgChartPage() {
             <div 
               onDragOver={handleDragOver}
               onDrop={(e) => handleDropToLevel(e, 6)}
-              className={`flex flex-col items-center relative w-full p-4 rounded-3xl transition-all duration-300 ${
+              className={`flex flex-col items-center relative w-full p-2 rounded-2xl transition-all duration-300 ${
                 draggedItem && draggedItem.level_order !== 6 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
               }`}
             >
-              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-2 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">6. พนักงานขับรถยก (Forklift Driver)</span>}
+              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-1 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">6. พนักงานขับรถยก (Forklift Driver)</span>}
               {forkliftDrivers.length > 0 ? (
-                <div className="flex flex-wrap justify-center gap-6 max-w-6xl">
+                <div className="flex flex-wrap justify-center gap-4 max-w-6xl">
                   {forkliftDrivers.map((item) => renderMemberCard(item))}
                 </div>
               ) : (
-                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-3.5 rounded-2xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
+                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
                   ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "พนักงานขับรถยก"
                 </div>
               )}
               {(liftOperators.length > 0 || isAdmin) && (
-                <div className="w-0.5 h-8 bg-slate-300 dark:bg-white/10 mt-4"></div>
+                <div className="w-0.5 h-6 bg-slate-300 dark:bg-white/10 mt-2"></div>
               )}
             </div>
           )}
@@ -534,17 +602,17 @@ export default function OrgChartPage() {
             <div 
               onDragOver={handleDragOver}
               onDrop={(e) => handleDropToLevel(e, 7)}
-              className={`flex flex-col items-center relative w-full p-4 rounded-3xl transition-all duration-300 ${
+              className={`flex flex-col items-center relative w-full p-2 rounded-2xl transition-all duration-300 ${
                 draggedItem && draggedItem.level_order !== 7 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
               }`}
             >
-              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-2 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">7. พนักงานหน้าลิฟท์ (Lift Operator)</span>}
+              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-1 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">7. พนักงานหน้าลิฟท์ (Lift Operator)</span>}
               {liftOperators.length > 0 ? (
-                <div className="flex flex-wrap justify-center gap-6 max-w-6xl">
+                <div className="flex flex-wrap justify-center gap-4 max-w-6xl">
                   {liftOperators.map((item) => renderMemberCard(item))}
                 </div>
               ) : (
-                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-3.5 rounded-2xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
+                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
                   ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "พนักงานหน้าลิฟท์"
                 </div>
               )}
@@ -598,6 +666,24 @@ export default function OrgChartPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">รายงานต่อผู้บังคับบัญชา (Reports To)</label>
+                <select
+                  value={formState.parent_id || ''}
+                  onChange={(e) => setFormState(prev => ({ ...prev, parent_id: e.target.value }))}
+                  className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate"
+                >
+                  <option value="">-- ไม่มี (ผู้จัดการสูงสุดในแผนก) --</option>
+                  {orgItems
+                    .filter(item => item.id !== editingId)
+                    .map(item => (
+                      <option key={item.id} value={item.id}>
+                        {item.name} ({item.role_name})
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase">ชื่อ-นามสกุลพนักงาน</label>
                 <input 
                   type="text" 
@@ -625,11 +711,11 @@ export default function OrgChartPage() {
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase">เลเวลตำแหน่ง (Level)</label>
                   <input 
-                    type="text" 
-                    placeholder="เช่น L1, L2, L3"
-                    value={formState.level}
-                    onChange={(e) => setFormState(prev => ({ ...prev, level: e.target.value }))}
-                    className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate"
+                     type="text" 
+                     placeholder="เช่น L1, L2, L3"
+                     value={formState.level}
+                     onChange={(e) => setFormState(prev => ({ ...prev, level: e.target.value }))}
+                     className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate"
                   />
                 </div>
 
@@ -642,6 +728,34 @@ export default function OrgChartPage() {
                     onChange={(e) => setFormState(prev => ({ ...prev, warehouse_area: e.target.value }))}
                     className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">ขนาดรูปภาพ (Photo Size)</label>
+                  <select
+                    value={formState.photo_size}
+                    onChange={(e) => setFormState(prev => ({ ...prev, photo_size: e.target.value }))}
+                    className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate"
+                  >
+                    <option value="sm">เล็ก (Small)</option>
+                    <option value="md">กลาง (Medium)</option>
+                    <option value="lg">ใหญ่ (Large)</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">ทรงกรอบรูป (Frame Shape)</label>
+                  <select
+                    value={formState.photo_shape}
+                    onChange={(e) => setFormState(prev => ({ ...prev, photo_shape: e.target.value }))}
+                    className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate"
+                  >
+                    <option value="circle">วงกลม (Circle)</option>
+                    <option value="rounded">สี่เหลี่ยมมน (Rounded)</option>
+                    <option value="hexagon">หกเหลี่ยม (Hexagon)</option>
+                  </select>
                 </div>
               </div>
 

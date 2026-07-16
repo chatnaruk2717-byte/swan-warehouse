@@ -313,6 +313,15 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
       await connection.query("ALTER TABLE org_chart ADD COLUMN warehouse_area VARCHAR(100)");
     } catch (e) {}
     try {
+      await connection.query("ALTER TABLE org_chart ADD COLUMN parent_id INT NULL");
+    } catch (e) {}
+    try {
+      await connection.query("ALTER TABLE org_chart ADD COLUMN photo_size VARCHAR(20) DEFAULT 'md'");
+    } catch (e) {}
+    try {
+      await connection.query("ALTER TABLE org_chart ADD COLUMN photo_shape VARCHAR(25) DEFAULT 'circle'");
+    } catch (e) {}
+    try {
       await connection.query("ALTER TABLE users ADD COLUMN evaluation_score INT DEFAULT 100");
     } catch (e) {}
     try {

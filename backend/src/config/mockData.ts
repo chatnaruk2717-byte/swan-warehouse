@@ -449,6 +449,9 @@ export interface OrgChartItem {
   warehouse_area?: string;
   image_url: string;
   display_order?: number;
+  parent_id?: number | null;
+  photo_size?: string;
+  photo_shape?: string;
 }
 
 export const mockOrgChart: OrgChartItem[] = [

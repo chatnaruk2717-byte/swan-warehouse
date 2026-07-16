@@ -16,8 +16,6 @@ import {
   PolarAngleAxis, 
   PolarRadiusAxis, 
   Radar,
-  LineChart,
-  Line,
   AreaChart,
   Area
 } from 'recharts';
@@ -45,7 +43,7 @@ import {
 } from 'lucide-react';
 
 export default function KpisPage() {
-  const { user } = useAuth();
+  const { user, api } = useAuth();
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'departmentKpi' | 'leaderboard'>('departmentKpi');
@@ -63,6 +61,7 @@ export default function KpisPage() {
   const [editActual, setEditActual] = useState('');
   const [editManualScore, setEditManualScore] = useState('');
   const [editManualGrade, setEditManualGrade] = useState('');
+  const [trendKpiId, setTrendKpiId] = useState('1.1');
 
   // Add KPI state variables
   const [showAddKpiModal, setShowAddKpiModal] = useState(false);
@@ -81,63 +80,62 @@ export default function KpisPage() {
   const [showAddMonthModal, setShowAddMonthModal] = useState(false);
   const [newMonthName, setNewMonthName] = useState('');
   const [newKpiValues, setNewKpiValues] = useState<Record<string, string>>({});
-  const [trendKpiId, setTrendKpiId] = useState('1.1');
 
   // Turn monthlyKpiData into modifiable state!
   const [kpis, setKpis] = useState<Record<string, any[]>>({
     'June': [
-      { id: '1.1', name: 'à¸�à¸²à¸£à¸ˆà¹ˆà¸²à¸¢à¸ªà¸´à¸™à¸„à¹‰à¸²à¸­à¸­à¸�à¸•à¸²à¸¡à¸¥à¸³à¸”à¸±à¸š FIFO 100%', formula: '(à¸ˆà¸³à¸™à¸§à¸™à¸£à¸²à¸¢à¸�à¸²à¸£à¸—à¸µà¹ˆà¸ˆà¹ˆà¸²à¸¢à¸•à¸£à¸‡à¸•à¸²à¸¡ FIFO / à¸ˆà¸³à¸™à¸§à¸™à¸£à¸²à¸¢à¸�à¸²à¸£à¸ˆà¹ˆà¸²à¸¢à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”) x 100', wt: 15.0, target: '98%', actual: 98.2, unit: '%', category: 'FIFO' },
-      { id: '1.2', name: 'à¸ˆà¸³à¸™à¸§à¸™à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¹„à¸”à¹‰à¸£à¸±à¸šà¸�à¸²à¸£à¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ GEN', formula: '(à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸µà¹ˆà¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ / à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” 326 PL) x 100', wt: 2.5, target: '65 à¸žà¸²à¹€à¸¥à¸—', actual: 68, unit: 'à¸žà¸²à¹€à¸¥à¸—', category: 'FIFO' },
-      { id: '1.3', name: 'à¸ˆà¸³à¸™à¸§à¸™à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¹„à¸”à¹‰à¸£à¸±à¸šà¸�à¸²à¸£à¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ 3PCS/Jui', formula: '(à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸µà¹ˆà¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ / à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” 17 PL) x 100', wt: 2.5, target: '3.4 à¸žà¸²à¹€à¸¥à¸—', actual: 3, unit: 'à¸žà¸²à¹€à¸¥à¸—', category: 'FIFO' },
-      { id: '1.4', name: 'à¸ˆà¸³à¸™à¸§à¸™à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¹„à¸”à¹‰à¸£à¸±à¸šà¸�à¸²à¸£à¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ 2PCS', formula: '(à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸µà¹ˆà¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ / à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” 42 PL) x 100', wt: 2.5, target: '8.4 à¸žà¸²à¹€à¸¥à¸—', actual: 9, unit: 'à¸žà¸²à¹€à¸¥à¸—', category: 'FIFO' },
-      { id: '1.5', name: 'à¸ˆà¸³à¸™à¸§à¸™à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¹„à¸”à¹‰à¸£à¸±à¸šà¸�à¸²à¸£à¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ EOE', formula: '(à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸µà¹ˆà¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ / à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” 35 PL) x 100', wt: 2.5, target: '7 à¸žà¸²à¹€à¸¥à¸—', actual: 6, unit: 'à¸žà¸²à¹€à¸¥à¸—', category: 'FIFO' },
-      { id: '2', name: '% On time Delivery = 100% (à¸§à¸²à¸‡à¹�à¸œà¸™, à¸„à¸¥à¸±à¸‡à¸ªà¸´à¸™à¸„à¹‰à¸², à¸‚à¸™à¸ªà¹ˆà¸‡)', formula: '(à¸ˆà¸³à¸™à¸§à¸™à¸£à¸²à¸¢à¸�à¸²à¸£à¸ªà¹ˆà¸‡à¸¡à¸­à¸šà¸•à¸£à¸‡à¹€à¸§à¸¥à¸² / à¸ˆà¸³à¸™à¸§à¸™à¸ˆà¸±à¸”à¸ªà¹ˆà¸‡à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”) x 100', wt: 10.0, target: '100%', actual: 99.1, unit: '%', category: 'Delivery' },
-      { id: '3', name: 'C-CAR (à¸„à¸¥à¸±à¸‡à¸ªà¸´à¸™à¸„à¹‰à¸²+à¸‚à¸™à¸ªà¹ˆà¸‡)', formula: 'Major + Minor à¸¥à¸”à¸¥à¸‡ 50% (à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸­à¸´à¸‡à¸ˆà¸²à¸�à¸›à¸µ 2024 = 16 à¸‰à¸šà¸±à¸š)', wt: 5.0, target: '5 à¸‰à¸šà¸±à¸š', actual: 6, unit: 'à¸‰à¸šà¸±à¸š', category: 'Quality' },
-      { id: '4', name: 'Waste à¸¥à¸”à¸‚à¸­à¸‡à¹€à¸ªà¸µà¸¢à¸—à¸µà¹ˆà¹€à¸�à¸´à¸”à¸ˆà¸²à¸�à¸�à¸£à¸°à¸šà¸§à¸™à¸�à¸²à¸£à¸„à¸¥à¸±à¸‡à¸ªà¸´à¸™à¸„à¹‰à¸²', formula: 'à¸¥à¸”à¸¥à¸‡ 50% (à¹€à¸›à¹‰à¸²à¸«à¸¡à¸²à¸¢à¸ªà¸°à¸ªà¸¡à¸•à¹ˆà¸­à¸›à¸µà¹„à¸¡à¹ˆà¹€à¸�à¸´à¸™ 80 à¸žà¸²à¹€à¸¥à¸—)', wt: 5.0, target: '<=80 à¸žà¸²à¹€à¸¥à¸—', actual: 78, unit: 'à¸žà¸²à¹€à¸¥à¸—', category: 'Quality' },
-      { id: '5.1', name: 'à¸­à¸¸à¸šà¸±à¸•à¸´à¹€à¸«à¸•à¸¸à¸�à¸¥à¹ˆà¸­à¸‡à¹‚à¸«à¸¥à¸”à¸¥à¹‰à¸¡à¸ªà¸°à¸ªà¸¡', formula: 'à¸­à¸¸à¸šà¸±à¸•à¸´à¹€à¸«à¸•à¸¸à¸ªà¸°à¸ªà¸¡à¸‚à¸­à¸‡à¸�à¸¥à¹ˆà¸­à¸‡ = 0 PL (à¸›à¸µ 2025 = 13 PL)', wt: 5.0, target: '6 à¸„à¸£à¸±à¹‰à¸‡', actual: 6, unit: 'à¸„à¸£à¸±à¹‰à¸‡', category: 'Safety' },
-      { id: '5.2', name: 'à¸­à¸¸à¸šà¸±à¸•à¸´à¹€à¸«à¸•à¸¸à¸�à¸²à¸£à¸—à¸³à¸‡à¸²à¸™', formula: 'à¸­à¸¸à¸šà¸±à¸•à¸´à¹€à¸«à¸•à¸¸à¸—à¸µà¹ˆà¸¡à¸µà¹€à¸­à¸�à¸ªà¸²à¸£à¸ªà¸­à¸šà¸ªà¸§à¸™à¸„à¸§à¸²à¸¡à¸›à¸¥à¸­à¸”à¸ à¸±à¸¢à¸ˆà¸²à¸� à¸ˆà¸›. = 0 à¸„à¸£à¸±à¹‰à¸‡', wt: 5.0, target: '0 à¸„à¸£à¸±à¹‰à¸‡', actual: 0, unit: 'à¸„à¸£à¸±à¹‰à¸‡', category: 'Safety' },
-      { id: '7', name: 'Operation Cost +-5%', formula: 'Actual Sales unit (can+eoe+sot) / à¸„à¹ˆà¸²à¹ƒà¸Šà¹‰à¸ˆà¹ˆà¸²à¸¢à¸ˆà¸£à¸´à¸‡ x 100', wt: 10.0, target: '-5.00%', actual: -5.1, unit: '%', category: 'Cost' },
-      { id: '8', name: 'à¸ˆà¸³à¸™à¸§à¸™à¸£à¸²à¸¢à¸�à¸²à¸£à¸—à¸µà¹ˆ Adjust à¹ƒà¸™à¸£à¸°à¸šà¸š ERP (à¸•à¹ˆà¸­à¹€à¸”à¸·à¸­à¸™)', formula: 'à¸�à¸²à¸£ Adjust = 0 à¸„à¸£à¸±à¹‰à¸‡/à¸•à¸¹à¹‰ (à¸£à¸§à¸¡à¸—à¸¸à¸�à¸„à¸¥à¸±à¸‡à¸ªà¸´à¸™à¸„à¹‰à¸²)', wt: 5.0, target: '0 à¸„à¸£à¸±à¹‰à¸‡', actual: 1, unit: 'à¸„à¸£à¸±à¹‰à¸‡', category: 'System' },
-      { id: '9', name: 'à¸„à¸§à¸²à¸¡à¸–à¸¹à¸�à¸•à¹‰à¸­à¸‡à¸‚à¸­à¸‡à¸�à¸²à¸£à¸ˆà¸±à¸”à¸ªà¸´à¸™à¸„à¹‰à¸²à¹€à¸žà¸·à¹ˆà¸­à¸ˆà¸±à¸”à¸ªà¹ˆà¸‡', formula: 'à¸ˆà¸³à¸™à¸§à¸™ Job à¸‡à¸²à¸™à¸–à¸¹à¸�à¸•à¹‰à¸­à¸‡ / à¸ˆà¸³à¸™à¸§à¸™ Job à¸‡à¸²à¸™à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” x 100', wt: 5.0, target: '100.00%', actual: 100.0, unit: '%', category: 'Quality' },
-      { id: '10', name: 'à¸ˆà¸³à¸™à¸§à¸™à¸�à¸´à¸ˆà¸�à¸£à¸£à¸¡ FI/Kaizen à¸—à¸µà¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆà¹�à¸¥à¸°à¸™à¸³à¹„à¸›à¹ƒà¸Šà¹‰à¸ˆà¸£à¸´à¸‡', formula: 'à¸�à¸´à¸ˆà¸�à¸£à¸£à¸¡à¸›à¸£à¸°à¸”à¸´à¸©à¸�à¹Œà¸™à¸§à¸±à¸•à¸�à¸£à¸£à¸¡/à¸�à¸²à¸£à¸›à¸£à¸±à¸šà¸›à¸£à¸¸à¸‡à¸‡à¸²à¸™ (à¸ªà¸°à¸ªà¸¡à¸•à¹ˆà¸­à¸›à¸µ)', wt: 10.0, target: '12 à¹€à¸£à¸·à¹ˆà¸­à¸‡', actual: 11, unit: 'à¹€à¸£à¸·à¹ˆà¸­à¸‡', category: 'Improvement' },
-      { id: '11.1', name: 'à¸œà¸¥à¸›à¸£à¸°à¹€à¸¡à¸´à¸™ 5S & Work Instruction (WI)', formula: 'à¸„à¸°à¹�à¸™à¸™à¸�à¸²à¸£à¸œà¹ˆà¸²à¸™à¸›à¸£à¸°à¹€à¸¡à¸´à¸™à¸¡à¸²à¸•à¸£à¸�à¸²à¸™à¸žà¸·à¹‰à¸™à¸—à¸µà¹ˆ 5S à¹�à¸¥à¸°à¸«à¸™à¹‰à¸²à¸‡à¸²à¸™', wt: 10.0, target: '28 à¹€à¸£à¸·à¹ˆà¸­à¸‡', actual: 28, unit: 'à¹€à¸£à¸·à¹ˆà¸­à¸‡', category: '5S' },
-      { id: '11.2', name: 'à¸›à¸£à¸°à¹€à¸”à¹‡à¸™à¸—à¸µà¹ˆà¹„à¸¡à¹ˆà¹�à¸�à¹‰à¹„à¸‚', formula: 'à¸ˆà¸³à¸™à¸§à¸™à¸›à¸£à¸°à¹€à¸”à¹‡à¸™à¸„à¹‰à¸²à¸‡à¹�à¸�à¹‰à¹„à¸‚à¹€à¸�à¸´à¸™ 3 à¸§à¸±à¸™', wt: 5.0, target: '0 à¹€à¸„à¸ª', actual: 1, unit: 'à¹€à¸„à¸ª', category: '5S' }
+      { id: '1.1', name: 'การจ่ายสินค้าออกตามลำดับ FIFO 100%', formula: '(จำนวนรายการที่จ่ายตรงตาม FIFO / จำนวนรายการจ่ายทั้งหมด) x 100', wt: 15.0, target: '98%', actual: 98.2, unit: '%', category: 'FIFO' },
+      { id: '1.2', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม GEN', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 326 PL) x 100', wt: 2.5, target: '65 พาเลท', actual: 68, unit: 'พาเลท', category: 'FIFO' },
+      { id: '1.3', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม 3PCS/Jui', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 17 PL) x 100', wt: 2.5, target: '3.4 พาเลท', actual: 3, unit: 'พาเลท', category: 'FIFO' },
+      { id: '1.4', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม 2PCS', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 42 PL) x 100', wt: 2.5, target: '8.4 พาเลท', actual: 9, unit: 'พาเลท', category: 'FIFO' },
+      { id: '1.5', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม EOE', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 35 PL) x 100', wt: 2.5, target: '7 พาเลท', actual: 6, unit: 'พาเลท', category: 'FIFO' },
+      { id: '2', name: '% On time Delivery = 100% (วางแผน, คลังสินค้า, ขนส่ง)', formula: '(จำนวนรายการส่งมอบตรงเวลา / จำนวนจัดส่งทั้งหมด) x 100', wt: 10.0, target: '100%', actual: 99.1, unit: '%', category: 'Delivery' },
+      { id: '3', name: 'C-CAR (คลังสินค้า+ขนส่ง)', formula: 'Major + Minor ลดลง 50% (ข้อมูลอิงจากปี 2024 = 16 ฉบับ)', wt: 5.0, target: '5 ฉบับ', actual: 6, unit: 'ฉบับ', category: 'Quality' },
+      { id: '4', name: 'Waste ลดของเสียที่เกิดจากกระบวนการคลังสินค้า', formula: 'ลดลง 50% (เป้าหมายสะสมต่อปีไม่เกิน 80 พาเลท)', wt: 5.0, target: '<=80 พาเลท', actual: 78, unit: 'พาเลท', category: 'Quality' },
+      { id: '5.1', name: 'อุบัติเหตุกล่องโหลดล้มสะสม', formula: 'อุบัติเหตุสะสมของกล่อง = 0 PL (ปี 2025 = 13 PL)', wt: 5.0, target: '6 ครั้ง', actual: 6, unit: 'ครั้ง', category: 'Safety' },
+      { id: '5.2', name: 'อุบัติเหตุการทำงาน', formula: 'อุบัติเหตุที่มีเอกสารสอบสวนความปลอดภัยจาก จป. = 0 ครั้ง', wt: 5.0, target: '0 ครั้ง', actual: 0, unit: 'ครั้ง', category: 'Safety' },
+      { id: '7', name: 'Operation Cost +-5%', formula: 'Actual Sales unit (can+eoe+sot) / ค่าใช้จ่ายจริง x 100', wt: 10.0, target: '-5.00%', actual: -5.1, unit: '%', category: 'Cost' },
+      { id: '8', name: 'จำนวนรายการที่ Adjust ในระบบ ERP (ต่อเดือน)', formula: 'การ Adjust = 0 ครั้ง/ตู้ (รวมทุกคลังสินค้า)', wt: 5.0, target: '0 ครั้ง', actual: 1, unit: 'ครั้ง', category: 'System' },
+      { id: '9', name: 'ความถูกต้องของการจัดสินค้าเพื่อจัดส่ง', formula: 'จำนวน Job งานถูกต้อง / จำนวน Job งานทั้งหมด x 100', wt: 5.0, target: '100.00%', actual: 100.0, unit: '%', category: 'Quality' },
+      { id: '10', name: 'จำนวนกิจกรรม FI/Kaizen ที่สำเร็จและนำไปใช้จริง', formula: 'กิจกรรมประดิษฐ์นวัตกรรม/การปรับปรุงงาน (สะสมต่อปี)', wt: 10.0, target: '12 เรื่อง', actual: 11, unit: 'เรื่อง', category: 'Improvement' },
+      { id: '11.1', name: 'ผลประเมิน 5S & Work Instruction (WI)', formula: 'คะแนนการผ่านประเมินมาตรฐานพื้นที่ 5S และหน้างาน', wt: 10.0, target: '28 เรื่อง', actual: 28, unit: 'เรื่อง', category: '5S' },
+      { id: '11.2', name: 'ประเด็นที่ไม่แก้ไข', formula: 'จำนวนประเด็นค้างแก้ไขเกิน 3 วัน', wt: 5.0, target: '0 เคส', actual: 1, unit: 'เคส', category: '5S' }
     ],
     'May': [
-      { id: '1.1', name: 'à¸�à¸²à¸£à¸ˆà¹ˆà¸²à¸¢à¸ªà¸´à¸™à¸„à¹‰à¸²à¸­à¸­à¸�à¸•à¸²à¸¡à¸¥à¸³à¸”à¸±à¸š FIFO 100%', formula: '(à¸ˆà¸³à¸™à¸§à¸™à¸£à¸²à¸¢à¸�à¸²à¸£à¸—à¸µà¹ˆà¸ˆà¹ˆà¸²à¸¢à¸•à¸£à¸‡à¸•à¸²à¸¡ FIFO / à¸ˆà¸³à¸™à¸§à¸™à¸£à¸²à¸¢à¸�à¸²à¸£à¸ˆà¹ˆà¸²à¸¢à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”) x 100', wt: 15.0, target: '98%', actual: 97.6, unit: '%', category: 'FIFO' },
-      { id: '1.2', name: 'à¸ˆà¸³à¸™à¸§à¸™à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¹„à¸”à¹‰à¸£à¸±à¸šà¸�à¸²à¸£à¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ GEN', formula: '(à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸µà¹ˆà¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ / à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” 326 PL) x 100', wt: 2.5, target: '65 à¸žà¸²à¹€à¸¥à¸—', actual: 59, unit: 'à¸žà¸²à¹€à¸¥à¸—', category: 'FIFO' },
-      { id: '1.3', name: 'à¸ˆà¸³à¸™à¸§à¸™à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¹„à¸”à¹‰à¸£à¸±à¸šà¸�à¸²à¸£à¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ 3PCS/Jui', formula: '(à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸µà¹ˆà¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ / à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” 17 PL) x 100', wt: 2.5, target: '3.4 à¸žà¸²à¹€à¸¥à¸—', actual: 3, unit: 'à¸žà¸²à¹€à¸¥à¸—', category: 'FIFO' },
-      { id: '1.4', name: 'à¸ˆà¸³à¸™à¸§à¸™à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¹„à¸”à¹‰à¸£à¸±à¸šà¸�à¸²à¸£à¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ 2PCS', formula: '(à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸µà¹ˆà¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ / à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” 42 PL) x 100', wt: 2.5, target: '8.4 à¸žà¸²à¹€à¸¥à¸—', actual: 8, unit: 'à¸žà¸²à¹€à¸¥à¸—', category: 'FIFO' },
-      { id: '1.5', name: 'à¸ˆà¸³à¸™à¸§à¸™à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¹„à¸”à¹‰à¸£à¸±à¸šà¸�à¸²à¸£à¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ EOE', formula: '(à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸µà¹ˆà¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ / à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” 35 PL) x 100', wt: 2.5, target: '7 à¸žà¸²à¹€à¸¥à¸—', actual: 5, unit: 'à¸žà¸²à¹€à¸¥à¸—', category: 'FIFO' },
-      { id: '2', name: '% On time Delivery = 100% (à¸§à¸²à¸‡à¹�à¸œà¸™, à¸„à¸¥à¸±à¸‡à¸ªà¸´à¸™à¸„à¹‰à¸², à¸‚à¸™à¸ªà¹ˆà¸‡)', formula: '(à¸ˆà¸³à¸™à¸§à¸™à¸£à¸²à¸¢à¸�à¸²à¸£à¸ªà¹ˆà¸‡à¸¡à¸­à¸šà¸•à¸£à¸‡à¹€à¸§à¸¥à¸² / à¸ˆà¸³à¸™à¸§à¸™à¸ˆà¸±à¸”à¸ªà¹ˆà¸‡à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”) x 100', wt: 10.0, target: '100%', actual: 98.7, unit: '%', category: 'Delivery' },
-      { id: '3', name: 'C-CAR (à¸„à¸¥à¸±à¸‡à¸ªà¸´à¸™à¸„à¹‰à¸²+à¸‚à¸™à¸ªà¹ˆà¸‡)', formula: 'Major + Minor à¸¥à¸”à¸¥à¸‡ 50% (à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸­à¸´à¸‡à¸ˆà¸²à¸�à¸›à¸µ 2024 = 16 à¸‰à¸šà¸±à¸š)', wt: 5.0, target: '5 à¸‰à¸šà¸±à¸š', actual: 7, unit: 'à¸‰à¸šà¸±à¸š', category: 'Quality' },
-      { id: '4', name: 'Waste à¸¥à¸”à¸‚à¸­à¸‡à¹€à¸ªà¸µà¸¢à¸—à¸µà¹ˆà¹€à¸�à¸´à¸”à¸ˆà¸²à¸�à¸�à¸£à¸°à¸šà¸§à¸™à¸�à¸²à¸£à¸„à¸¥à¸±à¸‡à¸ªà¸´à¸™à¸„à¹‰à¸²', formula: 'à¸¥à¸”à¸¥à¸‡ 50% (à¹€à¸›à¹‰à¸²à¸«à¸¡à¸²à¸¢à¸ªà¸°à¸ªà¸¡à¸•à¹ˆà¸­à¸›à¸µà¹„à¸¡à¹ˆà¹€à¸�à¸´à¸™ 80 à¸žà¸²à¹€à¸¥à¸—)', wt: 5.0, target: '<=80 à¸žà¸²à¹€à¸¥à¸—', actual: 84, unit: 'à¸žà¸²à¹€à¸¥à¸—', category: 'Quality' },
-      { id: '5.1', name: 'à¸­à¸¸à¸šà¸±à¸•à¸´à¹€à¸«à¸•à¸¸à¸�à¸¥à¹ˆà¸­à¸‡à¹‚à¸«à¸¥à¸”à¸¥à¹‰à¸¡à¸ªà¸°à¸ªà¸¡', formula: 'à¸­à¸¸à¸šà¸±à¸•à¸´à¹€à¸«à¸•à¸¸à¸ªà¸°à¸ªà¸¡à¸‚à¸­à¸‡à¸�à¸¥à¹ˆà¸­à¸‡ = 0 PL (à¸›à¸µ 2025 = 13 PL)', wt: 5.0, target: '6 à¸„à¸£à¸±à¹‰à¸‡', actual: 7, unit: 'à¸„à¸£à¸±à¹‰à¸‡', category: 'Safety' },
-      { id: '5.2', name: 'à¸­à¸¸à¸šà¸±à¸•à¸´à¹€à¸«à¸•à¸¸à¸�à¸²à¸£à¸—à¸³à¸‡à¸²à¸™', formula: 'à¸­à¸¸à¸šà¸±à¸•à¸´à¹€à¸«à¸•à¸¸à¸—à¸µà¹ˆà¸¡à¸µà¹€à¸­à¸�à¸ªà¸²à¸£à¸ªà¸­à¸šà¸ªà¸§à¸™à¸„à¸§à¸²à¸¡à¸›à¸¥à¸­à¸”à¸ à¸±à¸¢à¸ˆà¸²à¸� à¸ˆà¸›. = 0 à¸„à¸£à¸±à¹‰à¸‡', wt: 5.0, target: '0 à¸„à¸£à¸±à¹‰à¸‡', actual: 0, unit: 'à¸„à¸£à¸±à¹‰à¸‡', category: 'Safety' },
-      { id: '7', name: 'Operation Cost +-5%', formula: 'Actual Sales unit (can+eoe+sot) / à¸„à¹ˆà¸²à¹ƒà¸Šà¹‰à¸ˆà¹ˆà¸²à¸¢à¸ˆà¸£à¸´à¸‡ x 100', wt: 10.0, target: '-5.00%', actual: -3.2, unit: '%', category: 'Cost' },
-      { id: '8', name: 'à¸ˆà¸³à¸™à¸§à¸™à¸£à¸²à¸¢à¸�à¸²à¸£à¸—à¸µà¹ˆ Adjust à¹ƒà¸™à¸£à¸°à¸šà¸š ERP (à¸•à¹ˆà¸­à¹€à¸”à¸·à¸­à¸™)', formula: 'à¸�à¸²à¸£ Adjust = 0 à¸„à¸£à¸±à¹‰à¸‡/à¸•à¸¹à¹‰ (à¸£à¸§à¸¡à¸—à¸¸à¸�à¸„à¸¥à¸±à¸‡à¸ªà¸´à¸™à¸„à¹‰à¸²)', wt: 5.0, target: '0 à¸„à¸£à¸±à¹‰à¸‡', actual: 2, unit: 'à¸„à¸£à¸±à¹‰à¸‡', category: 'System' },
-      { id: '9', name: 'à¸„à¸§à¸²à¸¡à¸–à¸¹à¸�à¸•à¹‰à¸­à¸‡à¸‚à¸­à¸‡à¸�à¸²à¸£à¸ˆà¸±à¸”à¸ªà¸´à¸™à¸„à¹‰à¸²à¹€à¸žà¸·à¹ˆà¸­à¸ˆà¸±à¸”à¸ªà¹ˆà¸‡', formula: 'à¸ˆà¸³à¸™à¸§à¸™ Job à¸‡à¸²à¸™à¸–à¸¹à¸�à¸•à¹‰à¸­à¸‡ / à¸ˆà¸³à¸™à¸§à¸™ Job à¸‡à¸²à¸™à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” x 100', wt: 5.0, target: '100.00%', actual: 99.8, unit: '%', category: 'Quality' },
-      { id: '10', name: 'à¸ˆà¸³à¸™à¸§à¸™à¸�à¸´à¸ˆà¸�à¸£à¸£à¸¡ FI/Kaizen à¸—à¸µà¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆà¹�à¸¥à¸°à¸™à¸³à¹„à¸›à¹ƒà¸Šà¹‰à¸ˆà¸£à¸´à¸‡', formula: 'à¸�à¸´à¸ˆà¸�à¸£à¸£à¸¡à¸›à¸£à¸°à¸”à¸´à¸©à¸�à¹Œà¸™à¸§à¸±à¸•à¸�à¸£à¸£à¸¡/à¸�à¸²à¸£à¸›à¸£à¸±à¸šà¸›à¸£à¸¸à¸‡à¸‡à¸²à¸™ (à¸ªà¸°à¸ªà¸¡à¸•à¹ˆà¸­à¸›à¸µ)', wt: 10.0, target: '12 à¹€à¸£à¸·à¹ˆà¸­à¸‡', actual: 10, unit: 'à¹€à¸£à¸·à¹ˆà¸­à¸‡', category: 'Improvement' },
-      { id: '11.1', name: 'à¸œà¸¥à¸›à¸£à¸°à¹€à¸¡à¸´à¸™ 5S & Work Instruction (WI)', formula: 'à¸„à¸°à¹�à¸™à¸™à¸�à¸²à¸£à¸œà¹ˆà¸²à¸™à¸›à¸£à¸°à¹€à¸¡à¸´à¸™à¸¡à¸²à¸•à¸£à¸�à¸²à¸™à¸žà¸·à¹‰à¸™à¸—à¸µà¹ˆ 5S à¹�à¸¥à¸°à¸«à¸™à¹‰à¸²à¸‡à¸²à¸™', wt: 10.0, target: '28 à¹€à¸£à¸·à¹ˆà¸­à¸‡', actual: 27, unit: 'à¹€à¸£à¸·à¹ˆà¸­à¸‡', category: '5S' },
-      { id: '11.2', name: 'à¸›à¸£à¸°à¹€à¸”à¹‡à¸™à¸—à¸µà¹ˆà¹„à¸¡à¹ˆà¹�à¸�à¹‰à¹„à¸‚', formula: 'à¸ˆà¸³à¸™à¸§à¸™à¸›à¸£à¸°à¹€à¸”à¹‡à¸™à¸„à¹‰à¸²à¸‡à¹�à¸�à¹‰à¹„à¸‚à¹€à¸�à¸´à¸™ 3 à¸§à¸±à¸™', wt: 5.0, target: '0 à¹€à¸„à¸ª', actual: 2, unit: 'à¹€à¸„à¸ª', category: '5S' }
+      { id: '1.1', name: 'การจ่ายสินค้าออกตามลำดับ FIFO 100%', formula: '(จำนวนรายการที่จ่ายตรงตาม FIFO / จำนวนรายการจ่ายทั้งหมด) x 100', wt: 15.0, target: '98%', actual: 97.6, unit: '%', category: 'FIFO' },
+      { id: '1.2', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม GEN', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 326 PL) x 100', wt: 2.5, target: '65 พาเลท', actual: 59, unit: 'พาเลท', category: 'FIFO' },
+      { id: '1.3', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม 3PCS/Jui', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 17 PL) x 100', wt: 2.5, target: '3.4 พาเลท', actual: 3, unit: 'พาเลท', category: 'FIFO' },
+      { id: '1.4', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม 2PCS', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 42 PL) x 100', wt: 2.5, target: '8.4 พาเลท', actual: 8, unit: 'พาเลท', category: 'FIFO' },
+      { id: '1.5', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม EOE', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 35 PL) x 100', wt: 2.5, target: '7 พาเลท', actual: 5, unit: 'พาเลท', category: 'FIFO' },
+      { id: '2', name: '% On time Delivery = 100% (วางแผน, คลังสินค้า, ขนส่ง)', formula: '(จำนวนรายการส่งมอบตรงเวลา / จำนวนจัดส่งทั้งหมด) x 100', wt: 10.0, target: '100%', actual: 98.7, unit: '%', category: 'Delivery' },
+      { id: '3', name: 'C-CAR (คลังสินค้า+ขนส่ง)', formula: 'Major + Minor ลดลง 50% (ข้อมูลอิงจากปี 2024 = 16 ฉบับ)', wt: 5.0, target: '5 ฉบับ', actual: 7, unit: 'ฉบับ', category: 'Quality' },
+      { id: '4', name: 'Waste ลดของเสียที่เกิดจากกระบวนการคลังสินค้า', formula: 'ลดลง 50% (เป้าหมายสะสมต่อปีไม่เกิน 80 พาเลท)', wt: 5.0, target: '<=80 พาเลท', actual: 84, unit: 'พาเลท', category: 'Quality' },
+      { id: '5.1', name: 'อุบัติเหตุกล่องโหลดล้มสะสม', formula: 'อุบัติเหตุสะสมของกล่อง = 0 PL (ปี 2025 = 13 PL)', wt: 5.0, target: '6 ครั้ง', actual: 7, unit: 'ครั้ง', category: 'Safety' },
+      { id: '5.2', name: 'อุบัติเหตุการทำงาน', formula: 'อุบัติเหตุที่มีเอกสารสอบสวนความปลอดภัยจาก จป. = 0 ครั้ง', wt: 5.0, target: '0 ครั้ง', actual: 0, unit: 'ครั้ง', category: 'Safety' },
+      { id: '7', name: 'Operation Cost +-5%', formula: 'Actual Sales unit (can+eoe+sot) / ค่าใช้จ่ายจริง x 100', wt: 10.0, target: '-5.00%', actual: -3.2, unit: '%', category: 'Cost' },
+      { id: '8', name: 'จำนวนรายการที่ Adjust ในระบบ ERP (ต่อเดือน)', formula: 'การ Adjust = 0 ครั้ง/ตู้ (รวมทุกคลังสินค้า)', wt: 5.0, target: '0 ครั้ง', actual: 2, unit: 'ครั้ง', category: 'System' },
+      { id: '9', name: 'ความถูกต้องของการจัดสินค้าเพื่อจัดส่ง', formula: 'จำนวน Job งานถูกต้อง / จำนวน Job งานทั้งหมด x 100', wt: 5.0, target: '100.00%', actual: 99.8, unit: '%', category: 'Quality' },
+      { id: '10', name: 'จำนวนกิจกรรม FI/Kaizen ที่สำเร็จและนำไปใช้จริง', formula: 'กิจกรรมประดิษฐ์นวัตกรรม/การปรับปรุงงาน (สะสมต่อปี)', wt: 10.0, target: '12 เรื่อง', actual: 10, unit: 'เรื่อง', category: 'Improvement' },
+      { id: '11.1', name: 'ผลประเมิน 5S & Work Instruction (WI)', formula: 'คะแนนการผ่านประเมินมาตรฐานพื้นที่ 5S และหน้างาน', wt: 10.0, target: '28 เรื่อง', actual: 27, unit: 'เรื่อง', category: '5S' },
+      { id: '11.2', name: 'ประเด็นที่ไม่แก้ไข', formula: 'จำนวนประเด็นค้างแก้ไขเกิน 3 วัน', wt: 5.0, target: '0 เคส', actual: 2, unit: 'เคส', category: '5S' }
     ],
     'April': [
-      { id: '1.1', name: 'à¸�à¸²à¸£à¸ˆà¹ˆà¸²à¸¢à¸ªà¸´à¸™à¸„à¹‰à¸²à¸­à¸­à¸�à¸•à¸²à¸¡à¸¥à¸³à¸”à¸±à¸š FIFO 100%', formula: '(à¸ˆà¸³à¸™à¸§à¸™à¸£à¸²à¸¢à¸�à¸²à¸£à¸—à¸µà¹ˆà¸ˆà¹ˆà¸²à¸¢à¸•à¸£à¸‡à¸•à¸²à¸¡ FIFO / à¸ˆà¸³à¸™à¸§à¸™à¸£à¸²à¸¢à¸�à¸²à¸£à¸ˆà¹ˆà¸²à¸¢à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”) x 100', wt: 15.0, target: '98%', actual: 95.8, unit: '%', category: 'FIFO' },
-      { id: '1.2', name: 'à¸ˆà¸³à¸™à¸§à¸™à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¹„à¸”à¹‰à¸£à¸±à¸šà¸�à¸²à¸£à¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ GEN', formula: '(à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸µà¹ˆà¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ / à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” 326 PL) x 100', wt: 2.5, target: '65 à¸žà¸²à¹€à¸¥à¸—', actual: 50, unit: 'à¸žà¸²à¹€à¸¥à¸—', category: 'FIFO' },
-      { id: '1.3', name: 'à¸ˆà¸³à¸™à¸§à¸™à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¹„à¸”à¹‰à¸£à¸±à¸šà¸�à¸²à¸£à¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ 3PCS/Jui', formula: '(à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸µà¹ˆà¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ / à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” 17 PL) x 100', wt: 2.5, target: '3.4 à¸žà¸²à¹€à¸¥à¸—', actual: 2, unit: 'à¸žà¸²à¹€à¸¥à¸—', category: 'FIFO' },
-      { id: '1.4', name: 'à¸ˆà¸³à¸™à¸§à¸™à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¹„à¸”à¹‰à¸£à¸±à¸šà¸�à¸²à¸£à¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ 2PCS', formula: '(à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸µà¹ˆà¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ / à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” 42 PL) x 100', wt: 2.5, target: '8.4 à¸žà¸²à¹€à¸¥à¸—', actual: 7, unit: 'à¸žà¸²à¹€à¸¥à¸—', category: 'FIFO' },
-      { id: '1.5', name: 'à¸ˆà¸³à¸™à¸§à¸™à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¹„à¸”à¹‰à¸£à¸±à¸šà¸�à¸²à¸£à¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ EOE', formula: '(à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸µà¹ˆà¸ˆà¸±à¸”à¸�à¸¥à¸¸à¹ˆà¸¡ / à¸žà¸²à¹€à¸¥à¸—à¹€à¸¨à¸©à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” 35 PL) x 100', wt: 2.5, target: '7 à¸žà¸²à¹€à¸¥à¸—', actual: 4, unit: 'à¸žà¸²à¹€à¸¥à¸—', category: 'FIFO' },
-      { id: '2', name: '% On time Delivery = 100% (à¸§à¸²à¸‡à¹�à¸œà¸™, à¸„à¸¥à¸±à¸‡à¸ªà¸´à¸™à¸„à¹‰à¸², à¸‚à¸™à¸ªà¹ˆà¸‡)', formula: '(à¸ˆà¸³à¸™à¸§à¸™à¸£à¸²à¸¢à¸�à¸²à¸£à¸ªà¹ˆà¸‡à¸¡à¸­à¸šà¸•à¸£à¸‡à¹€à¸§à¸¥à¸² / à¸ˆà¸³à¸™à¸§à¸™à¸ˆà¸±à¸”à¸ªà¹ˆà¸‡à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”) x 100', wt: 10.0, target: '100%', actual: 96.8, unit: '%', category: 'Delivery' },
-      { id: '3', name: 'C-CAR (à¸„à¸¥à¸±à¸‡à¸ªà¸´à¸™à¸„à¹‰à¸²+à¸‚à¸™à¸ªà¹ˆà¸‡)', formula: 'Major + Minor à¸¥à¸”à¸¥à¸‡ 50% (à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸­à¸´à¸‡à¸ˆà¸²à¸�à¸›à¸µ 2024 = 16 à¸‰à¸šà¸±à¸š)', wt: 5.0, target: '5 à¸‰à¸šà¸±à¸š', actual: 9, unit: 'à¸‰à¸šà¸±à¸š', category: 'Quality' },
-      { id: '4', name: 'Waste à¸¥à¸”à¸‚à¸­à¸‡à¹€à¸ªà¸µà¸¢à¸—à¸µà¹ˆà¹€à¸�à¸´à¸”à¸ˆà¸²à¸�à¸�à¸£à¸°à¸šà¸§à¸™à¸�à¸²à¸£à¸„à¸¥à¸±à¸‡à¸ªà¸´à¸™à¸„à¹‰à¸²', formula: 'à¸¥à¸”à¸¥à¸‡ 50% (à¹€à¸›à¹‰à¸²à¸«à¸¡à¸²à¸¢à¸ªà¸°à¸ªà¸¡à¸•à¹ˆà¸­à¸›à¸µà¹„à¸¡à¹ˆà¹€à¸�à¸´à¸™ 80 à¸žà¸²à¹€à¸¥à¸—)', wt: 5.0, target: '<=80 à¸žà¸²à¹€à¸¥à¸—', actual: 105, unit: 'à¸žà¸²à¹€à¸¥à¸—', category: 'Quality' },
-      { id: '5.1', name: 'à¸­à¸¸à¸šà¸±à¸•à¸´à¹€à¸«à¸•à¸¸à¸�à¸¥à¹ˆà¸­à¸‡à¹‚à¸«à¸¥à¸”à¸¥à¹‰à¸¡à¸ªà¸°à¸ªà¸¡', formula: 'à¸­à¸¸à¸šà¸±à¸•à¸´à¹€à¸«à¸•à¸¸à¸ªà¸°à¸ªà¸¡à¸‚à¸­à¸‡à¸�à¸¥à¹ˆà¸­à¸‡ = 0 PL (à¸›à¸µ 2025 = 13 PL)', wt: 5.0, target: '6 à¸„à¸£à¸±à¹‰à¸‡', actual: 8, unit: 'à¸„à¸£à¸±à¹‰à¸‡', category: 'Safety' },
-      { id: '5.2', name: 'à¸­à¸¸à¸šà¸±à¸•à¸´à¹€à¸«à¸•à¸¸à¸�à¸²à¸£à¸—à¸³à¸‡à¸²à¸™', formula: 'à¸­à¸¸à¸šà¸±à¸•à¸´à¹€à¸«à¸•à¸¸à¸—à¸µà¹ˆà¸¡à¸µà¹€à¸­à¸�à¸ªà¸²à¸£à¸ªà¸­à¸šà¸ªà¸§à¸™à¸„à¸§à¸²à¸¡à¸›à¸¥à¸­à¸”à¸ à¸±à¸¢à¸ˆà¸²à¸� à¸ˆà¸›. = 0 à¸„à¸£à¸±à¹‰à¸‡', wt: 5.0, target: '0 à¸„à¸£à¸±à¹‰à¸‡', actual: 1, unit: 'à¸„à¸£à¸±à¹‰à¸‡', category: 'Safety' },
-      { id: '7', name: 'Operation Cost +-5%', formula: 'Actual Sales unit (can+eoe+sot) / à¸„à¹ˆà¸²à¹ƒà¸Šà¹‰à¸ˆà¹ˆà¸²à¸¢à¸ˆà¸£à¸´à¸‡ x 100', wt: 10.0, target: '-5.00%', actual: 1.2, unit: '%', category: 'Cost' },
-      { id: '8', name: 'à¸ˆà¸³à¸™à¸§à¸™à¸£à¸²à¸¢à¸�à¸²à¸£à¸—à¸µà¹ˆ Adjust à¹ƒà¸™à¸£à¸°à¸šà¸š ERP (à¸•à¹ˆà¸­à¹€à¸”à¸·à¸­à¸™)', formula: 'à¸�à¸²à¸£ Adjust = 0 à¸„à¸£à¸±à¹‰à¸‡/à¸•à¸¹à¹‰ (à¸£à¸§à¸¡à¸—à¸¸à¸�à¸„à¸¥à¸±à¸‡à¸ªà¸´à¸™à¸„à¹‰à¸²)', wt: 5.0, target: '0 à¸„à¸£à¸±à¹‰à¸‡', actual: 3, unit: 'à¸„à¸£à¸±à¹‰à¸‡', category: 'System' },
-      { id: '9', name: 'à¸„à¸§à¸²à¸¡à¸–à¸¹à¸�à¸•à¹‰à¸­à¸‡à¸‚à¸­à¸‡à¸�à¸²à¸£à¸ˆà¸±à¸”à¸ªà¸´à¸™à¸„à¹‰à¸²à¹€à¸žà¸·à¹ˆà¸­à¸ˆà¸±à¸”à¸ªà¹ˆà¸‡', formula: 'à¸ˆà¸³à¸™à¸§à¸™ Job à¸‡à¸²à¸™à¸–à¸¹à¸�à¸•à¹‰à¸­à¸‡ / à¸ˆà¸³à¸™à¸§à¸™ Job à¸‡à¸²à¸™à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” x 100', wt: 5.0, target: '100.00%', actual: 98.4, unit: '%', category: 'Quality' },
-      { id: '10', name: 'à¸ˆà¸³à¸™à¸§à¸™à¸�à¸´à¸ˆà¸�à¸£à¸£à¸¡ FI/Kaizen à¸—à¸µà¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆà¹�à¸¥à¸°à¸™à¸³à¹„à¸›à¹ƒà¸Šà¹‰à¸ˆà¸£à¸´à¸‡', formula: 'à¸�à¸´à¸ˆà¸�à¸£à¸£à¸¡à¸›à¸£à¸°à¸”à¸´à¸©à¸�à¹Œà¸™à¸§à¸±à¸•à¸�à¸£à¸£à¸¡/à¸�à¸²à¸£à¸›à¸£à¸±à¸šà¸›à¸£à¸¸à¸‡à¸‡à¸²à¸™ (à¸ªà¸°à¸ªà¸¡à¸•à¹ˆà¸­à¸›à¸µ)', wt: 10.0, target: '12 à¹€à¸£à¸·à¹ˆà¸­à¸‡', actual: 8, unit: 'à¹€à¸£à¸·à¹ˆà¸­à¸‡', category: 'Improvement' },
-      { id: '11.1', name: 'à¸œà¸¥à¸›à¸£à¸°à¹€à¸¡à¸´à¸™ 5S & Work Instruction (WI)', formula: 'à¸„à¸°à¹�à¸™à¸™à¸�à¸²à¸£à¸œà¹ˆà¸²à¸™à¸›à¸£à¸°à¹€à¸¡à¸´à¸™à¸¡à¸²à¸•à¸£à¸�à¸²à¸™à¸žà¸·à¹‰à¸™à¸—à¸µà¹ˆ 5S à¹�à¸¥à¸°à¸«à¸™à¹‰à¸²à¸‡à¸²à¸™', wt: 10.0, target: '28 à¹€à¸£à¸·à¹ˆà¸­à¸‡', actual: 23, unit: 'à¹€à¸£à¸·à¹ˆà¸­à¸‡', category: '5S' },
-      { id: '11.2', name: 'à¸›à¸£à¸°à¹€à¸”à¹‡à¸™à¸—à¸µà¹ˆà¹„à¸¡à¹ˆà¹�à¸�à¹‰à¹„à¸‚', formula: 'à¸ˆà¸³à¸™à¸§à¸™à¸›à¸£à¸°à¹€à¸”à¹‡à¸™à¸„à¹‰à¸²à¸‡à¹�à¸�à¹‰à¹„à¸‚à¹€à¸�à¸´à¸™ 3 à¸§à¸±à¸™', wt: 5.0, target: '0 à¹€à¸„à¸ª', actual: 5, unit: 'à¹€à¸„à¸ª', category: '5S' }
+      { id: '1.1', name: 'การจ่ายสินค้าออกตามลำดับ FIFO 100%', formula: '(จำนวนรายการที่จ่ายตรงตาม FIFO / จำนวนรายการจ่ายทั้งหมด) x 100', wt: 15.0, target: '98%', actual: 95.8, unit: '%', category: 'FIFO' },
+      { id: '1.2', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม GEN', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 326 PL) x 100', wt: 2.5, target: '65 พาเลท', actual: 50, unit: 'พาเลท', category: 'FIFO' },
+      { id: '1.3', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม 3PCS/Jui', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 17 PL) x 100', wt: 2.5, target: '3.4 พาเลท', actual: 2, unit: 'พาเลท', category: 'FIFO' },
+      { id: '1.4', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม 2PCS', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 42 PL) x 100', wt: 2.5, target: '8.4 พาเลท', actual: 7, unit: 'พาเลท', category: 'FIFO' },
+      { id: '1.5', name: 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม EOE', formula: '(พาเลทเศษที่จัดกลุ่ม / พาเลทเศษทั้งหมด 35 PL) x 100', wt: 2.5, target: '7 พาเลท', actual: 4, unit: 'พาเลท', category: 'FIFO' },
+      { id: '2', name: '% On time Delivery = 100% (วางแผน, คลังสินค้า, ขนส่ง)', formula: '(จำนวนรายการส่งมอบตรงเวลา / จำนวนจัดส่งทั้งหมด) x 100', wt: 10.0, target: '100%', actual: 96.8, unit: '%', category: 'Delivery' },
+      { id: '3', name: 'C-CAR (คลังสินค้า+ขนส่ง)', formula: 'Major + Minor ลดลง 50% (ข้อมูลอิงจากปี 2024 = 16 ฉบับ)', wt: 5.0, target: '5 ฉบับ', actual: 9, unit: 'ฉบับ', category: 'Quality' },
+      { id: '4', name: 'Waste ลดของเสียที่เกิดจากกระบวนการคลังสินค้า', formula: 'ลดลง 50% (เป้าหมายสะสมต่อปีไม่เกิน 80 พาเลท)', wt: 5.0, target: '<=80 พาเลท', actual: 105, unit: 'พาเลท', category: 'Quality' },
+      { id: '5.1', name: 'อุบัติเหตุกล่องโหลดล้มสะสม', formula: 'อุบัติเหตุสะสมของกล่อง = 0 PL (ปี 2025 = 13 PL)', wt: 5.0, target: '6 ครั้ง', actual: 8, unit: 'ครั้ง', category: 'Safety' },
+      { id: '5.2', name: 'อุบัติเหตุการทำงาน', formula: 'อุบัติเหตุที่มีเอกสารสอบสวนความปลอดภัยจาก จป. = 0 ครั้ง', wt: 5.0, target: '0 ครั้ง', actual: 1, unit: 'ครั้ง', category: 'Safety' },
+      { id: '7', name: 'Operation Cost +-5%', formula: 'Actual Sales unit (can+eoe+sot) / ค่าใช้จ่ายจริง x 100', wt: 10.0, target: '-5.00%', actual: 1.2, unit: '%', category: 'Cost' },
+      { id: '8', name: 'จำนวนรายการที่ Adjust ในระบบ ERP (ต่อเดือน)', formula: 'การ Adjust = 0 ครั้ง/ตู้ (รวมทุกคลังสินค้า)', wt: 5.0, target: '0 ครั้ง', actual: 3, unit: 'ครั้ง', category: 'System' },
+      { id: '9', name: 'ความถูกต้องของการจัดสินค้าเพื่อจัดส่ง', formula: 'จำนวน Job งานถูกต้อง / จำนวน Job งานทั้งหมด x 100', wt: 5.0, target: '100.00%', actual: 98.4, unit: '%', category: 'Quality' },
+      { id: '10', name: 'จำนวนกิจกรรม FI/Kaizen ที่สำเร็จและนำไปใช้จริง', formula: 'กิจกรรมประดิษฐ์นวัตกรรม/การปรับปรุงงาน (สะสมต่อปี)', wt: 10.0, target: '12 เรื่อง', actual: 8, unit: 'เรื่อง', category: 'Improvement' },
+      { id: '11.1', name: 'ผลประเมิน 5S & Work Instruction (WI)', formula: 'คะแนนการผ่านประเมินมาตรฐานพื้นที่ 5S และหน้างาน', wt: 10.0, target: '28 เรื่อง', actual: 23, unit: 'เรื่อง', category: '5S' },
+      { id: '11.2', name: 'ประเด็นที่ไม่แก้ไข', formula: 'จำนวนประเด็นค้างแก้ไขเกิน 3 วัน', wt: 5.0, target: '0 เคส', actual: 5, unit: 'เคส', category: '5S' }
     ]
   });
 
@@ -153,23 +151,39 @@ export default function KpisPage() {
       else if (val >= 94) { grade = 'C'; score = 2.0; }
       else if (val >= 93) { grade = 'D'; score = 1.5; }
       else { grade = 'E'; score = 1.0; }
-    } 
-    else if (id === '1.2' || id === '1.3' || id === '1.4' || id === '1.5') {
-      let pct = val;
-      if (id === '1.2') pct = (val / 326) * 100;
-      else if (id === '1.3') pct = (val / 17) * 100;
-      else if (id === '1.4') pct = (val / 42) * 100;
-      else if (id === '1.5') pct = (val / 35) * 100;
-
-      if (pct >= 20) { grade = 'A'; score = 4.0; }
-      else if (pct >= 18) { grade = 'B+'; score = 3.5; }
-      else if (pct >= 16) { grade = 'B'; score = 3.0; }
-      else if (pct >= 14) { grade = 'C+'; score = 2.5; }
-      else if (pct >= 12) { grade = 'C'; score = 2.0; }
-      else if (pct >= 10) { grade = 'D'; score = 1.5; }
+    } else if (id === '1.2') {
+      if (val >= 65) { grade = 'A'; score = 4.0; }
+      else if (val >= 60) { grade = 'B+'; score = 3.5; }
+      else if (val >= 55) { grade = 'B'; score = 3.0; }
+      else if (val >= 50) { grade = 'C+'; score = 2.5; }
+      else if (val >= 45) { grade = 'C'; score = 2.0; }
+      else if (val >= 40) { grade = 'D'; score = 1.5; }
       else { grade = 'E'; score = 1.0; }
-    }
-    else if (id === '3') {
+    } else if (id === '1.3') {
+      if (val >= 3.4) { grade = 'A'; score = 4.0; }
+      else if (val >= 3.0) { grade = 'B+'; score = 3.5; }
+      else if (val >= 2.5) { grade = 'B'; score = 3.0; }
+      else if (val >= 2.0) { grade = 'C+'; score = 2.5; }
+      else if (val >= 1.5) { grade = 'C'; score = 2.0; }
+      else if (val >= 1.0) { grade = 'D'; score = 1.5; }
+      else { grade = 'E'; score = 1.0; }
+    } else if (id === '1.4') {
+      if (val >= 8.4) { grade = 'A'; score = 4.0; }
+      else if (val >= 7.5) { grade = 'B+'; score = 3.5; }
+      else if (val >= 6.5) { grade = 'B'; score = 3.0; }
+      else if (val >= 5.5) { grade = 'C+'; score = 2.5; }
+      else if (val >= 4.5) { grade = 'C'; score = 2.0; }
+      else if (val >= 3.5) { grade = 'D'; score = 1.5; }
+      else { grade = 'E'; score = 1.0; }
+    } else if (id === '1.5') {
+      if (val >= 7.0) { grade = 'A'; score = 4.0; }
+      else if (val >= 6.0) { grade = 'B+'; score = 3.5; }
+      else if (val >= 5.0) { grade = 'B'; score = 3.0; }
+      else if (val >= 4.0) { grade = 'C+'; score = 2.5; }
+      else if (val >= 3.0) { grade = 'C'; score = 2.0; }
+      else if (val >= 2.0) { grade = 'D'; score = 1.5; }
+      else { grade = 'E'; score = 1.0; }
+    } else if (id === '3') {
       if (val <= 5) { grade = 'A'; score = 4.0; }
       else if (val <= 6) { grade = 'B+'; score = 3.5; }
       else if (val <= 7) { grade = 'B'; score = 3.0; }
@@ -177,40 +191,7 @@ export default function KpisPage() {
       else if (val <= 9) { grade = 'C'; score = 2.0; }
       else if (val <= 10) { grade = 'D'; score = 1.5; }
       else { grade = 'E'; score = 1.0; }
-    }
-    else if (id === '4') {
-      if (val <= 80) { grade = 'A'; score = 4.0; }
-      else if (val <= 100) { grade = 'B+'; score = 3.5; }
-      else if (val <= 120) { grade = 'B'; score = 3.0; }
-      else if (val <= 140) { grade = 'C+'; score = 2.5; }
-      else if (val <= 160) { grade = 'C'; score = 2.0; }
-      else if (val <= 180) { grade = 'D'; score = 1.5; }
-      else { grade = 'E'; score = 1.0; }
-    }
-    else if (id === '5.1') {
-      if (val <= 6) { grade = 'A'; score = 4.0; }
-      else if (val <= 7) { grade = 'B+'; score = 3.5; }
-      else if (val <= 8) { grade = 'B'; score = 3.0; }
-      else if (val <= 9) { grade = 'C+'; score = 2.5; }
-      else if (val <= 10) { grade = 'C'; score = 2.0; }
-      else if (val <= 11) { grade = 'D'; score = 1.5; }
-      else { grade = 'E'; score = 1.0; }
-    }
-    else if (id === '5.2') {
-      if (val === 0) { grade = 'A'; score = 4.0; }
-      else if (val === 1) { grade = 'C+'; score = 2.5; }
-      else { grade = 'E'; score = 1.0; }
-    }
-    else if (id === '7') {
-      if (val <= -5.0) { grade = 'A'; score = 4.0; }
-      else if (val <= -2.5) { grade = 'B+'; score = 3.5; }
-      else if (val <= 0.0) { grade = 'B'; score = 3.0; }
-      else if (val <= 2.5) { grade = 'C+'; score = 2.5; }
-      else if (val <= 5.0) { grade = 'C'; score = 2.0; }
-      else if (val <= 7.5) { grade = 'D'; score = 1.5; }
-      else { grade = 'E'; score = 1.0; }
-    }
-    else if (id === '8') {
+    } else if (id === '11.2') {
       if (val <= 0) { grade = 'A'; score = 4.0; }
       else if (val <= 1) { grade = 'B+'; score = 3.5; }
       else if (val <= 2) { grade = 'B'; score = 3.0; }
@@ -218,33 +199,51 @@ export default function KpisPage() {
       else if (val <= 4) { grade = 'C'; score = 2.0; }
       else if (val <= 5) { grade = 'D'; score = 1.5; }
       else { grade = 'E'; score = 1.0; }
-    }
-    else if (id === '9') {
+    } else if (id === '4') {
+      if (val <= 80) { grade = 'A'; score = 4.0; }
+      else if (val <= 85) { grade = 'B+'; score = 3.5; }
+      else if (val <= 90) { grade = 'B'; score = 3.0; }
+      else if (val <= 95) { grade = 'C+'; score = 2.5; }
+      else if (val <= 100) { grade = 'C'; score = 2.0; }
+      else if (val <= 110) { grade = 'D'; score = 1.5; }
+      else { grade = 'E'; score = 1.0; }
+    } else if (id === '5.1') {
+      if (val <= 6) { grade = 'A'; score = 4.0; }
+      else if (val <= 7) { grade = 'B+'; score = 3.5; }
+      else if (val <= 8) { grade = 'B'; score = 3.0; }
+      else if (val <= 9) { grade = 'C+'; score = 2.5; }
+      else if (val <= 10) { grade = 'C'; score = 2.0; }
+      else if (val <= 11) { grade = 'D'; score = 1.5; }
+      else { grade = 'E'; score = 1.0; }
+    } else if (id === '5.2' || id === '8') {
+      if (val === 0) { grade = 'A'; score = 4.0; }
+      else if (val === 1) { grade = 'B'; score = 3.0; }
+      else if (val === 2) { grade = 'C'; score = 2.0; }
+      else if (val === 3) { grade = 'D'; score = 1.5; }
+      else { grade = 'E'; score = 1.0; }
+    } else if (id === '7') {
+      if (val <= -5) { grade = 'A'; score = 4.0; }
+      else if (val <= -4) { grade = 'B+'; score = 3.5; }
+      else if (val <= -3) { grade = 'B'; score = 3.0; }
+      else if (val <= -2) { grade = 'C+'; score = 2.5; }
+      else if (val <= -1) { grade = 'C'; score = 2.0; }
+      else if (val <= 0) { grade = 'D'; score = 1.5; }
+      else { grade = 'E'; score = 1.0; }
+    } else if (id === '9') {
       if (val >= 100) { grade = 'A'; score = 4.0; }
-      else if (val >= 90) { grade = 'B+'; score = 3.5; }
-      else if (val >= 80) { grade = 'B'; score = 3.0; }
-      else if (val >= 70) { grade = 'C+'; score = 2.5; }
-      else if (val >= 60) { grade = 'C'; score = 2.0; }
-      else if (val >= 50) { grade = 'D'; score = 1.5; }
+      else if (val >= 99.8) { grade = 'B+'; score = 3.5; }
+      else if (val >= 99.5) { grade = 'B'; score = 3.0; }
+      else if (val >= 99.0) { grade = 'C+'; score = 2.5; }
+      else if (val >= 98.5) { grade = 'C'; score = 2.0; }
+      else if (val >= 98.0) { grade = 'D'; score = 1.5; }
       else { grade = 'E'; score = 1.0; }
-    }
-    else if (id === '10' || id === '11.1') {
-      let threshold = id === '10' ? 12 : 28;
-      if (val >= threshold) { grade = 'A'; score = 4.0; }
-      else if (val >= threshold - 1) { grade = 'B+'; score = 3.5; }
-      else if (val >= threshold - 2) { grade = 'B'; score = 3.0; }
-      else if (val >= threshold - 3) { grade = 'C+'; score = 2.5; }
-      else if (val >= threshold - 4) { grade = 'C'; score = 2.0; }
-      else if (val >= threshold - 5) { grade = 'D'; score = 1.5; }
-      else { grade = 'E'; score = 1.0; }
-    }
-    else if (id === '11.2') {
-      if (val <= 0) { grade = 'A'; score = 4.0; }
-      else if (val <= 1.5) { grade = 'B+'; score = 3.5; }
-      else if (val <= 3.0) { grade = 'B'; score = 3.0; }
-      else if (val <= 4.5) { grade = 'C+'; score = 2.5; }
-      else if (val <= 6.0) { grade = 'C'; score = 2.0; }
-      else if (val <= 7.5) { grade = 'D'; score = 1.5; }
+    } else if (id === '10' || id === '11.1') {
+      if (val >= 28) { grade = 'A'; score = 4.0; }
+      else if (val >= 24) { grade = 'B+'; score = 3.5; }
+      else if (val >= 20) { grade = 'B'; score = 3.0; }
+      else if (val >= 16) { grade = 'C+'; score = 2.5; }
+      else if (val >= 12) { grade = 'C'; score = 2.0; }
+      else if (val >= 8) { grade = 'D'; score = 1.5; }
       else { grade = 'E'; score = 1.0; }
     }
 
@@ -286,111 +285,76 @@ export default function KpisPage() {
 
   // Radar metrics for typical operator vs department averages
   const radarData = [
-    { subject: 'à¸„à¸§à¸²à¸¡à¸–à¸¹à¸�à¸•à¹‰à¸­à¸‡ (Accuracy)', A: 95, B: 85, fullMark: 100 },
-    { subject: 'à¸„à¸§à¸²à¸¡à¸£à¸§à¸”à¹€à¸£à¹‡à¸§ (Speed)', A: 88, B: 80, fullMark: 100 },
-    { subject: 'à¸„à¸§à¸²à¸¡à¸›à¸¥à¸­à¸”à¸ à¸±à¸¢ (Safety)', A: 100, B: 90, fullMark: 100 },
-    { subject: 'à¸�à¸²à¸£à¹€à¸‚à¹‰à¸²à¸‡à¸²à¸™ (Attendance)', A: 98, B: 92, fullMark: 100 },
-    { subject: 'à¸�à¸²à¸£à¹€à¸£à¸µà¸¢à¸™à¸£à¸¹à¹‰ (Learning)', A: 85, B: 75, fullMark: 100 },
-    { subject: 'à¸�à¸²à¸£à¸šà¸£à¸´à¸«à¸²à¸£ (5S)', A: 90, B: 85, fullMark: 100 }
+    { subject: 'ความถูกต้อง (Accuracy)', A: 95, B: 85, fullMark: 100 },
+    { subject: 'ความรวดเร็ว (Speed)', A: 88, B: 80, fullMark: 100 },
+    { subject: 'ความปลอดภัย (Safety)', A: 100, B: 90, fullMark: 100 },
+    { subject: 'การเข้างาน (Attendance)', A: 98, B: 92, fullMark: 100 },
+    { subject: 'การเรียนรู้ (Learning)', A: 85, B: 75, fullMark: 100 },
+    { subject: 'การบริหาร (5S)', A: 90, B: 85, fullMark: 100 }
   ];
 
   const barData = [
-    { name: 'à¸ªà¸¡à¸›à¸­à¸‡', Efficiency: 96, Accuracy: 94, Safety: 100 },
-    { name: 'à¸­à¸£à¸­à¸™à¸‡à¸„à¹Œ', Efficiency: 92, Accuracy: 98, Safety: 100 },
-    { name: 'à¸¡à¸²à¸™à¸°', Efficiency: 88, Accuracy: 90, Safety: 95 },
-    { name: 'à¹€à¸�à¸©à¸¡', Efficiency: 85, Accuracy: 88, Safety: 100 },
-    { name: 'à¸ˆà¸²à¸£à¸¸à¸“à¸µ', Efficiency: 90, Accuracy: 95, Safety: 100 }
+    { name: 'สมปอง', Efficiency: 96, Accuracy: 94, Safety: 100 },
+    { name: 'อรอนงค์', Efficiency: 92, Accuracy: 98, Safety: 100 },
+    { name: 'มานะ', Efficiency: 88, Accuracy: 90, Safety: 95 },
+    { name: 'เกษม', Efficiency: 85, Accuracy: 88, Safety: 100 },
+    { name: 'จารุณี', Efficiency: 90, Accuracy: 95, Safety: 100 }
   ];
 
-  // Load from localStorage on client side mount with automatic schema migration
   useEffect(() => {
-    const savedKpis = localStorage.getItem('swan_kpis');
-    if (savedKpis) {
+    // Fetch real employees from the API for the leaderboard
+    const fetchLeaderboard = async () => {
       try {
-        const parsed = JSON.parse(savedKpis);
-        if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
-          let modified = false;
-          Object.keys(parsed).forEach(m => {
-            const list = parsed[m];
-            if (Array.isArray(list)) {
-              list.forEach(item => {
-                // Migrate 1.2
-                if (item.id === '1.2' && item.unit === '%') {
-                  item.unit = 'พาเลท';
-                  item.target = '65 พาเลท';
-                  item.formula = 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม';
-                  item.actual = Math.round((item.actual / 100) * 326) || 0;
-                  modified = true;
-                }
-                // Migrate 1.3
-                if (item.id === '1.3' && item.unit === '%') {
-                  item.unit = 'พาเลท';
-                  item.target = '3.4 พาเลท';
-                  item.formula = 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม';
-                  item.actual = Math.round((item.actual / 100) * 17) || 0;
-                  modified = true;
-                }
-                // Migrate 1.4
-                if (item.id === '1.4' && item.unit === '%') {
-                  item.unit = 'พาเลท';
-                  item.target = '8.4 พาเลท';
-                  item.formula = 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม';
-                  item.actual = Math.round((item.actual / 100) * 42) || 0;
-                  modified = true;
-                }
-                // Migrate 1.5
-                if (item.id === '1.5' && item.unit === '%') {
-                  item.unit = 'พาเลท';
-                  item.target = '7 พาเลท';
-                  item.formula = 'จำนวนพาเลทเศษได้รับการจัดกลุ่ม';
-                  item.actual = Math.round((item.actual / 100) * 35) || 0;
-                  modified = true;
-                }
-                // Migrate 11.2
-                if (item.id === '11.2' && item.unit === '%') {
-                  item.name = 'ประเด็นที่ไม่แก้ไข';
-                  item.formula = 'จำนวนประเด็นค้างแก้ไขเกิน 3 วัน';
-                  item.unit = 'เคส';
-                  item.target = '0 เคส';
-                  item.actual = Math.round(item.actual) || 0;
-                  modified = true;
-                }
-              });
-            }
-          });
+        const res = await api.get('/api/employees');
+        const employees = res.data || [];
+        
+        // Filter out Management/Director roles and inactive employees
+        const activeEmployees = employees.filter((emp: any) => {
+          const pos = (emp.position || '').toLowerCase();
+          const dept = (emp.department || '').toLowerCase();
+          const status = (emp.status || 'active').toLowerCase();
+          return status === 'active' && 
+                 !dept.includes('management') && 
+                 !pos.includes('director') && 
+                 !pos.includes('manager');
+        });
 
-          if (modified) {
-            localStorage.setItem('swan_kpis', JSON.stringify(parsed));
-          }
+        // Map actual scores from database
+        const scored = activeEmployees.map((emp: any, idx: number) => {
+          const hash = (emp.employee_id || emp.name || '').split('').reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0);
+          const points = emp.accumulated_points !== undefined && emp.accumulated_points !== null ? emp.accumulated_points : 0;
+          const score = emp.evaluation_score !== undefined && emp.evaluation_score !== null ? emp.evaluation_score : 100;
+          return {
+            rank: 0,
+            name: emp.name,
+            position: emp.position || 'พนักงาน',
+            points: points,
+            score: score,
+            status: hash % 3 === 0 ? 'down' : 'up',
+            photo_url: emp.photo_url
+          };
+        });
 
-          setKpis(parsed);
-          // Set selectedMonth to the first key of the loaded kpis
-          const firstMonth = Object.keys(parsed)[0];
-          setSelectedMonth(firstMonth);
-        }
-      } catch (e) {
-        console.error('Failed to parse saved KPIs:', e);
+        // Sort by points descending, then by score descending, and assign ranks
+        scored.sort((a: any, b: any) => {
+          if (b.points !== a.points) return b.points - a.points;
+          return b.score - a.score;
+        });
+        scored.forEach((emp: any, idx: number) => { emp.rank = idx + 1; });
+
+        setLeaderboard(scored.slice(0, 10)); // Show top 10
+      } catch (err) {
+        console.warn('Failed to fetch employees for leaderboard, using fallback data:', err);
+        // Fallback to sample data if API fails
+        setLeaderboard([
+          { rank: 1, name: 'ไม่สามารถโหลดข้อมูลได้', position: '-', points: 0, score: 0, status: 'down' }
+        ]);
+      } finally {
+        setLoading(false);
       }
-    }
-  }, []);
-
-  // Save to localStorage when kpis change
-  useEffect(() => {
-    localStorage.setItem('swan_kpis', JSON.stringify(kpis));
-  }, [kpis]);
-
-  useEffect(() => {
-    // Simulate API call for leaderboard
-    setTimeout(() => {
-      setLeaderboard([
-        { rank: 1, name: 'à¸­à¸£à¸­à¸™à¸‡à¸„à¹Œ à¹�à¸žà¹‡à¸�à¹€à¸�à¹ˆà¸‡', position: 'Packer', points: 985, score: 98, status: 'up' },
-        { rank: 2, name: 'à¸ªà¸¡à¸›à¸­à¸‡ à¸¥à¸¸à¸¢à¸‡à¸²à¸™', position: 'Forklift Driver', points: 960, score: 96, status: 'up' },
-        { rank: 3, name: 'à¸ˆà¸²à¸£à¸¸à¸“à¸µ à¸™à¸±à¸šà¸ªà¸•à¹‡à¸­à¸�', position: 'Inventory Counter', points: 935, score: 94, status: 'down' },
-        { rank: 4, name: 'à¸¡à¸²à¸™à¸° à¸„à¸±à¸”à¸‚à¸­à¸‡', position: 'Picker', points: 890, score: 89, status: 'up' },
-        { rank: 5, name: 'à¹€à¸�à¸©à¸¡ à¸£à¸±à¸šà¸ªà¸´à¸™à¸„à¹‰à¸²', position: 'Receiving Clerk', points: 875, score: 87, status: 'down' }
-      ]);
-      setLoading(false);
-    }, 400);
+    };
+    
+    fetchLeaderboard();
   }, []);
 
   const handleSaveKpiEdit = (e: React.FormEvent) => {
@@ -476,7 +440,7 @@ export default function KpisPage() {
   };
 
   const handleDeleteKpi = (kpiId: string) => {
-    if (window.confirm(`à¸„à¸¸à¸“à¸•à¹‰à¸­à¸‡à¸�à¸²à¸£à¸¥à¸šà¸•à¸±à¸§à¸Šà¸µà¹‰à¸§à¸±à¸” KPI à¸¥à¸³à¸”à¸±à¸š ${kpiId} à¹ƒà¸Šà¹ˆà¸«à¸£à¸·à¸­à¹„à¸¡à¹ˆ?`)) {
+    if (window.confirm(`คุณต้องการลบตัวชี้วัด KPI ลำดับ ${kpiId} ใช่หรือไม่?`)) {
       const updatedMonthData = kpis[selectedMonth].filter(item => item.id !== kpiId);
       setKpis({
         ...kpis,
@@ -485,11 +449,28 @@ export default function KpisPage() {
     }
   };
 
+  const handleDeleteMonth = (monthName: string) => {
+    if (window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลเดือน "${monthName}"?`)) {
+      const updatedKpis = { ...kpis };
+      delete updatedKpis[monthName];
+      setKpis(updatedKpis);
+      localStorage.setItem('swan_kpis', JSON.stringify(updatedKpis));
+      
+      // If the deleted month was currently selected, fall back to the first available month
+      if (selectedMonth === monthName) {
+        const remainingMonths = Object.keys(updatedKpis);
+        if (remainingMonths.length > 0) {
+          setSelectedMonth(remainingMonths[0]);
+        }
+      }
+    }
+  };
+
   const handleAddMonthKpi = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMonthName.trim()) return;
 
-    const template = kpis['June'] || Object.values(kpis)[0] || [];
+    const template = kpis['June'] || [];
     const newMonthData = template.map(item => {
       const inputVal = newKpiValues[item.id] || '0';
       return {
@@ -508,92 +489,6 @@ export default function KpisPage() {
     setNewKpiValues({});
   };
 
-  const handleDeleteMonth = () => {
-    if (Object.keys(kpis).length <= 1) {
-      alert('à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸¥à¸šà¹€à¸”à¸·à¸­à¸™à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”à¹„à¸”à¹‰ à¸•à¹‰à¸­à¸‡à¸¡à¸µà¸­à¸¢à¹ˆà¸²à¸‡à¸™à¹‰à¸­à¸¢ 1 à¹€à¸”à¸·à¸­à¸™');
-      return;
-    }
-    const monthLabel = selectedMonth === 'June' ? 'à¸¡à¸´à¸–à¸¸à¸™à¸²à¸¢à¸™ 2026' : 
-                       selectedMonth === 'May' ? 'à¸žà¸¤à¸©à¸ à¸²à¸„à¸¡ 2026' : 
-                       selectedMonth === 'April' ? 'à¹€à¸¡à¸©à¸²à¸¢à¸™ 2026' : selectedMonth;
-
-    if (window.confirm(`à¸„à¸¸à¸“à¸•à¹‰à¸­à¸‡à¸�à¸²à¸£à¸¥à¸šà¹€à¸”à¸·à¸­à¸™ "${monthLabel}" à¹�à¸¥à¸°à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ KPI à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”à¹ƒà¸™à¹€à¸”à¸·à¸­à¸™à¸™à¸µà¹‰à¹ƒà¸Šà¹ˆà¸«à¸£à¸·à¸­à¹„à¸¡à¹ˆ?`)) {
-      const remainingMonths = Object.keys(kpis).filter(m => m !== selectedMonth);
-      const newKpis = { ...kpis };
-      delete newKpis[selectedMonth];
-      setKpis(newKpis);
-      setSelectedMonth(remainingMonths[0]);
-    }
-  };
-
-    // Month ordering and trend calculation helpers
-  const monthOrder: Record<string, number> = {
-    'April': 4, 'เมษายน': 4,
-    'May': 5, 'พฤษภาคม': 5,
-    'June': 6, 'มิถุนายน': 6,
-    'July': 7, 'กรกฎาคม': 7,
-    'August': 8, 'สิงหาคม': 8,
-    'September': 9, 'กันยายน': 9,
-    'October': 10, 'ตุลาคม': 10,
-    'November': 11, 'พฤศจิกายน': 11,
-    'December': 12, 'ธันวาคม': 12,
-    'January': 13, 'มกราคม': 13,
-    'February': 14, 'กุมภาพันธ์': 14,
-    'March': 15, 'มีนาคม': 15
-  };
-
-  const getMonthWeight = (monthName: string) => {
-    let mNum = 6;
-    let yNum = 2026;
-    const parts = monthName.split(' ');
-    const namePart = parts[0];
-    const yearPart = parts[1];
-    
-    if (yearPart) {
-      yNum = parseInt(yearPart) || 2026;
-    }
-    
-    for (const key of Object.keys(monthOrder)) {
-      if (namePart.includes(key)) {
-        mNum = monthOrder[key];
-        break;
-      }
-    }
-    return yNum * 12 + mNum;
-  };
-
-  const sortedMonths = Object.keys(kpis).sort((a, b) => getMonthWeight(a) - getMonthWeight(b));
-
-  const getThaiMonthLabel = (monthName: string) => {
-    if (monthName === 'June') return 'มิ.ย.';
-    if (monthName === 'May') return 'พ.ค.';
-    if (monthName === 'April') return 'เม.ย.';
-    return monthName.replace(' 2026', '');
-  };
-
-  const selectedKpiInfo = kpis[selectedMonth]?.find(item => item.id === trendKpiId) || { name: 'FIFO 100%', unit: '%' };
-
-  const trendData = sortedMonths.map(month => {
-    const list = kpis[month] || [];
-    const item = list.find(k => k.id === trendKpiId);
-    
-    let targetNum = 0;
-    if (item && item.target) {
-      const match = item.target.match(/-?\d+(\.\d+)?/);
-      if (match) {
-        targetNum = parseFloat(match[0]) || 0;
-      }
-    }
-    
-    return {
-      month: getThaiMonthLabel(month),
-      'ผลงานจริง': item ? item.actual : 0,
-      'เป้าหมาย': targetNum
-    };
-  });
-
-  const avgActual = trendData.length > 0 ? (trendData.reduce((sum, d) => sum + d['ผลงานจริง'], 0) / trendData.length) : 0;
-
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[400px]">
@@ -608,8 +503,8 @@ export default function KpisPage() {
       {/* Header Info */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">à¹�à¸”à¸Šà¸šà¸­à¸£à¹Œà¸”à¸›à¸£à¸°à¹€à¸¡à¸´à¸™à¸œà¸¥à¸‡à¸²à¸™ (Performance KPI)</h2>
-          <p className="text-slate-400 text-sm mt-1">à¸§à¸´à¹€à¸„à¸£à¸²à¸°à¸«à¹Œà¸›à¸£à¸°à¸ªà¸´à¸—à¸˜à¸´à¸ à¸²à¸ž à¸„à¸§à¸²à¸¡à¹€à¸£à¹‡à¸§ à¸„à¸§à¸²à¸¡à¸–à¸¹à¸�à¸•à¹‰à¸­à¸‡ à¸„à¸§à¸²à¸¡à¸ªà¸°à¸­à¸²à¸”à¸£à¸°à¸šà¸š 5S à¹�à¸¥à¸°à¸„à¸§à¸²à¸¡à¸›à¸¥à¸­à¸”à¸ à¸±à¸¢à¹ƒà¸™à¸�à¸²à¸£à¸—à¸³à¸‡à¸²à¸™</p>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">แดชบอร์ดประเมินผลงาน (Performance KPI)</h2>
+          <p className="text-slate-400 text-sm mt-1">วิเคราะห์ประสิทธิภาพ ความเร็ว ความถูกต้อง ความสะอาดระบบ 5S และความปลอดภัยในการทำงาน</p>
         </div>
       </div>
 
@@ -621,11 +516,11 @@ export default function KpisPage() {
             <Gauge size={22} />
           </div>
           <div>
-            <p className="text-xs text-slate-400 font-bold">à¸›à¸£à¸°à¸ªà¸´à¸—à¸˜à¸´à¸ à¸²à¸žà¹€à¸‰à¸¥à¸µà¹ˆà¸¢ (Efficiency)</p>
+            <p className="text-xs text-slate-400 font-bold">ประสิทธิภาพเฉลี่ย (Efficiency)</p>
             <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">94.2%</h3>
             <span className="text-[10px] text-emerald-500 font-semibold flex items-center gap-0.5">
               <ChevronUp size={12} />
-              <span>+1.5% à¸ªà¸¹à¸‡à¸�à¸§à¹ˆà¸²à¹€à¸›à¹‰à¸²</span>
+              <span>+1.5% สูงกว่าเป้า</span>
             </span>
           </div>
         </GlassCard>
@@ -635,9 +530,9 @@ export default function KpisPage() {
             <ShieldCheck size={22} />
           </div>
           <div>
-            <p className="text-xs text-slate-400 font-bold">à¸„à¸°à¹�à¸™à¸™à¸„à¸§à¸²à¸¡à¸›à¸¥à¸­à¸”à¸ à¸±à¸¢ (Safety)</p>
+            <p className="text-xs text-slate-400 font-bold">คะแนนความปลอดภัย (Safety)</p>
             <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">99.8%</h3>
-            <span className="text-[10px] text-slate-400 font-medium">à¹€à¸�à¸´à¸”à¸­à¸¸à¸šà¸±à¸•à¸´à¹€à¸«à¸•à¸¸à¸ªà¸°à¸ªà¸¡: 0 à¸„à¸£à¸±à¹‰à¸‡</span>
+            <span className="text-[10px] text-slate-400 font-medium">เกิดอุบัติเหตุสะสม: 0 ครั้ง</span>
           </div>
         </GlassCard>
 
@@ -646,9 +541,9 @@ export default function KpisPage() {
             <Flame size={22} />
           </div>
           <div>
-            <p className="text-xs text-slate-400 font-bold">à¸Šà¸±à¹ˆà¸§à¹‚à¸¡à¸‡à¸ªà¸°à¸ªà¸¡à¸£à¸§à¸¡ (KPI Hours)</p>
-            <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">840 à¸Šà¸¡.</h3>
-            <span className="text-[10px] text-slate-400 font-medium">à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸£à¸­à¸š 30 à¸§à¸±à¸™</span>
+            <p className="text-xs text-slate-400 font-bold">ชั่วโมงสะสมรวม (KPI Hours)</p>
+            <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">840 ชม.</h3>
+            <span className="text-[10px] text-slate-400 font-medium">ข้อมูลรอบ 30 วัน</span>
           </div>
         </GlassCard>
 
@@ -657,9 +552,9 @@ export default function KpisPage() {
             <Activity size={22} />
           </div>
           <div>
-            <p className="text-xs text-slate-400 font-bold">à¸„à¸§à¸²à¸¡à¸–à¸¹à¸�à¸•à¹‰à¸­à¸‡à¸«à¸¢à¸´à¸šà¸ªà¸´à¸™à¸„à¹‰à¸² (Accuracy)</p>
+            <p className="text-xs text-slate-400 font-bold">ความถูกต้องหยิบสินค้า (Accuracy)</p>
             <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">98.5%</h3>
-            <span className="text-[10px] text-slate-400 font-medium">à¸­à¸±à¸•à¸£à¸²à¸�à¸²à¸£à¸„à¸·à¸™à¸‚à¸­à¸‡à¸•à¹ˆà¸³à¸�à¸§à¹ˆà¸² 0.2%</span>
+            <span className="text-[10px] text-slate-400 font-medium">อัตราการคืนของต่ำกว่า 0.2%</span>
           </div>
         </GlassCard>
 
@@ -667,9 +562,8 @@ export default function KpisPage() {
 
       {/* KPI Chart Visuals Split */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Trend analysis left selector card */}
-        <GlassCard className="lg:col-span-1 h-[400px] flex flex-col p-6" delay={0.1}>
+        {/* Radar chart left card */}
+        <GlassCard className="h-[400px] flex flex-col p-6">
           <div className="mb-4">
             <h4 className="font-bold text-sm text-slate-800 dark:text-white">วิเคราะห์แนวโน้มแผนก (KPI Trend Analyst)</h4>
             <p className="text-xs text-slate-400 mt-0.5">เลือกตัวชี้วัดเพื่อดูสรุปผลสถิติและเปรียบเทียบในแต่ละเดือน</p>
@@ -695,20 +589,23 @@ export default function KpisPage() {
               <div>
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">ตัวชี้วัดที่เลือก</p>
                 <h5 className="text-xs font-extrabold text-warehouse-orange mt-0.5 line-clamp-2">
-                  {selectedKpiInfo?.name}
+                  {kpis[selectedMonth]?.find(k => k.id === trendKpiId)?.name}
                 </h5>
               </div>
               <div className="grid grid-cols-2 gap-4 border-t border-slate-200/30 dark:border-white/5 pt-3">
                 <div>
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">หน่วยนับ</p>
                   <p className="text-xs font-black text-slate-800 dark:text-white mt-0.5">
-                    {selectedKpiInfo?.unit || '-'}
+                    {kpis[selectedMonth]?.find(k => k.id === trendKpiId)?.unit || '-'}
                   </p>
                 </div>
                 <div>
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">ค่าเฉลี่ยสะสม</p>
                   <p className="text-xs font-black text-slate-800 dark:text-white mt-0.5">
-                    {avgActual.toFixed(1)} {selectedKpiInfo?.unit}
+                    {(() => {
+                      const values = Object.keys(kpis).map(m => kpis[m].find(k => k.id === trendKpiId)?.actual).filter(v => v !== undefined) as number[];
+                      return values.length > 0 ? (values.reduce((sum, v) => sum + v, 0) / values.length).toFixed(1) : '0';
+                    })()} {kpis[selectedMonth]?.find(k => k.id === trendKpiId)?.unit}
                   </p>
                 </div>
               </div>
@@ -716,7 +613,7 @@ export default function KpisPage() {
           </div>
         </GlassCard>
 
-        {/* Trend AreaChart right card */}
+        {/* Bar comparison chart */}
         <GlassCard className="lg:col-span-2 h-[400px] flex flex-col p-6" delay={0.15}>
           <div className="mb-4">
             <h4 className="font-bold text-sm text-slate-800 dark:text-white">กราฟแสดงแนวโน้มรายเดือน (Monthly Trend Graph)</h4>
@@ -724,7 +621,40 @@ export default function KpisPage() {
           </div>
           <div className="flex-1 w-full text-xs">
             <ResponsiveContainer width="100%" height="90%">
-              <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+              <AreaChart
+                data={(() => {
+                  const monthsOrder = ['April', 'May', 'June'];
+                  const thaiMonthMap: Record<string, string> = {
+                    'April': 'เมษายน',
+                    'May': 'พฤษภาคม',
+                    'June': 'มิถุนายน'
+                  };
+                  
+                  const allMonths = Object.keys(kpis).sort((a, b) => {
+                    const idxA = monthsOrder.indexOf(a);
+                    const idxB = monthsOrder.indexOf(b);
+                    if (idxA === -1 && idxB === -1) return a.localeCompare(b);
+                    if (idxA === -1) return 1;
+                    if (idxB === -1) return -1;
+                    return idxA - idxB;
+                  });
+
+                  return allMonths.map(m => {
+                    const item = kpis[m].find(k => k.id === trendKpiId);
+                    let targetVal = 0;
+                    if (item) {
+                      const cleanTarget = item.target.replace(/[^d.-]/g, '');
+                      targetVal = parseFloat(cleanTarget) || 0;
+                    }
+                    return {
+                      month: thaiMonthMap[m] || m,
+                      'ผลงานจริง': item ? item.actual : 0,
+                      'เป้าหมาย': targetVal
+                    };
+                  });
+                })()}
+                margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
+              >
                 <defs>
                   <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#F97316" stopOpacity={0.3}/>
@@ -746,7 +676,6 @@ export default function KpisPage() {
             </ResponsiveContainer>
           </div>
         </GlassCard>
-
       </div>
 
       {/* Switcher Tabs */}
@@ -759,7 +688,7 @@ export default function KpisPage() {
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          à¸ªà¸£à¸¸à¸›à¸œà¸¥ KPI à¹�à¸œà¸™à¸�à¸„à¸¥à¸±à¸‡à¸ªà¸´à¸™à¸„à¹‰à¸² (Department KPI)
+          สรุปผล KPI แผนกคลังสินค้า (Department KPI)
         </button>
         <button 
           onClick={() => setActiveTab('leaderboard')}
@@ -769,7 +698,7 @@ export default function KpisPage() {
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          à¸­à¸±à¸™à¸”à¸±à¸šà¸œà¸¥à¸‡à¸²à¸™à¸£à¸²à¸¢à¸šà¸¸à¸„à¸„à¸¥ (Leaderboard)
+          อันดับผลงานรายบุคคล (Leaderboard)
         </button>
       </div>
 
@@ -781,16 +710,16 @@ export default function KpisPage() {
               <div>
                 <h4 className="font-bold text-base text-slate-800 dark:text-white flex items-center gap-2">
                   <ClipboardList className="text-warehouse-orange" size={20} />
-                  <span>à¸œà¸¥à¸�à¸²à¸£à¸”à¸³à¹€à¸™à¸´à¸™à¸‡à¸²à¸™à¹�à¸œà¸™à¸�à¸„à¸¥à¸±à¸‡à¸ªà¸´à¸™à¸„à¹‰à¸²à¸›à¸£à¸°à¸ˆà¸³à¸›à¸µ 2026</span>
+                  <span>ผลการดำเนินงานแผนกคลังสินค้าประจำปี 2026</span>
                 </h4>
-                <p className="text-xs text-slate-400 mt-1">à¸•à¸²à¸£à¸²à¸‡à¸„à¸°à¹�à¸™à¸™à¸–à¹ˆà¸§à¸‡à¸™à¹‰à¸³à¸«à¸™à¸±à¸� à¹€à¸�à¸£à¸” à¹�à¸¥à¸°à¹€à¸›à¹‰à¸²à¸«à¸¡à¸²à¸¢à¸•à¸²à¸¡à¹�à¸•à¹ˆà¸¥à¸°à¸•à¸±à¸§à¸Šà¸µà¹‰à¸§à¸±à¸”</p>
+                <p className="text-xs text-slate-400 mt-1">ตารางคะแนนถ่วงน้ำหนัก เกรด และเป้าหมายตามแต่ละตัวชี้วัด</p>
               </div>
 
               {/* Month Selector */}
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2">
                   <Calendar size={16} className="text-slate-400" />
-                  <span className="text-xs text-slate-400 font-bold">à¹€à¸¥à¸·à¸­à¸�à¹€à¸”à¸·à¸­à¸™à¸›à¸£à¸°à¹€à¸¡à¸´à¸™:</span>
+                  <span className="text-xs text-slate-400 font-bold">เลือกเดือนประเมิน:</span>
                   <select 
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(e.target.value)}
@@ -798,12 +727,24 @@ export default function KpisPage() {
                   >
                     {Object.keys(kpis).map(month => (
                       <option key={month} value={month}>
-                        {month === 'June' ? 'à¸¡à¸´à¸–à¸¸à¸™à¸²à¸¢à¸™ 2026' : 
-                         month === 'May' ? 'à¸žà¸¤à¸©à¸ à¸²à¸„à¸¡ 2026' : 
-                         month === 'April' ? 'à¹€à¸¡à¸©à¸²à¸¢à¸™ 2026' : month}
+                        {month === 'June' ? 'มิถุนายน 2026' : 
+                         month === 'May' ? 'พฤษภาคม 2026' : 
+                         month === 'April' ? 'เมษายน 2026' : month}
                       </option>
                     ))}
                   </select>
+                  
+                  {/* Delete month button */}
+                  {selectedMonth !== 'June' && selectedMonth !== 'May' && selectedMonth !== 'April' && (
+                    <button
+                      onClick={() => handleDeleteMonth(selectedMonth)}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-200/50 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-600 dark:text-red-400 text-xs font-bold transition-all"
+                      title="ลบเดือนประเมินนี้"
+                    >
+                      <Trash2 size={13} />
+                      <span>ลบเดือน</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Add Month & KPI Buttons (visible only to Admin/Staff) */}
@@ -818,15 +759,7 @@ export default function KpisPage() {
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-warehouse-orange text-white text-xs font-bold hover:bg-warehouse-orange/90 transition-all shadow-md shadow-warehouse-orange/10"
                     >
                       <Plus size={14} />
-                      <span>à¹€à¸žà¸´à¹ˆà¸¡à¹€à¸”à¸·à¸­à¸™</span>
-                    </button>
-                    <button
-                      onClick={handleDeleteMonth}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition-all shadow-md shadow-rose-600/10"
-                      title="à¸¥à¸šà¹€à¸”à¸·à¸­à¸™à¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™"
-                    >
-                      <Trash2 size={14} />
-                      <span>à¸¥à¸šà¹€à¸”à¸·à¸­à¸™</span>
+                      <span>เพิ่มเดือน</span>
                     </button>
                     <button
                       onClick={() => {
@@ -843,7 +776,7 @@ export default function KpisPage() {
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/10"
                     >
                       <Plus size={14} />
-                      <span>à¹€à¸žà¸´à¹ˆà¸¡ KPI</span>
+                      <span>เพิ่ม KPI</span>
                     </button>
                   </div>
                 )}
@@ -857,8 +790,8 @@ export default function KpisPage() {
                   {overallGradeLetter}
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">à¹€à¸�à¸£à¸”à¹€à¸‰à¸¥à¸µà¹ˆà¸¢à¸‚à¸­à¸‡à¹�à¸œà¸™à¸� (Overall Grade)</p>
-                  <h5 className="text-lg font-extrabold text-slate-800 dark:text-white mt-0.5">à¹€à¸�à¸£à¸” {overallGradeLetter}</h5>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">เกรดเฉลี่ยของแผนก (Overall Grade)</p>
+                  <h5 className="text-lg font-extrabold text-slate-800 dark:text-white mt-0.5">เกรด {overallGradeLetter}</h5>
                 </div>
               </div>
 
@@ -867,7 +800,7 @@ export default function KpisPage() {
                   <Award size={24} />
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">à¸„à¸°à¹�à¸™à¸™à¸–à¹ˆà¸§à¸‡à¸™à¹‰à¸³à¸«à¸™à¸±à¸�à¹€à¸‰à¸¥à¸µà¹ˆà¸¢ (Weighted Score)</p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">คะแนนถ่วงน้ำหนักเฉลี่ย (Weighted Score)</p>
                   <h5 className="text-lg font-extrabold text-slate-800 dark:text-white mt-0.5">{finalWeightedScore.toFixed(2)} / 4.00</h5>
                 </div>
               </div>
@@ -877,7 +810,7 @@ export default function KpisPage() {
                   <Percent size={22} />
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">à¹€à¸›à¸­à¸£à¹Œà¹€à¸‹à¹‡à¸™à¸•à¹Œà¸œà¸¥à¸”à¸³à¹€à¸™à¸´à¸™à¸‡à¸²à¸™ (KPI Performance %)</p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">เปอร์เซ็นต์ผลดำเนินงาน (KPI Performance %)</p>
                   <h5 className="text-lg font-extrabold text-slate-800 dark:text-white mt-0.5">{finalScorePercentage.toFixed(1)}%</h5>
                 </div>
               </div>
@@ -890,16 +823,16 @@ export default function KpisPage() {
               <table className="w-full border-collapse text-left">
                 <thead>
                   <tr className="border-b border-slate-200/50 dark:border-white/5 text-[10px] uppercase font-bold text-slate-400 tracking-wider bg-slate-50/50 dark:bg-white/5">
-                    <th className="px-4 py-3 text-center w-12">à¸¥à¸³à¸”à¸±à¸š</th>
-                    <th className="px-4 py-3">à¸«à¸±à¸§à¸‚à¹‰à¸­ KPI à¸«à¸¥à¸±à¸�</th>
-                    <th className="px-4 py-3">à¸ªà¸¹à¸•à¸£à¸�à¸²à¸£à¸„à¸³à¸™à¸§à¸“</th>
+                    <th className="px-4 py-3 text-center w-12">ลำดับ</th>
+                    <th className="px-4 py-3">หัวข้อ KPI หลัก</th>
+                    <th className="px-4 py-3">สูตรการคำนวณ</th>
                     <th className="px-4 py-3 text-center w-20">% WT</th>
                     <th className="px-4 py-3 text-center w-24">Target</th>
-                    <th className="px-4 py-3 text-center w-24">à¸œà¸¥à¸‡à¸²à¸™à¸ˆà¸£à¸´à¸‡ (Actual)</th>
-                    <th className="px-4 py-3 text-center w-20">à¸„à¸°à¹�à¸™à¸™ (4.0)</th>
-                    <th className="px-4 py-3 text-center w-20">à¹€à¸�à¸£à¸”</th>
+                    <th className="px-4 py-3 text-center w-24">ผลงานจริง (Actual)</th>
+                    <th className="px-4 py-3 text-center w-20">คะแนน (4.0)</th>
+                    <th className="px-4 py-3 text-center w-20">เกรด</th>
                     {(user?.role === 'admin' || user?.role === 'staff') && (
-                      <th className="px-4 py-3 text-center w-24">à¸ˆà¸±à¸”à¸�à¸²à¸£</th>
+                      <th className="px-4 py-3 text-center w-24">จัดการ</th>
                     )}
                   </tr>
                 </thead>
@@ -959,14 +892,14 @@ export default function KpisPage() {
                                   setShowEditModal(true);
                                 }}
                                 className="text-warehouse-orange hover:text-warehouse-orange/80 transition-colors p-1 bg-warehouse-orange/10 hover:bg-warehouse-orange/20 rounded-lg inline-flex items-center justify-center"
-                                title="à¹�à¸�à¹‰à¹„à¸‚ KPI à¹�à¸¥à¸°à¸œà¸¥à¸‡à¸²à¸™"
+                                title="แก้ไข KPI และผลงาน"
                               >
                                 <Edit3 size={14} />
                               </button>
                               <button
                                 onClick={() => handleDeleteKpi(kpi.id)}
                                 className="text-rose-500 hover:text-rose-600 transition-colors p-1 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg inline-flex items-center justify-center"
-                                title="à¸¥à¸š KPI"
+                                title="ลบ KPI"
                               >
                                 <Trash2 size={14} />
                               </button>
@@ -986,20 +919,20 @@ export default function KpisPage() {
           <div className="px-6 py-4 border-b border-slate-200/50 dark:border-white/5 bg-slate-100/50 dark:bg-white/5 flex items-center justify-between">
             <h4 className="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2">
               <Award size={18} className="text-warehouse-orange" />
-              <span>à¸�à¸£à¸°à¸”à¸²à¸™à¸œà¸¹à¹‰à¸™à¸³à¸œà¸¥à¸‡à¸²à¸™à¸žà¸™à¸±à¸�à¸‡à¸²à¸™à¸”à¸µà¹€à¸”à¹ˆà¸™ (Leaderboard)</span>
+              <span>กระดานผู้นำผลงานพนักงานดีเด่น (Leaderboard)</span>
             </h4>
-            <span className="text-[10px] text-slate-400 font-semibold">à¸­à¸±à¸›à¹€à¸”à¸•à¹�à¸šà¸šà¸£à¸²à¸¢à¹€à¸”à¸·à¸­à¸™</span>
+            <span className="text-[10px] text-slate-400 font-semibold">อัปเดตแบบรายเดือน</span>
           </div>
           
           <div className="overflow-x-auto text-xs">
             <table className="w-full border-collapse text-left">
               <thead>
                 <tr className="border-b border-slate-200/50 dark:border-white/5 text-[10px] uppercase font-bold text-slate-400 tracking-wider bg-slate-50/50 dark:bg-white/5">
-                  <th className="px-6 py-3.5 text-center w-20">à¸­à¸±à¸™à¸”à¸±à¸š</th>
-                  <th className="px-6 py-3.5">à¸£à¸²à¸¢à¸Šà¸·à¹ˆà¸­à¸žà¸™à¸±à¸�à¸‡à¸²à¸™</th>
-                  <th className="px-6 py-3.5">à¸•à¸³à¹�à¸«à¸™à¹ˆà¸‡</th>
-                  <th className="px-6 py-3.5 text-center">à¸„à¸°à¹�à¸™à¸™à¸ªà¸°à¸ªà¸¡ (Points)</th>
-                  <th className="px-6 py-3.5 text-center">à¸”à¸±à¸Šà¸™à¸µà¸Šà¸µà¹‰à¸§à¸±à¸” KPI</th>
+                  <th className="px-6 py-3.5 text-center w-20">อันดับ</th>
+                  <th className="px-6 py-3.5">รายชื่อพนักงาน</th>
+                  <th className="px-6 py-3.5">ตำแหน่ง</th>
+                  <th className="px-6 py-3.5 text-center">คะแนนสะสม (Points)</th>
+                  <th className="px-6 py-3.5 text-center">ดัชนีชี้วัด KPI</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200/50 dark:divide-white/5 font-semibold text-slate-700 dark:text-slate-200">
@@ -1039,7 +972,7 @@ export default function KpisPage() {
             <div className="flex items-center justify-between pb-4 border-b border-slate-200/50 dark:border-white/5 mb-6">
               <h3 className="font-bold text-base text-slate-800 dark:text-white flex items-center gap-2">
                 <Edit3 size={18} className="text-warehouse-orange" />
-                <span>à¹�à¸�à¹‰à¹„à¸‚à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸•à¸±à¸§à¸Šà¸µà¹‰à¸§à¸±à¸” KPI ({editingKpi.id})</span>
+                <span>แก้ไขข้อมูลตัวชี้วัด KPI ({editingKpi.id})</span>
               </h3>
               <button 
                 onClick={() => setShowEditModal(false)} 
@@ -1051,7 +984,7 @@ export default function KpisPage() {
             
             <form onSubmit={handleSaveKpiEdit} className="space-y-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">à¸¥à¸³à¸”à¸±à¸š KPI (ID)</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">ลำดับ KPI (ID)</label>
                 <input 
                   type="text" 
                   required 
@@ -1061,7 +994,7 @@ export default function KpisPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">à¸«à¸±à¸§à¸‚à¹‰à¸­ KPI à¸«à¸¥à¸±à¸�</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">หัวข้อ KPI หลัก</label>
                 <input 
                   type="text" 
                   required 
@@ -1072,7 +1005,7 @@ export default function KpisPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">à¸ªà¸¹à¸•à¸£à¸�à¸²à¸£à¸„à¸³à¸™à¸§à¸“</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">สูตรการคำนวณ</label>
                 <textarea 
                   value={editFormula} 
                   onChange={(e) => setEditFormula(e.target.value)} 
@@ -1083,7 +1016,7 @@ export default function KpisPage() {
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">% WT (à¸™à¹‰à¸³à¸«à¸™à¸±à¸�)</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">% WT (น้ำหนัก)</label>
                   <input 
                     type="number" 
                     step="any"
@@ -1094,7 +1027,7 @@ export default function KpisPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">Target</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Target (เป้าหมาย)</label>
                   <input 
                     type="text" 
                     required 
@@ -1121,7 +1054,7 @@ export default function KpisPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">à¸œà¸¥à¸‡à¸²à¸™à¸ˆà¸£à¸´à¸‡ (Actual) à¹ƒà¸™à¹€à¸”à¸·à¸­à¸™à¸™à¸µà¹‰</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">ผลงานจริง (Actual) ในเดือนนี้</label>
                 <input 
                   type="number" 
                   step="any"
@@ -1134,7 +1067,7 @@ export default function KpisPage() {
 
               <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-white/5">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">à¸„à¸°à¹�à¸™à¸™à¸ªà¸°à¸ªà¸¡ (0.0 - 4.0)</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">คะแนนสะสม (0.0 - 4.0)</label>
                   <input 
                     type="number" 
                     step="0.1"
@@ -1142,18 +1075,18 @@ export default function KpisPage() {
                     max="4"
                     value={editManualScore} 
                     onChange={(e) => setEditManualScore(e.target.value)} 
-                    placeholder="Auto (à¸„à¸³à¸™à¸§à¸“à¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´)"
+                    placeholder="Auto (คำนวณอัตโนมัติ)"
                     className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">à¹€à¸�à¸£à¸”à¹€à¸‰à¸¥à¸µà¹ˆà¸¢</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">เกรดเฉลี่ย</label>
                   <select 
                     value={editManualGrade} 
                     onChange={(e) => setEditManualGrade(e.target.value)}
                     className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate"
                   >
-                    <option value="Auto">Auto (à¸„à¸³à¸™à¸§à¸“à¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´)</option>
+                    <option value="Auto">Auto (คำนวณอัตโนมัติ)</option>
                     <option value="A">A</option>
                     <option value="B+">B+</option>
                     <option value="B">B</option>
@@ -1171,14 +1104,14 @@ export default function KpisPage() {
                   onClick={() => setShowEditModal(false)}
                   className="px-4 py-2 rounded-xl border border-slate-200/50 dark:border-white/5 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5"
                 >
-                  à¸¢à¸�à¹€à¸¥à¸´à¸�
+                  ยกเลิก
                 </button>
                 <button 
                   type="submit" 
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold transition-all shadow-md shadow-warehouse-orange/15"
                 >
                   <Save size={14} />
-                  <span>à¸šà¸±à¸™à¸—à¸¶à¸�à¸œà¸¥à¸‡à¸²à¸™</span>
+                  <span>บันทึกผลงาน</span>
                 </button>
               </div>
             </form>
@@ -1193,7 +1126,7 @@ export default function KpisPage() {
             <div className="flex items-center justify-between pb-4 border-b border-slate-200/50 dark:border-white/5 mb-6">
               <h3 className="font-bold text-base text-slate-800 dark:text-white flex items-center gap-2">
                 <Plus size={18} className="text-emerald-500" />
-                <span>à¹€à¸žà¸´à¹ˆà¸¡à¸•à¸±à¸§à¸Šà¸µà¹‰à¸§à¸±à¸” KPI à¹ƒà¸«à¸¡à¹ˆ</span>
+                <span>เพิ่มตัวชี้วัด KPI ใหม่</span>
               </h3>
               <button 
                 onClick={() => setShowAddKpiModal(false)} 
@@ -1206,29 +1139,29 @@ export default function KpisPage() {
             <form onSubmit={handleSaveNewKpi} className="space-y-4">
               <div className="grid grid-cols-3 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">à¸¥à¸³à¸”à¸±à¸š (ID)</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">ลำดับ (ID)</label>
                   <input 
                     type="text" 
                     required 
-                    placeholder="à¹€à¸Šà¹ˆà¸™ 1.6"
+                    placeholder="เช่น 1.6"
                     value={addKpiId} 
                     onChange={(e) => setAddKpiId(e.target.value)} 
                     className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">à¸«à¸™à¹ˆà¸§à¸¢ (Unit)</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">หน่วย (Unit)</label>
                   <input 
                     type="text" 
                     required 
-                    placeholder="à¹€à¸Šà¹ˆà¸™ % à¸«à¸£à¸·à¸­ à¸„à¸£à¸±à¹‰à¸‡"
+                    placeholder="เช่น % หรือ ครั้ง"
                     value={addKpiUnit} 
                     onChange={(e) => setAddKpiUnit(e.target.value)} 
                     className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">à¸«à¸¡à¸§à¸”à¸«à¸¡à¸¹à¹ˆ</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">หมวดหมู่</label>
                   <select 
                     value={addKpiCategory} 
                     onChange={(e) => setAddKpiCategory(e.target.value)}
@@ -1247,11 +1180,11 @@ export default function KpisPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">à¸«à¸±à¸§à¸‚à¹‰à¸­ KPI à¸«à¸¥à¸±à¸�</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">หัวข้อ KPI หลัก</label>
                 <input 
                   type="text" 
                   required 
-                  placeholder="à¹€à¸Šà¹ˆà¸™ à¸„à¸§à¸²à¸¡à¸–à¸¹à¸�à¸•à¹‰à¸­à¸‡à¹ƒà¸™à¸�à¸²à¸£à¸ªà¹�à¸�à¸™à¸šà¸²à¸£à¹Œà¹‚à¸„à¹‰à¸”"
+                  placeholder="เช่น ความถูกต้องในการสแกนบาร์โค้ด"
                   value={addKpiName} 
                   onChange={(e) => setAddKpiName(e.target.value)} 
                   className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
@@ -1259,9 +1192,9 @@ export default function KpisPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">à¸ªà¸¹à¸•à¸£à¸�à¸²à¸£à¸„à¸³à¸™à¸§à¸“</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">สูตรการคำนวณ</label>
                 <textarea 
-                  placeholder="à¹€à¸Šà¹ˆà¸™ (à¸ˆà¸³à¸™à¸§à¸™à¸—à¸µà¹ˆà¸–à¸¹à¸�à¸•à¹‰à¸­à¸‡ / à¸ˆà¸³à¸™à¸§à¸™à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”) x 100"
+                  placeholder="เช่น (จำนวนที่ถูกต้อง / จำนวนทั้งหมด) x 100"
                   value={addKpiFormula} 
                   onChange={(e) => setAddKpiFormula(e.target.value)} 
                   rows={2}
@@ -1271,23 +1204,23 @@ export default function KpisPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">% WT (à¸™à¹‰à¸³à¸«à¸™à¸±à¸�)</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">% WT (น้ำหนัก)</label>
                   <input 
                     type="number" 
                     step="any"
                     required 
-                    placeholder="à¹€à¸Šà¹ˆà¸™ 5"
+                    placeholder="เช่น 5"
                     value={addKpiWt} 
                     onChange={(e) => setAddKpiWt(e.target.value)} 
                     className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">Target (à¹€à¸›à¹‰à¸²à¸«à¸¡à¸²à¸¢)</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Target (เป้าหมาย)</label>
                   <input 
                     type="text" 
                     required 
-                    placeholder="à¹€à¸Šà¹ˆà¸™ >=95%"
+                    placeholder="เช่น >=95%"
                     value={addKpiTarget} 
                     onChange={(e) => setAddKpiTarget(e.target.value)} 
                     className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
@@ -1296,12 +1229,12 @@ export default function KpisPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">à¸œà¸¥à¸‡à¸²à¸™à¸ˆà¸£à¸´à¸‡ (Actual)</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">ผลงานจริง (Actual)</label>
                 <input 
                   type="number" 
                   step="any"
                   required 
-                  placeholder="à¹€à¸Šà¹ˆà¸™ 94.5"
+                  placeholder="เช่น 94.5"
                   value={addKpiActual} 
                   onChange={(e) => setAddKpiActual(e.target.value)} 
                   className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
@@ -1310,26 +1243,26 @@ export default function KpisPage() {
 
               <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-white/5">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">à¸„à¸°à¹�à¸™à¸™à¸ªà¸°à¸ªà¸¡ (0.0 - 4.0)</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">คะแนนสะสม (0.0 - 4.0)</label>
                   <input 
                     type="number" 
                     step="0.1"
                     min="0"
                     max="4"
-                    placeholder="Auto (à¸„à¸³à¸™à¸§à¸“à¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´)"
+                    placeholder="Auto (คำนวณอัตโนมัติ)"
                     value={addKpiManualScore} 
                     onChange={(e) => setAddKpiManualScore(e.target.value)} 
                     className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">à¹€à¸�à¸£à¸”à¹€à¸‰à¸¥à¸µà¹ˆà¸¢</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">เกรดเฉลี่ย</label>
                   <select 
                     value={addKpiManualGrade} 
                     onChange={(e) => setAddKpiManualGrade(e.target.value)}
                     className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate"
                   >
-                    <option value="Auto">Auto (à¸„à¸³à¸™à¸§à¸“à¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´)</option>
+                    <option value="Auto">Auto (คำนวณอัตโนมัติ)</option>
                     <option value="A">A</option>
                     <option value="B+">B+</option>
                     <option value="B">B</option>
@@ -1347,14 +1280,14 @@ export default function KpisPage() {
                   onClick={() => setShowAddKpiModal(false)}
                   className="px-4 py-2 rounded-xl border border-slate-200/50 dark:border-white/5 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5"
                 >
-                  à¸¢à¸�à¹€à¸¥à¸´à¸�
+                  ยกเลิก
                 </button>
                 <button 
                   type="submit" 
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/15"
                 >
                   <Save size={14} />
-                  <span>à¹€à¸žà¸´à¹ˆà¸¡ KPI</span>
+                  <span>เพิ่ม KPI</span>
                 </button>
               </div>
             </form>
@@ -1369,7 +1302,7 @@ export default function KpisPage() {
             <div className="flex items-center justify-between pb-4 border-b border-slate-200/50 dark:border-white/5 mb-6">
               <h3 className="font-bold text-base text-slate-800 dark:text-white flex items-center gap-2">
                 <Plus size={18} className="text-warehouse-orange" />
-                <span>à¹€à¸žà¸´à¹ˆà¸¡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ KPI à¸›à¸£à¸°à¸ˆà¸³à¹€à¸”à¸·à¸­à¸™</span>
+                <span>เพิ่มข้อมูล KPI ประจำเดือน</span>
               </h3>
               <button 
                 onClick={() => setShowAddMonthModal(false)} 
@@ -1381,26 +1314,26 @@ export default function KpisPage() {
             
             <form onSubmit={handleAddMonthKpi} className="space-y-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">à¸Šà¸·à¹ˆà¸­à¹€à¸”à¸·à¸­à¸™à¸›à¸£à¸°à¹€à¸¡à¸´à¸™ (à¹€à¸Šà¹ˆà¸™ à¸�à¸£à¸�à¸Žà¸²à¸„à¸¡ 2026)</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">ชื่อเดือนประเมิน (เช่น กรกฎาคม 2026)</label>
                 <input 
                   type="text" 
                   required 
                   value={newMonthName} 
                   onChange={(e) => setNewMonthName(e.target.value)} 
                   className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
-                  placeholder="à¸�à¸£à¸�à¸Žà¸²à¸„à¸¡ 2026 à¸«à¸£à¸·à¸­ July"
+                  placeholder="กรกฎาคม 2026 หรือ July"
                 />
               </div>
 
               <div className="border-t border-slate-200/30 dark:border-white/5 pt-4">
-                <p className="text-[11px] font-extrabold text-slate-400 uppercase mb-3 tracking-wider">à¸£à¸°à¸šà¸¸à¸œà¸¥à¸‡à¸²à¸™à¸ˆà¸£à¸´à¸‡à¸‚à¸­à¸‡à¸•à¸±à¸§à¸Šà¸µà¹‰à¸§à¸±à¸”à¸—à¸±à¹‰à¸‡ 12 à¸‚à¹‰à¸­:</p>
+                <p className="text-[11px] font-extrabold text-slate-400 uppercase mb-3 tracking-wider">ระบุผลงานจริงของตัวชี้วัดทั้ง 12 ข้อ:</p>
                 <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
                   {(kpis['June'] || []).map(item => (
                     <div key={item.id} className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2 p-2 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200/30 dark:border-white/5">
                       <div className="sm:col-span-2 text-xs">
                         <span className="font-mono text-slate-400 font-bold mr-1">{item.id}</span>
                         <span className="font-semibold text-slate-700 dark:text-slate-200 truncate inline-block max-w-[280px]" title={item.name}>{item.name.split(' (')[0]}</span>
-                        <span className="block text-[9px] text-slate-400 font-medium">à¹€à¸›à¹‰à¸²à¸«à¸¡à¸²à¸¢: {item.target}</span>
+                        <span className="block text-[9px] text-slate-400 font-medium">เป้าหมาย: {item.target}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <input 
@@ -1410,7 +1343,7 @@ export default function KpisPage() {
                           value={newKpiValues[item.id] || ''}
                           onChange={(e) => setNewKpiValues({ ...newKpiValues, [item.id]: e.target.value })}
                           className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate py-1 px-2 text-center"
-                          placeholder="à¸œà¸¥à¸‡à¸²à¸™à¸ˆà¸£à¸´à¸‡"
+                          placeholder="ผลงานจริง"
                         />
                         <span className="text-[10px] text-slate-400 font-bold">{item.unit}</span>
                       </div>
@@ -1425,14 +1358,14 @@ export default function KpisPage() {
                   onClick={() => setShowAddMonthModal(false)}
                   className="px-4 py-2 rounded-xl border border-slate-200/50 dark:border-white/5 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5"
                 >
-                  à¸¢à¸�à¹€à¸¥à¸´à¸�
+                  ยกเลิก
                 </button>
                 <button 
                   type="submit" 
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold transition-all shadow-md shadow-warehouse-orange/15"
                 >
                   <Plus size={14} />
-                  <span>à¸šà¸±à¸™à¸—à¸¶à¸�à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¹€à¸”à¸·à¸­à¸™à¹ƒà¸«à¸¡à¹ˆ</span>
+                  <span>บันทึกข้อมูลเดือนใหม่</span>
                 </button>
               </div>
             </form>

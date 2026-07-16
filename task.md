@@ -17,6 +17,7 @@
 - [x] Change fractional pallet KPI units to pallets and issue KPI unit to cases, with automatic grading and browser migration logic.
 - [x] Add target unit dropdown selection menu in the Edit KPI modal.
 - [x] Replace static Radar and Bar charts with dynamic monthly trend graph in Performance KPI dashboard.
+- [x] Prevent silent mock database fallback in production to avoid data loss on database connection hiccups.
 
 
 

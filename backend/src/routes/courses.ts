@@ -969,6 +969,10 @@ router.post('/lessons/:id/questions', authenticateToken, requireRole(['admin', '
     return res.status(201).json(result.rows[0]);
 
   } catch (err: any) {
+    console.error('[AddQuestion Critical Error]:', err);
+    if (!getMockStatus()) {
+      return res.status(500).json({ message: `Internal server error during question creation: ${err.message}` });
+    }
     const newId = mockStore.mockQuestions.reduce((max, q) => q.id > max ? q.id : max, 0) + 1;
     const newQuestion = {
       id: newId,

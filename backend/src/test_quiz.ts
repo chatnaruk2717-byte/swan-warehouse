@@ -1,33 +1,39 @@
-import { query } from './config/db';
+import mysql from 'mysql2/promise';
+import dotenv from 'dotenv';
 
-async function run() {
+dotenv.config();
+
+const connString = process.env.DATABASE_URL;
+if (!connString) {
+  console.error('DATABASE_URL is not defined in .env');
+  process.exit(1);
+}
+
+async function main() {
+  let connection;
   try {
-    const lessonId = 5; // Safety Quiz
-    const questionsResult = await query(
-      'SELECT id, correct_answers, points FROM questions WHERE lesson_id = $1',
-      [lessonId]
-    );
-    const questions = questionsResult.rows;
+    connection = await mysql.createConnection({
+      uri: connString,
+      ssl: { rejectUnauthorized: false }
+    });
+    console.log('Connected to MySQL database!');
 
-    console.log("--- QUESTIONS FROM DB ---");
-    for (const q of questions) {
-      console.log(`ID: ${q.id}, Type of correct_answers: ${typeof q.correct_answers}`);
-      console.log("correct_answers:", q.correct_answers);
-      console.log("Is array:", Array.isArray(q.correct_answers));
+    const [courses] = await connection.query('SELECT id, name FROM courses');
+    console.log('\n--- Courses ---');
+    console.table(courses);
 
-      let correct = q.correct_answers;
-      if (typeof correct === 'string') {
-        try {
-          correct = JSON.parse(correct);
-          console.log("  Parsed correct_answers:", correct, "Is array:", Array.isArray(correct));
-        } catch (e: any) {
-          console.error("  Parse error:", e.message);
-        }
-      }
-    }
+    const [lessons] = await connection.query('SELECT id, chapter_id, title, content_type FROM lessons');
+    console.log('\n--- Lessons ---');
+    console.table(lessons);
+
+    const [questions] = await connection.query('SELECT id, lesson_id, question_text FROM questions');
+    console.log('\n--- Questions ---');
+    console.table(questions);
   } catch (err: any) {
-    console.error("Query failed:", err.message);
+    console.error('Error:', err.message);
+  } finally {
+    if (connection) await connection.end();
   }
 }
 
-run();
+main();

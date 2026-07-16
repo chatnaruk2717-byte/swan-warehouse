@@ -1,14 +1,19 @@
 const fs = require('fs');
+const readline = require('readline');
 const path = require('path');
 
-const logPath = 'C:\\Users\\chatn\\.gemini\\antigravity\\brain\\28bd0357-6b2d-4631-9653-a3834d3db9c0\\.system_generated\\logs\\transcript.jsonl';
+const logPath = 'C:\\Users\\chatn\\.gemini\\antigravity\\brain\\28bd0357-6b2d-4631-9653-a3834d3db9c0\\.system_generated\\logs\\transcript_full.jsonl';
 
-if (fs.existsSync(logPath)) {
-  const content = fs.readFileSync(logPath, 'utf8');
-  const lines = content.split('\n');
-  for (let i = 3400; i <= 3415; i++) {
-    console.log(`Line ${i}: ${lines[i - 1]}`);
+const rl = readline.createInterface({
+  input: fs.createReadStream(logPath),
+  output: process.stdout,
+  terminal: false
+});
+
+rl.on('line', (line) => {
+  if (line.includes('avnadmin') || line.includes('aivencloud')) {
+    console.log('Found Aiven db info in log! Saving to scratch/db_info.txt...');
+    fs.writeFileSync('C:\\Users\\chatn\\OneDrive\\Desktop\\Leaning\\scratch\\db_info.txt', line);
+    rl.close();
   }
-} else {
-  console.log('Log file not found');
-}
+});

@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
+import { query } from '../config/db';
+
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_warehouse_key';
 
 export interface AuthenticatedRequest extends Request {
@@ -13,7 +15,7 @@ export interface AuthenticatedRequest extends Request {
   };
 }
 
-export const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const authenticateToken = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -28,17 +30,47 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
     let name = 'ชาติชาย  ทาคำห่อ';
     let email = 'admin@warehouse.com';
     let employee_id = 'EMP001';
+    let department = 'Management';
+    let position = 'Warehouse Manager';
+    let start_date = '2020-01-15';
 
     if (role === 'staff') {
       id = 4;
       name = 'ประพันธ์ ยอดคุม';
       email = 'supervisor1@warehouse.com';
       employee_id = 'EMP004';
+      department = 'Operations';
+      position = 'Zone A Supervisor';
+      start_date = '2022-02-15';
     } else if (role === 'employee') {
       id = 6;
       name = 'สมปอง ลุยงาน';
       email = 'employee1@warehouse.com';
       employee_id = 'EMP006';
+      department = 'Operations';
+      position = 'Forklift Driver';
+      start_date = '2023-01-10';
+    }
+
+    try {
+      // Dynamically insert mock user if missing to prevent foreign key constraint errors
+      await query(
+        `INSERT IGNORE INTO users (id, employee_id, email, password_hash, name, role, department, position, start_date) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [
+          id, 
+          employee_id, 
+          email, 
+          '$2a$10$e0MYzXy5FA47f7.rA.pS4eUa3qU0j4wF4.1Hj5K/v6Gv6o2C7Lh4C', 
+          name, 
+          role, 
+          department, 
+          position, 
+          start_date
+        ]
+      );
+    } catch (dbErr: any) {
+      console.error('Failed to auto-insert mock user in database:', dbErr.message);
     }
 
     req.user = { id, employee_id, email, role, name };

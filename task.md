@@ -15,6 +15,7 @@
 - [x] Fix course self-enrollment permission on backend API to allow employee role (with self ID security checks), so course learners show up correctly.
 - [x] Implement month deletion feature on the department KPIs dashboard and persist the states in localStorage.
 - [x] Change fractional pallet KPI units to pallets and issue KPI unit to cases, with automatic grading and browser migration logic.
+- [x] Add target unit dropdown selection menu in the Edit KPI modal.
 
 
 

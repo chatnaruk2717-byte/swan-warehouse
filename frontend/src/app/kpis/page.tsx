@@ -15,7 +15,11 @@ import {
   PolarGrid, 
   PolarAngleAxis, 
   PolarRadiusAxis, 
-  Radar 
+  Radar,
+  LineChart,
+  Line,
+  AreaChart,
+  Area
 } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { 
@@ -77,6 +81,7 @@ export default function KpisPage() {
   const [showAddMonthModal, setShowAddMonthModal] = useState(false);
   const [newMonthName, setNewMonthName] = useState('');
   const [newKpiValues, setNewKpiValues] = useState<Record<string, string>>({});
+  const [trendKpiId, setTrendKpiId] = useState('1.1');
 
   // Turn monthlyKpiData into modifiable state!
   const [kpis, setKpis] = useState<Record<string, any[]>>({
@@ -521,6 +526,74 @@ export default function KpisPage() {
     }
   };
 
+    // Month ordering and trend calculation helpers
+  const monthOrder: Record<string, number> = {
+    'April': 4, 'เมษายน': 4,
+    'May': 5, 'พฤษภาคม': 5,
+    'June': 6, 'มิถุนายน': 6,
+    'July': 7, 'กรกฎาคม': 7,
+    'August': 8, 'สิงหาคม': 8,
+    'September': 9, 'กันยายน': 9,
+    'October': 10, 'ตุลาคม': 10,
+    'November': 11, 'พฤศจิกายน': 11,
+    'December': 12, 'ธันวาคม': 12,
+    'January': 13, 'มกราคม': 13,
+    'February': 14, 'กุมภาพันธ์': 14,
+    'March': 15, 'มีนาคม': 15
+  };
+
+  const getMonthWeight = (monthName: string) => {
+    let mNum = 6;
+    let yNum = 2026;
+    const parts = monthName.split(' ');
+    const namePart = parts[0];
+    const yearPart = parts[1];
+    
+    if (yearPart) {
+      yNum = parseInt(yearPart) || 2026;
+    }
+    
+    for (const key of Object.keys(monthOrder)) {
+      if (namePart.includes(key)) {
+        mNum = monthOrder[key];
+        break;
+      }
+    }
+    return yNum * 12 + mNum;
+  };
+
+  const sortedMonths = Object.keys(kpis).sort((a, b) => getMonthWeight(a) - getMonthWeight(b));
+
+  const getThaiMonthLabel = (monthName: string) => {
+    if (monthName === 'June') return 'มิ.ย.';
+    if (monthName === 'May') return 'พ.ค.';
+    if (monthName === 'April') return 'เม.ย.';
+    return monthName.replace(' 2026', '');
+  };
+
+  const selectedKpiInfo = kpis[selectedMonth]?.find(item => item.id === trendKpiId) || { name: 'FIFO 100%', unit: '%' };
+
+  const trendData = sortedMonths.map(month => {
+    const list = kpis[month] || [];
+    const item = list.find(k => k.id === trendKpiId);
+    
+    let targetNum = 0;
+    if (item && item.target) {
+      const match = item.target.match(/-?\d+(\.\d+)?/);
+      if (match) {
+        targetNum = parseFloat(match[0]) || 0;
+      }
+    }
+    
+    return {
+      month: getThaiMonthLabel(month),
+      'ผลงานจริง': item ? item.actual : 0,
+      'เป้าหมาย': targetNum
+    };
+  });
+
+  const avgActual = trendData.length > 0 ? (trendData.reduce((sum, d) => sum + d['ผลงานจริง'], 0) / trendData.length) : 0;
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[400px]">
@@ -595,45 +668,81 @@ export default function KpisPage() {
       {/* KPI Chart Visuals Split */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Radar KPI breakdown chart */}
-        <GlassCard className="lg:col-span-1 h-[400px] flex flex-col" delay={0.1}>
+        {/* Trend analysis left selector card */}
+        <GlassCard className="lg:col-span-1 h-[400px] flex flex-col p-6" delay={0.1}>
           <div className="mb-4">
-            <h4 className="font-bold text-sm text-slate-800 dark:text-white">à¹€à¸£à¸”à¸²à¸£à¹Œà¸§à¸±à¸”à¸‚à¸µà¸”à¸„à¸§à¸²à¸¡à¸ªà¸²à¸¡à¸²à¸£à¸– (Competency Radar)</h4>
-            <p className="text-xs text-slate-400 mt-0.5">à¸ à¸²à¸žà¸£à¸§à¸¡à¸—à¸±à¸�à¸©à¸°à¸ªà¹ˆà¸§à¸™à¸•à¸±à¸§à¹€à¸›à¸£à¸µà¸¢à¸šà¹€à¸—à¸µà¸¢à¸šà¸�à¸±à¸šà¸„à¹ˆà¸²à¹€à¸‰à¸¥à¸µà¹ˆà¸¢à¸‚à¸­à¸‡à¹�à¸œà¸™à¸�</p>
+            <h4 className="font-bold text-sm text-slate-800 dark:text-white">วิเคราะห์แนวโน้มแผนก (KPI Trend Analyst)</h4>
+            <p className="text-xs text-slate-400 mt-0.5">เลือกตัวชี้วัดเพื่อดูสรุปผลสถิติและเปรียบเทียบในแต่ละเดือน</p>
           </div>
-          <div className="flex-1 w-full text-xs">
-            <ResponsiveContainer width="100%" height="90%">
-              <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-                <PolarGrid stroke="#E2E8F0" className="dark:stroke-slate-800" />
-                <PolarAngleAxis dataKey="subject" tick={{ fill: '#94A3B8', fontSize: 10 }} />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} />
-                <Radar name="à¸žà¸™à¸±à¸�à¸‡à¸²à¸™à¹€à¸›à¹‰à¸²à¸«à¸¡à¸²à¸¢ (Operator A)" dataKey="A" stroke="#F97316" fill="#F97316" fillOpacity={0.2} />
-                <Radar name="à¸„à¹ˆà¸²à¹€à¸‰à¸¥à¸µà¹ˆà¸¢à¸„à¸¥à¸±à¸‡ (Standard Avg)" dataKey="B" stroke="#1E3A8A" fill="#1E3A8A" fillOpacity={0.1} />
-                <Tooltip contentStyle={{ borderRadius: '12px' }} />
-                <Legend wrapperStyle={{ fontSize: 10, marginTop: 10 }} />
-              </RadarChart>
-            </ResponsiveContainer>
+          
+          <div className="flex-1 flex flex-col justify-between gap-4">
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase">เลือกตัวชี้วัด (Select KPI):</span>
+              <select
+                value={trendKpiId}
+                onChange={(e) => setTrendKpiId(e.target.value)}
+                className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate py-2 px-3"
+              >
+                {kpis[selectedMonth]?.map(k => (
+                  <option key={k.id} value={k.id}>
+                    [{k.id}] {k.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="p-4 bg-slate-100/50 dark:bg-white/5 border border-slate-200/30 dark:border-white/5 rounded-2xl flex flex-col gap-3">
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">ตัวชี้วัดที่เลือก</p>
+                <h5 className="text-xs font-extrabold text-warehouse-orange mt-0.5 line-clamp-2">
+                  {selectedKpiInfo?.name}
+                </h5>
+              </div>
+              <div className="grid grid-cols-2 gap-4 border-t border-slate-200/30 dark:border-white/5 pt-3">
+                <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">หน่วยนับ</p>
+                  <p className="text-xs font-black text-slate-800 dark:text-white mt-0.5">
+                    {selectedKpiInfo?.unit || '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">ค่าเฉลี่ยสะสม</p>
+                  <p className="text-xs font-black text-slate-800 dark:text-white mt-0.5">
+                    {avgActual.toFixed(1)} {selectedKpiInfo?.unit}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </GlassCard>
 
-        {/* Bar comparison chart */}
-        <GlassCard className="lg:col-span-2 h-[400px] flex flex-col" delay={0.15}>
+        {/* Trend AreaChart right card */}
+        <GlassCard className="lg:col-span-2 h-[400px] flex flex-col p-6" delay={0.15}>
           <div className="mb-4">
-            <h4 className="font-bold text-sm text-slate-800 dark:text-white">à¸œà¸¥à¸ªà¸±à¸¡à¸¤à¸—à¸˜à¸´à¹Œà¸£à¸²à¸¢à¸šà¸¸à¸„à¸„à¸¥ (Operator KPI Performance)</h4>
-            <p className="text-xs text-slate-400 mt-0.5">à¸�à¸²à¸£à¹€à¸›à¸£à¸µà¸¢à¸šà¹€à¸—à¸µà¸¢à¸šà¸›à¸£à¸°à¸ªà¸´à¸—à¸˜à¸´à¸œà¸¥à¸„à¸§à¸²à¸¡à¹�à¸¡à¹ˆà¸™à¸¢à¸³à¹�à¸¥à¸°à¸„à¸§à¸²à¸¡à¸›à¸¥à¸­à¸”à¸ à¸±à¸¢à¹ƒà¸™à¸�à¸¥à¸¸à¹ˆà¸¡à¸žà¸™à¸±à¸�à¸‡à¸²à¸™à¸”à¸µà¹€à¸”à¹ˆà¸™</p>
+            <h4 className="font-bold text-sm text-slate-800 dark:text-white">กราฟแสดงแนวโน้มรายเดือน (Monthly Trend Graph)</h4>
+            <p className="text-xs text-slate-400 mt-0.5">กราฟแสดงความก้าวหน้าผลงานจริงเทียบกับค่าเป้าหมายของแต่ละเดือน</p>
           </div>
           <div className="flex-1 w-full text-xs">
             <ResponsiveContainer width="100%" height="90%">
-              <BarChart data={barData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+              <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#F97316" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#F97316" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorTarget" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.15}/>
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" className="dark:stroke-slate-800" />
-                <XAxis dataKey="name" tickLine={false} stroke="#94A3B8" />
+                <XAxis dataKey="month" tickLine={false} stroke="#94A3B8" />
                 <YAxis axisLine={false} tickLine={false} stroke="#94A3B8" />
-                <Tooltip contentStyle={{ borderRadius: '12px' }} />
+                <Tooltip contentStyle={{ borderRadius: '12px', background: 'rgba(30, 41, 59, 0.95)', border: 'none', color: '#fff' }} />
                 <Legend wrapperStyle={{ fontSize: 10 }} />
-                <Bar dataKey="Efficiency" name="à¸›à¸£à¸°à¸ªà¸´à¸—à¸˜à¸´à¸ à¸²à¸žà¸„à¸§à¸²à¸¡à¹€à¸£à¹‡à¸§" fill="#1E3A8A" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Accuracy" name="à¸„à¸§à¸²à¸¡à¸–à¸¹à¸�à¸•à¹‰à¸­à¸‡" fill="#F97316" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Safety" name="à¸„à¸°à¹�à¸™à¸™à¹€à¸‹à¸Ÿà¸•à¸µà¹‰" fill="#10B981" radius={[4, 4, 0, 0]} />
-              </BarChart>
+                <Area type="monotone" dataKey="ผลงานจริง" stroke="#F97316" strokeWidth={2.5} fillOpacity={1} fill="url(#colorActual)" />
+                <Area type="monotone" dataKey="เป้าหมาย" stroke="#3B82F6" strokeWidth={2} strokeDasharray="5 5" fillOpacity={1} fill="url(#colorTarget)" />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </GlassCard>

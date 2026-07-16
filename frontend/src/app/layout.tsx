@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import './globals.css';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { ThemeProvider } from '../context/ThemeContext';
@@ -77,6 +77,8 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
   if (isLoginPage || !user) {
     return <>{children}</>;
   }
@@ -93,15 +95,13 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
       <div className="absolute top-[-10%] left-[-10%] w-[45%] h-[45%] rounded-full bg-warehouse-orange/15 blur-[120px] pointer-events-none z-0" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[45%] h-[45%] rounded-full bg-emerald-600/15 blur-[120px] pointer-events-none z-0" />
 
-      {/*Collapsible Navigation Sidebar */}
-      <div className="relative z-10 flex">
-        <Sidebar />
-      </div>
+      {/* Collapsible Navigation Sidebar */}
+      <Sidebar mobileOpen={mobileSidebarOpen} onCloseMobile={() => setMobileSidebarOpen(false)} />
       
-      {/*Main Workspace Content Container */}
+      {/* Main Workspace Content Container */}
       <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden relative z-10">
         {/* Top Navbar */}
-        <Navbar />
+        <Navbar onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
         
         {/* Render page routing */}
         <main className="p-6 md:p-8 flex-1 relative">

@@ -16,7 +16,11 @@ import {
   Settings
 } from 'lucide-react';
 
-export const Navbar = () => {
+interface NavbarProps {
+  onToggleMobileSidebar?: () => void;
+}
+
+export const Navbar = ({ onToggleMobileSidebar }: NavbarProps) => {
   const { user, logout, switchDemoRole, api } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
@@ -62,14 +66,28 @@ export const Navbar = () => {
       <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-warehouse-orange/30 to-emerald-500/30" />
 
       {/* Search / Section Info */}
-      <div className="relative z-10">
-        <h1 className="text-xl font-bold font-sans text-slate-800 dark:text-white flex items-center gap-2">
-          <span>ระบบจัดการพนักงานคลังสินค้า</span>
-          <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-warehouse-orange/15 text-warehouse-orange border border-warehouse-orange/20 font-extrabold uppercase tracking-wider shadow-sm">
-            {user.role}
-          </span>
-        </h1>
-        <p className="text-xs text-slate-400 font-medium">แผนกคลังสินค้า • อัปเดตข้อมูลล่าสุดเรียลไทม์</p>
+      <div className="relative z-10 flex items-center gap-2 md:gap-3">
+        {/* Mobile Hamburger Menu Trigger */}
+        <button 
+          type="button"
+          onClick={onToggleMobileSidebar}
+          className="lg:hidden p-2 -ml-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all"
+          aria-label="เปิดเมนูนำทาง"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+
+        <div>
+          <h1 className="text-sm sm:text-xl font-bold font-sans text-slate-800 dark:text-white flex items-center gap-1.5 sm:gap-2">
+            <span>ระบบจัดการพนักงานคลังสินค้า</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-warehouse-orange/15 text-warehouse-orange border border-warehouse-orange/20 font-extrabold uppercase tracking-wider shadow-sm">
+              {user.role}
+            </span>
+          </h1>
+          <p className="text-[10px] sm:text-xs text-slate-400 font-medium hidden sm:block">แผนกคลังสินค้า • อัปเดตข้อมูลล่าสุดเรียลไทม์</p>
+        </div>
       </div>
 
       {/* Action Utilities */}

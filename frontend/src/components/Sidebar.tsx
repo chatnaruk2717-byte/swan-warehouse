@@ -23,7 +23,12 @@ import {
   Network
 } from 'lucide-react';
 
-export const Sidebar = () => {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
+}
+
+export const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
@@ -104,11 +109,22 @@ export const Sidebar = () => {
   const filteredMenu = menuItems.filter(item => item.roles.includes(role));
 
   return (
-    <div 
-      className={`glass-panel border-r border-slate-200/50 dark:border-white/5 h-screen sticky top-0 transition-all duration-300 z-30 flex flex-col justify-between ${
-        collapsed ? 'w-20' : 'w-72'
-      }`}
-    >
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {mobileOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 lg:hidden"
+          onClick={onCloseMobile}
+        />
+      )}
+
+      <aside 
+        className={`glass-panel border-r border-slate-200/50 dark:border-white/5 h-screen fixed lg:sticky top-0 left-0 transition-all duration-300 z-50 lg:z-30 flex flex-col justify-between ${
+          collapsed ? 'w-20' : 'w-72'
+        } ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
       {/* Top Brand Logo */}
       <div>
         <div className="p-6 flex items-center justify-between border-b border-transparent relative transition-all duration-300">
@@ -146,6 +162,7 @@ export const Sidebar = () => {
               <Link 
                 key={item.path} 
                 href={item.path}
+                onClick={onCloseMobile}
                 className={`flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                   isActive 
                     ? 'bg-gradient-to-r from-warehouse-orange to-amber-500 text-white shadow-lg shadow-warehouse-orange/30 glow-orange font-semibold border border-white/10' 
@@ -192,7 +209,8 @@ export const Sidebar = () => {
           {!collapsed && <span>ออกจากระบบ (Logout)</span>}
         </button>
       </div>
-    </div>
+    </aside>
+    </>
   );
 };
 

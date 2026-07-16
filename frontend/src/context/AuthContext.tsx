@@ -52,9 +52,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Intercept request to inject Authorization header
   api.interceptors.request.use((config) => {
-    const savedToken = sessionStorage.getItem('token');
-    if (savedToken) {
-      config.headers.Authorization = `Bearer ${savedToken}`;
+    try {
+      const savedToken = sessionStorage.getItem('token');
+      if (savedToken) {
+        config.headers.Authorization = `Bearer ${savedToken}`;
+      }
+    } catch (e) {
+      console.error('Error reading token from sessionStorage:', e);
     }
     return config;
   }, (error) => {
@@ -62,19 +66,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   });
 
   useEffect(() => {
-    const savedToken = sessionStorage.getItem('token');
-    const savedUser = sessionStorage.getItem('user');
+    try {
+      const savedToken = sessionStorage.getItem('token');
+      const savedUser = sessionStorage.getItem('user');
 
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
-    } else {
-      // Force redirect to login on fresh page entries
-      setToken(null);
-      setUser(null);
-      router.push('/login');
+      if (savedToken && savedUser) {
+        setToken(savedToken);
+        setUser(JSON.parse(savedUser));
+      } else {
+        // Force redirect to login on fresh page entries
+        setToken(null);
+        setUser(null);
+        router.push('/login');
+      }
+    } catch (e) {
+      console.error('Failed to load session:', e);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   const login = async (loginIdentifier: string, password: string): Promise<boolean> => {

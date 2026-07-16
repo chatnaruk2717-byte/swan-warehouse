@@ -15,7 +15,8 @@ import {
   Check, 
   X,
   Award,
-  Video
+  Video,
+  ExternalLink
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -51,6 +52,13 @@ export default function CourseViewerClient() {
   const [certId, setCertId] = useState<string>('');
   const [currentQuizQuestions, setCurrentQuizQuestions] = useState<any[]>([]);
   const [displayDocUrl, setDisplayDocUrl] = useState<string>('');
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    }
+  }, []);
 
   const timerRef = useRef<any>(null);
 
@@ -571,7 +579,7 @@ export default function CourseViewerClient() {
               )}
 
               {activeLesson.content_type === 'document' && activeLesson.content_url && (
-                <GlassCard className="h-[450px] flex flex-col p-0 overflow-hidden border border-slate-200/50 dark:border-white/5">
+                <GlassCard className="min-h-[350px] md:h-[450px] flex flex-col p-0 overflow-hidden border border-slate-200/50 dark:border-white/5">
                   <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/50 dark:border-white/5 bg-slate-100/50 dark:bg-white/5">
                     <span className="font-bold text-xs">เอกสารหลักสูตร: {activeLesson.title}</span>
                     <a 
@@ -579,12 +587,34 @@ export default function CourseViewerClient() {
                       download={`${activeLesson.title}.pdf`}
                       target="_blank" 
                       rel="noreferrer" 
-                      className="text-xs text-warehouse-orange hover:underline font-bold"
+                      className="text-xs text-warehouse-orange hover:underline font-bold flex items-center gap-1"
                     >
-                      ดาวน์โหลด PDF
+                      <ExternalLink size={12} />
+                      <span>เปิดอ่าน / ดาวน์โหลด PDF</span>
                     </a>
                   </div>
-                  <iframe src={displayDocUrl} className="w-full flex-1 border-none bg-slate-900" />
+                  {isMobile ? (
+                    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-slate-50 dark:bg-slate-900/40 space-y-4">
+                      <div className="p-4 bg-warehouse-orange/10 text-warehouse-orange rounded-full">
+                        <FileText size={40} />
+                      </div>
+                      <div className="space-y-1.5 max-w-sm">
+                        <h4 className="font-bold text-slate-800 dark:text-white text-xs">ไม่สามารถเปิดแสดง PDF ในหน้านี้โดยตรงบนมือถือ</h4>
+                        <p className="text-[10px] text-slate-400">บราวเซอร์บนโทรศัพท์จำกัดการฝังหน้าไฟล์ PDF ท่านสามารถกดเปิดเพื่อเรียนรู้ในหน้าจอขนาดใหญ่เต็มจอได้ทันที</p>
+                      </div>
+                      <a 
+                        href={displayDocUrl} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="px-5 py-2.5 bg-warehouse-orange hover:bg-warehouse-orange/95 text-white rounded-xl font-bold text-[10px] shadow-md shadow-warehouse-orange/15 transition-all flex items-center gap-2"
+                      >
+                        <ExternalLink size={12} />
+                        <span>เปิดอ่านไฟล์เอกสาร PDF (Open PDF)</span>
+                      </a>
+                    </div>
+                  ) : (
+                    <iframe src={displayDocUrl} className="w-full flex-1 border-none bg-slate-900" />
+                  )}
                 </GlassCard>
               )}
 

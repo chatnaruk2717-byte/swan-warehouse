@@ -14,7 +14,8 @@ import {
   X, 
   FolderOpen, 
   ChevronRight,
-  Filter
+  Filter,
+  ExternalLink
 } from 'lucide-react';
 
 interface WarehouseDocument {
@@ -56,6 +57,13 @@ export default function DocumentsPage() {
   // PDF Viewer modal states
   const [activeViewerDoc, setActiveViewerDoc] = useState<WarehouseDocument | null>(null);
   const [displayDocUrl, setDisplayDocUrl] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    }
+  }, []);
 
   useEffect(() => {
     if (activeViewerDoc && activeViewerDoc.file_url) {
@@ -449,20 +457,53 @@ export default function DocumentsPage() {
                   {activeViewerDoc.title}
                 </span>
               </div>
-              <button 
-                onClick={() => setActiveViewerDoc(null)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg bg-slate-100 dark:bg-white/5 transition-colors shrink-0"
-              >
-                <X size={16} />
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <a 
+                  href={displayDocUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white p-1.5 rounded-lg bg-slate-100 dark:bg-white/5 transition-colors flex items-center gap-1.5 text-xs font-bold"
+                  title="เปิดในหน้าต่างใหม่ (Open in new window)"
+                >
+                  <ExternalLink size={14} />
+                  <span className="hidden sm:inline">เปิดหน้าต่างใหม่</span>
+                </a>
+                <button 
+                  onClick={() => setActiveViewerDoc(null)}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1.5 rounded-lg bg-slate-100 dark:bg-white/5 transition-colors shrink-0"
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
             
-            {/* Embedded PDF iframe */}
-            <iframe 
-              src={displayDocUrl} 
-              className="w-full flex-1 border-none bg-slate-900" 
-              title={activeViewerDoc.title}
-            />
+            {/* Embedded PDF iframe / Mobile Button Fallback */}
+            {isMobile ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-slate-50 dark:bg-slate-900/40 space-y-4">
+                <div className="p-4 bg-warehouse-orange/10 text-warehouse-orange rounded-full animate-pulse">
+                  <FileText size={48} />
+                </div>
+                <div className="space-y-1.5 max-w-sm">
+                  <h4 className="font-bold text-slate-800 dark:text-white text-sm">ไม่สามารถเปิดแสดง PDF ในหน้านี้โดยตรงบนมือถือ</h4>
+                  <p className="text-xs text-slate-400">บราวเซอร์มือถือจำกัดการแสดงผล PDF ในเว็บเพจ ท่านสามารถเปิดเพื่ออ่านไฟล์ขนาดเต็มหรือดาวน์โหลดได้โดยตรงที่ลิงก์ด้านล่าง</p>
+                </div>
+                <a 
+                  href={displayDocUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="px-6 py-3 bg-warehouse-orange hover:bg-warehouse-orange/95 text-white rounded-xl font-bold text-xs shadow-md shadow-warehouse-orange/15 transition-all flex items-center gap-2"
+                >
+                  <ExternalLink size={14} />
+                  <span>เปิดอ่านเอกสาร PDF (Open PDF)</span>
+                </a>
+              </div>
+            ) : (
+              <iframe 
+                src={displayDocUrl} 
+                className="w-full flex-1 border-none bg-slate-900" 
+                title={activeViewerDoc.title}
+              />
+            )}
           </GlassCard>
         </div>
       )}

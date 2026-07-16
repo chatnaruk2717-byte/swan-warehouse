@@ -35,12 +35,24 @@ if (process.env.USE_MOCK_DB === 'true') {
         }
       })
       .catch((err) => {
-        console.warn('MySQL connection failed. Falling back to Mock Database Mode. Error:', err.message);
-        useMock = true;
+        console.warn('MySQL connection failed. Error:', err.message);
+        if (process.env.NODE_ENV === 'production' || process.env.DATABASE_URL) {
+          console.error('CRITICAL: MySQL connection failed in production. Process will exit to trigger restart.');
+          process.exit(1);
+        } else {
+          console.warn('Falling back to Mock Database Mode.');
+          useMock = true;
+        }
       });
   } catch (err: any) {
-    console.warn('Failed to initialize MySQL pool. Falling back to Mock Mode. Error:', err.message);
-    useMock = true;
+    console.warn('Failed to initialize MySQL pool. Error:', err.message);
+    if (process.env.NODE_ENV === 'production' || process.env.DATABASE_URL) {
+      console.error('CRITICAL: Failed to initialize MySQL pool in production. Process will exit.');
+      process.exit(1);
+    } else {
+      console.warn('Falling back to Mock Database Mode.');
+      useMock = true;
+    }
   }
 }
 

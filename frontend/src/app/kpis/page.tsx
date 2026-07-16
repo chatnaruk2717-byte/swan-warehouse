@@ -55,6 +55,7 @@ export default function KpisPage() {
   const [editFormula, setEditFormula] = useState('');
   const [editWt, setEditWt] = useState('');
   const [editTarget, setEditTarget] = useState('');
+  const [editUnit, setEditUnit] = useState('%');
   const [editActual, setEditActual] = useState('');
   const [editManualScore, setEditManualScore] = useState('');
   const [editManualGrade, setEditManualGrade] = useState('');
@@ -393,13 +394,15 @@ export default function KpisPage() {
 
     const updatedMonthData = kpis[selectedMonth].map(item => {
       if (item.id === editingKpi.id) {
+        const formattedTarget = editUnit === '%' ? `${editTarget}${editUnit}` : `${editTarget} ${editUnit}`;
         const updatedItem: any = {
           ...item,
           id: editId,
           name: editName,
           formula: editFormula,
           wt: parseFloat(editWt) || 0,
-          target: editTarget,
+          target: formattedTarget,
+          unit: editUnit,
           actual: parseFloat(editActual) || 0
         };
 
@@ -832,7 +835,15 @@ export default function KpisPage() {
                                   setEditName(kpi.name);
                                   setEditFormula(kpi.formula || '');
                                   setEditWt(kpi.wt.toString());
-                                  setEditTarget(kpi.target);
+                                  
+                                  // Strip unit suffix if target ends with it
+                                  let targetVal = kpi.target;
+                                  if (kpi.unit && targetVal.endsWith(kpi.unit)) {
+                                    targetVal = targetVal.slice(0, -kpi.unit.length).trim();
+                                  }
+                                  setEditTarget(targetVal);
+                                  setEditUnit(kpi.unit || '%');
+                                  
                                   setEditActual(kpi.actual.toString());
                                   setEditManualScore(kpi.manualScore !== undefined ? kpi.manualScore.toString() : '');
                                   setEditManualGrade(kpi.manualGrade || 'Auto');
@@ -961,7 +972,7 @@ export default function KpisPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase">% WT (à¸™à¹‰à¸³à¸«à¸™à¸±à¸�)</label>
                   <input 
@@ -974,7 +985,7 @@ export default function KpisPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">Target (à¹€à¸›à¹‰à¸²à¸«à¸¡à¸²à¸¢)</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Target</label>
                   <input 
                     type="text" 
                     required 
@@ -982,6 +993,21 @@ export default function KpisPage() {
                     onChange={(e) => setEditTarget(e.target.value)} 
                     className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate" 
                   />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">หน่วยนับ (Unit)</label>
+                  <select 
+                    value={editUnit} 
+                    onChange={(e) => setEditUnit(e.target.value)}
+                    className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate"
+                  >
+                    <option value="%">%</option>
+                    <option value="พาเลท">พาเลท</option>
+                    <option value="เคส">เคส</option>
+                    <option value="ครั้ง">ครั้ง</option>
+                    <option value="ฉบับ">ฉบับ</option>
+                    <option value="เรื่อง">เรื่อง</option>
+                  </select>
                 </div>
               </div>
 

@@ -630,6 +630,10 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
     });
 
   } catch (err: any) {
+    console.error('[QuizSubmit Critical Error]:', err);
+    if (!getMockStatus()) {
+      return res.status(500).json({ message: `Internal server error during quiz assessment: ${err.message}` });
+    }
     // Mock Mode Fallback
     const quizQuestions = mockStore.mockQuestions.filter(q => q.lesson_id === lessonId);
     if (quizQuestions.length === 0) {

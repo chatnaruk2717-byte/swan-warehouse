@@ -41,6 +41,11 @@ export default function RootLayout({
         <meta name="description" content="ระบบบริหารจัดการการฝึกอบรมและทักษะของพนักงานคลังสินค้าสำหรับองค์กรยุคใหม่" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         
+        {/* Anti-caching Headers */}
+        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+        <meta httpEquiv="Pragma" content="no-cache" />
+        <meta httpEquiv="Expires" content="0" />
+        
         {/* PWA Settings */}
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#F26522" />

@@ -14,16 +14,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   useEffect(() => {
+    // Unregister any active service worker to prevent static caching issues
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(
-          (registration) => {
-            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-          },
-          (err) => {
-            console.log('ServiceWorker registration failed: ', err);
-          }
-        );
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const registration of registrations) {
+          registration.unregister().then(() => {
+            console.log('ServiceWorker unregistered successfully');
+          });
+        }
+      });
+    }
+    // Clear browser caches to ensure the latest frontend files are loaded instantly
+    if ('caches' in window) {
+      caches.keys().then((keys) => {
+        keys.forEach((key) => {
+          caches.delete(key);
+        });
       });
     }
   }, []);

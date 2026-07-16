@@ -87,7 +87,7 @@ export default function LoginPage() {
 
             {/* Email/Employee ID Field */}
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-slate-300 tracking-wider">อีเมล หรือ รหัสพนักงาน</label>
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-300 tracking-wider">อีเมล หรือ รหัสพนักงาน</label>
               <div className="relative flex items-center">
                 <Mail className="absolute left-4 text-slate-400" size={18} />
                 <input
@@ -96,7 +96,7 @@ export default function LoginPage() {
                   value={loginIdentifier}
                   onChange={(e) => setLoginIdentifier(e.target.value)}
                   required
-                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:border-warehouse-orange transition-all focus:ring-2 focus:ring-warehouse-orange/20 placeholder:text-slate-500 text-sm"
+                  className="w-full pl-12 pr-4 py-3 bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-900 dark:text-white outline-none focus:border-warehouse-orange transition-all focus:ring-2 focus:ring-warehouse-orange/20 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm"
                 />
               </div>
             </div>
@@ -104,7 +104,7 @@ export default function LoginPage() {
             {/* Password Field */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-300 tracking-wider">รหัสผ่าน</label>
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-300 tracking-wider">รหัสผ่าน</label>
                 <button type="button" className="text-xs text-warehouse-orange hover:underline font-semibold">ลืมรหัสผ่าน?</button>
               </div>
               <div className="relative flex items-center">
@@ -115,7 +115,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full pl-12 pr-12 py-3 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:border-warehouse-orange transition-all focus:ring-2 focus:ring-warehouse-orange/20 placeholder:text-slate-500 text-sm"
+                  className="w-full pl-12 pr-12 py-3 bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-900 dark:text-white outline-none focus:border-warehouse-orange transition-all focus:ring-2 focus:ring-warehouse-orange/20 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm"
                 />
                 <button
                   type="button"
@@ -128,13 +128,13 @@ export default function LoginPage() {
             </div>
 
             {/* Remember Me */}
-            <div className="flex items-center justify-between text-xs text-slate-300">
+            <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input 
                   type="checkbox" 
                   checked={rememberMe} 
                   onChange={() => setRememberMe(!rememberMe)}
-                  className="rounded border-slate-700 bg-slate-800 text-warehouse-orange focus:ring-warehouse-orange/30 w-4 h-4 cursor-pointer"
+                  className="rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-warehouse-orange focus:ring-warehouse-orange/30 w-4 h-4 cursor-pointer"
                 />
                 <span>จดจำการเข้าระบบ</span>
               </label>

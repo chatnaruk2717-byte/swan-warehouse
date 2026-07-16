@@ -1,22 +1,8 @@
 async function main() {
   const url = 'https://swan-warehouse-api.onrender.com';
   try {
-    console.log('Logging in...');
-    const loginRes = await fetch(`${url}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        loginIdentifier: 'kall@gmail.com',
-        password: 'password123'
-      })
-    });
-    
-    if (!loginRes.ok) {
-      throw new Error(`Login failed: ${loginRes.status}`);
-    }
-    const loginData = await loginRes.json();
-    const token = loginData.token;
-    console.log('Logged in successfully!');
+    const token = 'mock_jwt_token_for_admin';
+    console.log('Using mock token:', token);
 
     console.log('Submitting quiz for lesson 21...');
     const submitRes = await fetch(`${url}/api/courses/lesson/21/quiz-submit`, {

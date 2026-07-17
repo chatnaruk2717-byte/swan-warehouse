@@ -7,43 +7,10 @@ import { authenticateToken, requireRole, AuthenticatedRequest } from '../middlew
 
 const router = Router();
 
-router.get('/debug-crash-log', async (req: any, res: any) => {
-  try {
-    const logPath = path.join(__dirname, '../../crash.log');
-    if (fs.existsSync(logPath)) {
-      const content = fs.readFileSync(logPath, 'utf8');
-      return res.send(content);
-    }
-    return res.send('No crash log found.');
-  } catch (err: any) {
-    return res.status(500).send(err.message);
-  }
-});
-
-router.get('/temp-debug-users', async (req: any, res: any) => {
-  try {
-    const result = await query('SELECT id, employee_id, email, password_hash, name, role, department, position FROM users');
-    return res.json(result.rows);
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
 // Helper to encrypt password (default to 'password123')
 const getDefaultPasswordHash = async () => {
   return '$2a$10$U1FNXk2W1scs2ZpblqipzuMN92V3rAAkW1UOdFSdgrCcmYjadz5O2';
 };
-
-router.get('/test-db-query', async (req: any, res: any) => {
-  try {
-    const result = await query(
-      `SELECT id, employee_id, email, name, role, LENGTH(photo_url) as photo_len FROM users`
-    );
-    return res.json({ success: true, count: result.rows.length, rows: result.rows });
-  } catch (err: any) {
-    return res.json({ success: false, error: err.message, stack: err.stack });
-  }
-});
 
 /**
  * @swagger

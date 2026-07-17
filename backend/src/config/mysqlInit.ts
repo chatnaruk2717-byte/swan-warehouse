@@ -101,6 +101,23 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
           await connection.query('SET FOREIGN_KEY_CHECKS = 1');
         }
 
+        // Shrink existing bloated images (>50KB) in database to default placeholder url
+        try {
+          await connection.query(`
+            UPDATE users 
+            SET photo_url = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150' 
+            WHERE LENGTH(photo_url) > 50000
+          `);
+          await connection.query(`
+            UPDATE org_chart 
+            SET image_url = '' 
+            WHERE LENGTH(image_url) > 50000
+          `);
+          console.log('Successfully optimized bloated images in database.');
+        } catch (e: any) {
+          console.error('Failed to optimize bloated images in database:', e.message);
+        }
+
         console.log('Successfully verified/altered all required columns to LONGTEXT, display_order, and performance stats.');
       } catch (err: any) {
         console.warn('Failed to alter columns:', err.message);

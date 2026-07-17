@@ -1,9 +1,24 @@
 import { Router, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
+import path from 'path';
 import { query, getMockStatus, mockStore } from '../config/db';
 import { authenticateToken, requireRole, AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
+
+router.get('/debug-crash-log', async (req: any, res: any) => {
+  try {
+    const logPath = path.join(__dirname, '../../crash.log');
+    if (fs.existsSync(logPath)) {
+      const content = fs.readFileSync(logPath, 'utf8');
+      return res.send(content);
+    }
+    return res.send('No crash log found.');
+  } catch (err: any) {
+    return res.status(500).send(err.message);
+  }
+});
 
 router.get('/temp-debug-users', async (req: any, res: any) => {
   try {

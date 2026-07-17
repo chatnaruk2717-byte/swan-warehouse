@@ -2,6 +2,28 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
+import fs from 'fs';
+import path from 'path';
+
+const logCrash = (error: any) => {
+  try {
+    const logPath = path.join(__dirname, '../crash.log');
+    const message = `\n\n--- CRASH LOG ${new Date().toISOString()} ---\n` + (error?.stack || error || 'Unknown error') + '\n';
+    fs.appendFileSync(logPath, message);
+  } catch (e) {}
+};
+
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err);
+  logCrash(err);
+  // Give fs time to write before exit if needed
+  setTimeout(() => { process.exit(1); }, 500);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('UNHANDLED REJECTION AT:', promise, 'REASON:', reason);
+  logCrash(reason);
+});
 
 import { getMockStatus } from './config/db';
 import authRouter from './routes/auth';

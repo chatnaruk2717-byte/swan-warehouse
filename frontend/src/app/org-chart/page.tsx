@@ -14,7 +14,10 @@ import {
   Save, 
   Building2,
   ChevronRight,
-  UserCheck
+  UserCheck,
+  ZoomIn,
+  ZoomOut,
+  Maximize
 } from 'lucide-react';
 
 interface OrgChartItem {
@@ -38,7 +41,11 @@ export default function OrgChartPage() {
   const [orgItems, setOrgItems] = useState<OrgChartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const isAdmin = user?.role === 'admin';
+
+  // Zoom and Pan States
+  const [zoom, setZoom] = useState(0.45);
 
   // Drag and Drop Free Position States
   const [draggingCardId, setDraggingCardId] = useState<number | null>(null);
@@ -106,8 +113,9 @@ export default function OrgChartPage() {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    // Divide by zoom to offset screen coordinate scale
+    const mouseX = (e.clientX - rect.left) / zoom;
+    const mouseY = (e.clientY - rect.top) / zoom;
 
     setDraggingCardId(item.id);
     setDragOffset({
@@ -125,8 +133,9 @@ export default function OrgChartPage() {
     if (!rect) return;
 
     const touch = e.touches[0];
-    const touchX = touch.clientX - rect.left;
-    const touchY = touch.clientY - rect.top;
+    // Divide by zoom to offset screen coordinate scale
+    const touchX = (touch.clientX - rect.left) / zoom;
+    const touchY = (touch.clientY - rect.top) / zoom;
 
     setDraggingCardId(item.id);
     setDragOffset({
@@ -140,8 +149,12 @@ export default function OrgChartPage() {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const newX = Math.max(0, e.clientX - rect.left - dragOffset.x);
-    const newY = Math.max(0, e.clientY - rect.top - dragOffset.y);
+    // Divide by zoom to offset screen coordinate scale
+    const mouseX = (e.clientX - rect.left) / zoom;
+    const mouseY = (e.clientY - rect.top) / zoom;
+
+    const newX = Math.max(0, mouseX - dragOffset.x);
+    const newY = Math.max(0, mouseY - dragOffset.y);
 
     setCanvasItems(prev => prev.map(item => 
       item.id === draggingCardId 
@@ -156,8 +169,12 @@ export default function OrgChartPage() {
     if (!rect) return;
 
     const touch = e.touches[0];
-    const newX = Math.max(0, touch.clientX - rect.left - dragOffset.x);
-    const newY = Math.max(0, touch.clientY - rect.top - dragOffset.y);
+    // Divide by zoom to offset screen coordinate scale
+    const touchX = (touch.clientX - rect.left) / zoom;
+    const touchY = (touch.clientY - rect.top) / zoom;
+
+    const newX = Math.max(0, touchX - dragOffset.x);
+    const newY = Math.max(0, touchY - dragOffset.y);
 
     setCanvasItems(prev => prev.map(item => 
       item.id === draggingCardId 
@@ -212,7 +229,66 @@ export default function OrgChartPage() {
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleMouseUp);
     };
-  }, [draggingCardId, dragOffset, canvasItems]);
+  }, [draggingCardId, dragOffset, canvasItems, zoom]);
+
+  const handleFitScreen = () => {
+    const container = containerRef.current;
+    if (!container || canvasItems.length === 0) return;
+
+    const rect = container.getBoundingClientRect();
+    const viewportWidth = rect.width;
+    const viewportHeight = rect.height || 750;
+
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    canvasItems.forEach(item => {
+      const x = item.pos_x || 0;
+      const y = item.pos_y || 0;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    });
+
+    // Card sizes
+    maxX += 208; // width of card
+    maxY += 170; // height of card
+
+    const contentWidth = maxX - minX;
+    const contentHeight = maxY - minY;
+
+    if (contentWidth <= 0 || contentHeight <= 0) return;
+
+    const padding = 120; // safe padding around bounds
+    const scaleX = viewportWidth / (contentWidth + padding);
+    const scaleY = viewportHeight / (contentHeight + padding);
+    
+    // Ideal fitted zoom capped within a premium UX range
+    const newZoom = Math.min(Math.max(Math.min(scaleX, scaleY), 0.15), 1.2);
+
+    setZoom(newZoom);
+
+    // After updating zoom state, scroll container to center the bounding box
+    setTimeout(() => {
+      const scrollX = minX - (viewportWidth / newZoom - contentWidth) / 2;
+      const scrollY = minY - (viewportHeight / newZoom - contentHeight) / 2;
+      container.scrollLeft = Math.max(0, scrollX * newZoom);
+      container.scrollTop = Math.max(0, scrollY * newZoom);
+    }, 100);
+  };
+
+  // Auto-fit screen once items are loaded
+  useEffect(() => {
+    if (canvasItems.length > 0) {
+      const timer = setTimeout(() => {
+        handleFitScreen();
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [canvasItems.length]);
 
   // Form modals state
   const [showFormModal, setShowFormModal] = useState(false);
@@ -531,83 +607,141 @@ export default function OrgChartPage() {
           <p className="text-xs text-slate-400 font-bold">กำลังโหลดผังองค์กร...</p>
         </div>
       ) : (
-        <div className="relative w-full overflow-x-auto bg-slate-50/50 dark:bg-slate-950/20 border border-slate-200/50 dark:border-white/5 rounded-3xl p-4 min-h-[750px] shadow-inner">
+        <div className="relative w-full">
           
+          {/* Floating Zoom Control Panel */}
+          <div className="absolute top-4 right-4 z-30 flex items-center gap-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/50 dark:border-white/5 p-1.5 rounded-2xl shadow-lg">
+            <button
+              type="button"
+              onClick={() => setZoom(prev => Math.max(0.15, prev - 0.05))}
+              className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-600 dark:text-slate-200 rounded-xl transition-all"
+              title="ซูมออก"
+            >
+              <ZoomOut size={14} />
+            </button>
+            <span className="text-[10px] font-extrabold text-slate-600 dark:text-slate-300 min-w-[36px] text-center">
+              {Math.round(zoom * 100)}%
+            </span>
+            <button
+              type="button"
+              onClick={() => setZoom(prev => Math.min(1.2, prev + 0.05))}
+              className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-600 dark:text-slate-200 rounded-xl transition-all"
+              title="ซูมเข้า"
+            >
+              <ZoomIn size={14} />
+            </button>
+            <div className="w-px h-4 bg-slate-200 dark:bg-white/10 mx-1"></div>
+            <button
+              type="button"
+              onClick={handleFitScreen}
+              className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 text-emerald-600 dark:text-emerald-400 rounded-xl transition-all flex items-center gap-1 text-[10px] font-bold"
+              title="จัดให้พอดีหน้าจอ"
+            >
+              <Maximize size={12} />
+              <span>พอดีหน้าจอ</span>
+            </button>
+          </div>
 
+          {/* Scrollable Viewport Container */}
+          <div 
+            ref={containerRef}
+            className="relative w-full overflow-auto bg-slate-50/50 dark:bg-slate-950/20 border border-slate-200/50 dark:border-white/5 rounded-3xl p-4 min-h-[750px] shadow-inner"
+          >
+            {/* Scaled Layout Wrapper (to ensure scrollbars match scaled canvas bounds) */}
+            <div 
+              style={{ 
+                width: `${6000 * zoom}px`, 
+                height: `${4000 * zoom}px`,
+                position: 'relative'
+              }}
+            >
+              {/* Actual Internal Dragging Canvas */}
+              <div 
+                ref={canvasRef} 
+                className="relative" 
+                style={{ 
+                  width: '6000px', 
+                  height: '4000px',
+                  transform: `scale(${zoom})`,
+                  transformOrigin: 'top left',
+                  position: 'absolute',
+                  left: 0,
+                  top: 0
+                }}
+              >
+                {/* SVG Connections Container */}
+                <svg className="absolute inset-0 pointer-events-none w-full h-full" style={{ zIndex: 0 }}>
+                  <defs>
+                    <marker
+                      id="arrow"
+                      viewBox="0 0 10 10"
+                      refX="6"
+                      refY="5"
+                      markerWidth="6"
+                      markerHeight="6"
+                      orient="auto-start-reverse"
+                    >
+                      <path d="M 0 1 L 10 5 L 0 9 z" fill="#94a3b8" />
+                    </marker>
+                  </defs>
+                  {canvasItems.map(item => {
+                    if (!item.parent_id) return null;
+                    const parent = canvasItems.find(p => p.id === item.parent_id);
+                    if (!parent) return null;
 
-          <div ref={canvasRef} className="relative w-[6000px] h-[4000px]" style={{ position: 'relative' }}>
-            
-            {/* SVG Connections Container */}
-            <svg className="absolute inset-0 pointer-events-none w-full h-full" style={{ zIndex: 0 }}>
-              <defs>
-                <marker
-                  id="arrow"
-                  viewBox="0 0 10 10"
-                  refX="6"
-                  refY="5"
-                  markerWidth="6"
-                  markerHeight="6"
-                  orient="auto-start-reverse"
-                >
-                  <path d="M 0 1 L 10 5 L 0 9 z" fill="#94a3b8" />
-                </marker>
-              </defs>
-              {canvasItems.map(item => {
-                if (!item.parent_id) return null;
-                const parent = canvasItems.find(p => p.id === item.parent_id);
-                if (!parent) return null;
+                    // Parent bottom-center point calculation
+                    const startX = (parent.pos_x || 0) + 104; // w-52 is 208px, center is 104px
+                    const startY = (parent.pos_y || 0) + 150; // card bottom estimate
 
-                // Parent bottom-center point calculation
-                const startX = (parent.pos_x || 0) + 104; // w-52 is 208px, center is 104px
-                const startY = (parent.pos_y || 0) + 150; // card bottom estimate
+                    // Child top-center point
+                    const endX = (item.pos_x || 0) + 104;
+                    const endY = (item.pos_y || 0);
 
-                // Child top-center point
-                const endX = (item.pos_x || 0) + 104;
-                const endY = (item.pos_y || 0);
+                    const midY = (startY + endY) / 2;
+                    const pathD = `M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY}`;
 
-                const midY = (startY + endY) / 2;
-                const pathD = `M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY}`;
+                    // Color lines based on subordinate's zone choice
+                    const zoneColors: Record<string, string> = {
+                      'คลังสินค้า 24 Land': '#3b82f6',
+                      'คลังสินค้า Coil': '#a855f7',
+                      'คลังสินค้า 2PCS': '#f97316',
+                      'คลังสินค้าโรง2': '#ef4444',
+                      'คลังสินค้าโรง5': '#ec4899',
+                      'คลังสินค้า1': '#14b8a6',
+                      'คลังสินค้า2': '#6366f1',
+                      'ฝ่ายวางแผน': '#22c55e',
+                    };
+                    const strokeColor = zoneColors[item.warehouse_area || ''] || '#94a3b8';
 
-                // Color lines based on subordinate's zone choice
-                const zoneColors: Record<string, string> = {
-                  'คลังสินค้า 24 Land': '#3b82f6',
-                  'คลังสินค้า Coil': '#a855f7',
-                  'คลังสินค้า 2PCS': '#f97316',
-                  'คลังสินค้าโรง2': '#ef4444',
-                  'คลังสินค้าโรง5': '#ec4899',
-                  'คลังสินค้า1': '#14b8a6',
-                  'คลังสินค้า2': '#6366f1',
-                  'ฝ่ายวางแผน': '#22c55e',
-                };
-                const strokeColor = zoneColors[item.warehouse_area || ''] || '#94a3b8';
+                    return (
+                      <g key={`line-${item.id}`}>
+                        <path 
+                          d={pathD} 
+                          stroke={strokeColor} 
+                          strokeWidth="2.5" 
+                          fill="none" 
+                          className="opacity-70 dark:opacity-50 transition-all duration-100"
+                          markerEnd="url(#arrow)"
+                        />
+                      </g>
+                    );
+                  })}
+                </svg>
 
-                return (
-                  <g key={`line-${item.id}`}>
-                    <path 
-                      d={pathD} 
-                      stroke={strokeColor} 
-                      strokeWidth="2.5" 
-                      fill="none" 
-                      className="opacity-70 dark:opacity-50 transition-all duration-100"
-                      markerEnd="url(#arrow)"
-                    />
-                  </g>
-                );
-              })}
-            </svg>
+                {/* Render Canvas Draggable Cards */}
+                {canvasItems.map(item => renderMemberCard(item))}
 
-            {/* Render Canvas Draggable Cards */}
-            {canvasItems.map(item => renderMemberCard(item))}
-
-            {canvasItems.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <GlassCard className="p-8 text-center max-w-md pointer-events-auto">
-                  <Network size={48} className="mx-auto text-slate-400 mb-3" />
-                  <h4 className="font-bold text-slate-700 dark:text-white mb-1">ยังไม่มีข้อมูลผังองค์กร</h4>
-                  <p className="text-xs text-slate-400">โปรดเข้าสู่ระบบด้วยสิทธิ์ผู้ดูแลระบบ (Admin) เพื่อเพิ่มรายชื่อพนักงานในผัง</p>
-                </GlassCard>
+                {canvasItems.length === 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <GlassCard className="p-8 text-center max-w-md pointer-events-auto">
+                      <Network size={48} className="mx-auto text-slate-400 mb-3" />
+                      <h4 className="font-bold text-slate-700 dark:text-white mb-1">ยังไม่มีข้อมูลผังองค์กร</h4>
+                      <p className="text-xs text-slate-400">โปรดเข้าสู่ระบบด้วยสิทธิ์ผู้ดูแลระบบ (Admin) เพื่อเพิ่มรายชื่อพนักงานในผัง</p>
+                    </GlassCard>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
       )}

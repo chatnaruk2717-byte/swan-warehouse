@@ -19,6 +19,21 @@ const getDefaultPasswordHash = async () => {
   return '$2a$10$U1FNXk2W1scs2ZpblqipzuMN92V3rAAkW1UOdFSdgrCcmYjadz5O2';
 };
 
+router.get('/test-db-query', async (req: any, res: any) => {
+  try {
+    const result = await query(
+      `SELECT u.*, s.name as supervisor_name 
+       FROM users u 
+       LEFT JOIN users s ON u.supervisor_id = s.id 
+       WHERE u.employee_id NOT IN ('EMP001', 'EMP002', 'EMP003', 'EMP004', 'EMP005', 'EMP006', 'EMP007', 'EMP008', 'EMP009', 'EMP010')
+       ORDER BY u.employee_id ASC`
+    );
+    return res.json({ success: true, count: result.rows.length, sample: result.rows.slice(0, 2) });
+  } catch (err: any) {
+    return res.json({ success: false, error: err.message, stack: err.stack });
+  }
+});
+
 /**
  * @swagger
  * /api/employees:

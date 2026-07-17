@@ -48,9 +48,9 @@ function request(method, path, body, headers = {}) {
 async function runTest() {
   console.log('--- Testing Live API using HTTPS module ---');
   try {
-    console.log('Logging in as employee1@warehouse.com...');
+    console.log('Logging in as admin@warehouse.com...');
     const loginRes = await request('POST', '/api/auth/login', {
-      loginIdentifier: 'employee1@warehouse.com',
+      loginIdentifier: 'admin@warehouse.com',
       password: 'password123'
     });
 

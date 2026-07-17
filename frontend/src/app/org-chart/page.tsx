@@ -36,129 +36,159 @@ export default function OrgChartPage() {
   const [orgItems, setOrgItems] = useState<OrgChartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Drag and Drop States
-  const [draggedItem, setDraggedItem] = useState<OrgChartItem | null>(null);
+  // Drag and Drop Free Position States
+  const [draggingCardId, setDraggingCardId] = useState<number | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [canvasItems, setCanvasItems] = useState<OrgChartItem[]>([]);
 
-  const handleDragStart = (e: React.DragEvent, item: OrgChartItem) => {
-    setDraggedItem(item);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', item.id.toString());
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = async (e: React.DragEvent, targetItem: OrgChartItem) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!draggedItem || draggedItem.id === targetItem.id) {
-      setDraggedItem(null);
+  // Automatically calculate grid positions for items that don't have custom coordinates saved (pos_x === 0 && pos_y === 0)
+  useEffect(() => {
+    if (orgItems.length === 0) {
+      setCanvasItems([]);
       return;
     }
 
-    const isSameLevel = draggedItem.level_order === targetItem.level_order;
+    const updatedItems = [...orgItems];
+    const levelsCount: Record<number, number> = {};
+    const levelsIndex: Record<number, number> = {};
 
-    try {
-      if (isSameLevel) {
-        // Swap display_order within the same level
-        const levelItems = orgItems.filter(item => item.level_order === draggedItem.level_order);
-        const draggedIndex = levelItems.findIndex(item => item.id === draggedItem.id);
-        const targetIndex = levelItems.findIndex(item => item.id === targetItem.id);
-        
-        if (draggedIndex !== -1 && targetIndex !== -1) {
-          const updatedLevelItems = [...levelItems];
-          const [removed] = updatedLevelItems.splice(draggedIndex, 1);
-          updatedLevelItems.splice(targetIndex, 0, removed);
-
-          const promises = updatedLevelItems.map((item, idx) => {
-            return api.put(`/api/org-chart/${item.id}`, {
-              name: item.name,
-              role_name: item.role_name,
-              level_order: item.level_order,
-              level: item.level || '',
-              warehouse_area: item.warehouse_area || '',
-              image_url: item.image_url,
-              display_order: idx + 1
-            });
-          });
-          
-          await Promise.all(promises);
-        }
-      } else {
-        // Move to a different level
-        const targetLevelItems = orgItems.filter(item => item.level_order === targetItem.level_order);
-        const maxDisplayOrder = targetLevelItems.reduce((max, item) => (item.display_order || 0) > max ? (item.display_order || 0) : max, 0);
-
-        const levelLabels: { [key: number]: string } = {
-          1: 'L1',
-          2: 'L2',
-          3: 'L3',
-          4: 'L4',
-          5: 'L5',
-          6: 'L6',
-          7: 'L7'
-        };
-
-        await api.put(`/api/org-chart/${draggedItem.id}`, {
-          name: draggedItem.name,
-          role_name: draggedItem.role_name,
-          level_order: targetItem.level_order,
-          level: draggedItem.level || levelLabels[targetItem.level_order] || '',
-          warehouse_area: targetItem.warehouse_area || draggedItem.warehouse_area || '',
-          image_url: draggedItem.image_url,
-          display_order: maxDisplayOrder + 1
-        });
+    // Count items per level that don't have coordinates
+    updatedItems.forEach(item => {
+      if ((item.pos_x === 0 || !item.pos_x) && (item.pos_y === 0 || !item.pos_y)) {
+        levelsCount[item.level_order] = (levelsCount[item.level_order] || 0) + 1;
       }
-      
-      fetchOrgItems();
-    } catch (err) {
-      console.error('Failed to reorder org chart item via drag-and-drop', err);
-      alert('เกิดข้อผิดพลาดในการปรับเปลี่ยนตำแหน่งผังองค์กร');
-    } finally {
-      setDraggedItem(null);
-    }
+    });
+
+    const itemsWithCoords = updatedItems.map(item => {
+      let x = item.pos_x || 0;
+      let y = item.pos_y || 0;
+
+      if (x === 0 && y === 0) {
+        // Auto layout grid
+        const levelYMap: Record<number, number> = {
+          1: 30,
+          2: 175,
+          3: 320,
+          4: 465,
+          5: 610,
+          6: 755,
+          7: 900
+        };
+        y = levelYMap[item.level_order] || 610;
+
+        const count = levelsCount[item.level_order] || 1;
+        const index = levelsIndex[item.level_order] || 0;
+        levelsIndex[item.level_order] = index + 1;
+
+        // Spread horizontally
+        const canvasWidth = 1200;
+        const cardWidth = 208; // w-52 is 208px
+        const spacing = canvasWidth / (count + 1);
+        x = Math.round(spacing * (index + 1) - cardWidth / 2);
+      }
+
+      return { ...item, pos_x: x, pos_y: y };
+    });
+
+    setCanvasItems(itemsWithCoords);
+  }, [orgItems]);
+
+  const handleMouseDown = (e: React.MouseEvent, item: OrgChartItem) => {
+    if (e.button !== 0) return; // only left click
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('a') || target.closest('select')) return;
+
+    setDraggingCardId(item.id);
+    setDragOffset({
+      x: e.clientX - (item.pos_x || 0),
+      y: e.clientY - (item.pos_y || 0)
+    });
   };
 
-  const handleDropToLevel = async (e: React.DragEvent, levelOrder: number) => {
-    e.preventDefault();
-    if (!draggedItem || draggedItem.level_order === levelOrder) {
-      setDraggedItem(null);
-      return;
-    }
+  const handleTouchStart = (e: React.TouchEvent, item: OrgChartItem) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('a') || target.closest('select')) return;
 
-    try {
-      const targetLevelItems = orgItems.filter(item => item.level_order === levelOrder);
-      const maxDisplayOrder = targetLevelItems.reduce((max, item) => (item.display_order || 0) > max ? (item.display_order || 0) : max, 0);
-
-      const levelLabels: { [key: number]: string } = {
-        1: 'L1',
-        2: 'L2',
-        3: 'L3',
-        4: 'L4',
-        5: 'L5',
-        6: 'L6',
-        7: 'L7'
-      };
-
-      await api.put(`/api/org-chart/${draggedItem.id}`, {
-        name: draggedItem.name,
-        role_name: draggedItem.role_name,
-        level_order: levelOrder,
-        level: draggedItem.level || levelLabels[levelOrder] || '',
-        warehouse_area: draggedItem.warehouse_area || '',
-        image_url: draggedItem.image_url,
-        display_order: maxDisplayOrder + 1
-      });
-
-      fetchOrgItems();
-    } catch (err) {
-      console.error('Failed to move item to level', err);
-      alert('เกิดข้อผิดพลาดในการย้ายระดับตำแหน่ง');
-    } finally {
-      setDraggedItem(null);
-    }
+    const touch = e.touches[0];
+    setDraggingCardId(item.id);
+    setDragOffset({
+      x: touch.clientX - (item.pos_x || 0),
+      y: touch.clientY - (item.pos_y || 0)
+    });
   };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (draggingCardId === null) return;
+    const newX = Math.max(0, e.clientX - dragOffset.x);
+    const newY = Math.max(0, e.clientY - dragOffset.y);
+
+    setCanvasItems(prev => prev.map(item => 
+      item.id === draggingCardId 
+        ? { ...item, pos_x: newX, pos_y: newY }
+        : item
+    ));
+  };
+
+  const handleTouchMove = (e: TouchEvent) => {
+    if (draggingCardId === null) return;
+    const touch = e.touches[0];
+    const newX = Math.max(0, touch.clientX - dragOffset.x);
+    const newY = Math.max(0, touch.clientY - dragOffset.y);
+
+    setCanvasItems(prev => prev.map(item => 
+      item.id === draggingCardId 
+        ? { ...item, pos_x: newX, pos_y: newY }
+        : item
+    ));
+  };
+
+  const handleMouseUp = async () => {
+    if (draggingCardId === null) return;
+
+    const item = canvasItems.find(p => p.id === draggingCardId);
+    if (item) {
+      try {
+        await api.put(`/api/org-chart/${item.id}`, {
+          name: item.name,
+          role_name: item.role_name,
+          level_order: item.level_order,
+          level: item.level || '',
+          warehouse_area: item.warehouse_area || '',
+          image_url: item.image_url,
+          parent_id: item.parent_id,
+          photo_size: item.photo_size || 'md',
+          photo_shape: item.photo_shape || 'circle',
+          pos_x: item.pos_x,
+          pos_y: item.pos_y
+        });
+        
+        // Update main state so everything remains in sync
+        setOrgItems(prev => prev.map(p => 
+          p.id === item.id 
+            ? { ...p, pos_x: item.pos_x, pos_y: item.pos_y }
+            : p
+        ));
+      } catch (err) {
+        console.error('Failed to save card coordinate position', err);
+      }
+    }
+    setDraggingCardId(null);
+  };
+
+  useEffect(() => {
+    if (draggingCardId !== null) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleTouchMove, { passive: false });
+      window.addEventListener('touchend', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleMouseUp);
+    };
+  }, [draggingCardId, dragOffset, canvasItems]);
 
   // Form modals state
   const [showFormModal, setShowFormModal] = useState(false);
@@ -175,16 +205,20 @@ export default function OrgChartPage() {
     parent_id: string;
     photo_size: string;
     photo_shape: string;
+    pos_x: number;
+    pos_y: number;
   }>({
     name: '',
     role_name: '',
     level_order: 5,
     level: '',
-    warehouse_area: '',
+    warehouse_area: 'คลังสินค้า1',
     image_url: '',
     parent_id: '',
     photo_size: 'md',
-    photo_shape: 'circle'
+    photo_shape: 'circle',
+    pos_x: 0,
+    pos_y: 0
   });
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -233,11 +267,13 @@ export default function OrgChartPage() {
       role_name: '',
       level_order: 5,
       level: '',
-      warehouse_area: '',
+      warehouse_area: 'คลังสินค้า1',
       image_url: '',
       parent_id: '',
       photo_size: 'md',
-      photo_shape: 'circle'
+      photo_shape: 'circle',
+      pos_x: 0,
+      pos_y: 0
     });
     setUploadedFileName('');
     setShowFormModal(true);
@@ -251,11 +287,13 @@ export default function OrgChartPage() {
       role_name: item.role_name,
       level_order: item.level_order,
       level: item.level || '',
-      warehouse_area: item.warehouse_area || '',
+      warehouse_area: item.warehouse_area || 'คลังสินค้า1',
       image_url: item.image_url,
       parent_id: item.parent_id !== undefined && item.parent_id !== null ? item.parent_id.toString() : '',
       photo_size: item.photo_size || 'md',
-      photo_shape: item.photo_shape || 'circle'
+      photo_shape: item.photo_shape || 'circle',
+      pos_x: item.pos_x || 0,
+      pos_y: item.pos_y || 0
     });
     setUploadedFileName(item.image_url ? 'มีรูปภาพพนักงานเดิม' : '');
     setShowFormModal(true);
@@ -295,21 +333,14 @@ export default function OrgChartPage() {
     }
   };
 
-  // Group items by level
-  const deptManagers = orgItems.filter(item => item.level_order === 1); // 1. ผู้จัดการฝ่าย
-  const sectManagers = orgItems.filter(item => item.level_order === 2); // 2. ผู้จัดการแผนก
-  const departmentHeads = orgItems.filter(item => item.level_order === 3); // 3. หัวหน้าแผนก
-  const supervisors = orgItems.filter(item => item.level_order === 4); // 4. หัวหน้างาน
-  const officers = orgItems.filter(item => item.level_order === 5); // 5. เจ้าหน้าที่
-  const forkliftDrivers = orgItems.filter(item => item.level_order === 6); // 6. พนักงานขับรถยก
-  const liftOperators = orgItems.filter(item => item.level_order === 7); // 7. พนักงานหน้าลิฟท์
+
 
   const isAdmin = user?.role === 'admin';
 
   // Render a single member card
   const renderMemberCard = (item: OrgChartItem) => {
     // Find parent/supervisor name
-    const parentNode = orgItems.find(p => p.id === item.parent_id);
+    const parentNode = canvasItems.find(p => p.id === item.parent_id);
 
     // Frame Shape and Size settings
     const shapeClass = item.photo_shape === 'rounded' 
@@ -335,51 +366,74 @@ export default function OrgChartPage() {
       ? 'border-emerald-500/35 hover:border-emerald-500 shadow-emerald-500/5 dark:shadow-none'
       : 'border-slate-200/60 dark:border-white/5 hover:border-warehouse-orange/30';
 
+    const isDragging = draggingCardId === item.id;
+
+    // Predefined colors for Warehouse Zone badges
+    const zoneColors: Record<string, string> = {
+      'คลังสินค้า 24 Land': 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20',
+      'คลังสินค้า Coil': 'bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400 border border-purple-200 dark:border-purple-500/20',
+      'คลังสินค้า 2PCS': 'bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400 border border-orange-200 dark:border-orange-500/20',
+      'คลังสินค้าโรง2': 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 border border-red-200 dark:border-red-500/20',
+      'คลังสินค้าโรง5': 'bg-pink-50 text-pink-600 dark:bg-pink-500/10 dark:text-pink-400 border border-pink-200 dark:border-pink-500/20',
+      'คลังสินค้า1': 'bg-teal-50 text-teal-600 dark:bg-teal-500/10 dark:text-teal-400 border border-teal-200 dark:border-teal-500/20',
+      'คลังสินค้า2': 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20',
+      'ฝ่ายวางแผน': 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400 border border-green-200 dark:border-green-500/20',
+    };
+    const badgeColorClass = zoneColors[item.warehouse_area || ''] || 'bg-slate-50 text-slate-600 dark:bg-white/5 dark:text-slate-400 border border-slate-200 dark:border-white/5';
+
     return (
       <div 
         key={item.id} 
-        className="relative group flex flex-col items-center"
-        draggable={isAdmin}
-        onDragStart={(e) => handleDragStart(e, item)}
-        onDragOver={handleDragOver}
-        onDrop={(e) => handleDrop(e, item)}
+        className="absolute group flex flex-col items-center select-none"
+        style={{ 
+          left: `${item.pos_x || 0}px`, 
+          top: `${item.pos_y || 0}px`,
+          position: 'absolute',
+          zIndex: isDragging ? 30 : 10
+        }}
+        onMouseDown={(e) => handleMouseDown(e, item)}
+        onTouchStart={(e) => handleTouchStart(e, item)}
       >
-        <div className={`w-52 p-3.5 rounded-2xl bg-white dark:bg-warehouse-slate border shadow-md flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${levelGlowClass} ${
-          isAdmin ? 'cursor-grab active:cursor-grabbing' : ''
-        } ${draggedItem?.id === item.id ? 'opacity-40 border-dashed border-emerald-500/50' : ''}`}>
+        {/* Header label for Level when not dragging, helps visualize hierarchy structure */}
+        <div className="text-[8px] font-bold text-slate-400 dark:text-slate-500 mb-1 pointer-events-none uppercase tracking-wider">
+          Level {item.level_order}
+        </div>
+
+        <div className={`w-52 p-3.5 rounded-2xl bg-white dark:bg-warehouse-slate border shadow-md flex flex-col items-center text-center transition-shadow duration-300 hover:shadow-lg ${levelGlowClass} ${
+          isDragging ? 'cursor-grabbing border-emerald-500 scale-105 shadow-xl' : 'cursor-grab'
+        }`}>
           
           {/* Profile Image / Initial */}
           <div 
             style={clipStyle}
-            className={`${sizeClass} ${shapeClass} overflow-hidden border-2 border-emerald-500 bg-emerald-50 dark:bg-white/5 flex items-center justify-center mb-2.5 shadow-md`}
+            className={`${sizeClass} ${shapeClass} overflow-hidden border-2 border-emerald-500 bg-emerald-50 dark:bg-white/5 flex items-center justify-center mb-2.5 shadow-md pointer-events-none`}
           >
             {item.image_url ? (
-              <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+              <img src={item.image_url} alt={item.name} className="w-full h-full object-cover pointer-events-none" />
             ) : (
-              <User size={item.photo_size === 'sm' ? 24 : item.photo_size === 'lg' ? 44 : 32} className="text-emerald-600 dark:text-emerald-400" />
+              <User size={item.photo_size === 'sm' ? 24 : item.photo_size === 'lg' ? 44 : 32} className="text-emerald-600 dark:text-emerald-400 pointer-events-none" />
             )}
           </div>
 
           {/* Member Details */}
-          <h5 className="font-bold text-xs sm:text-sm text-slate-800 dark:text-white leading-snug">{item.name}</h5>
-          <p className="text-[9px] font-extrabold text-warehouse-orange mt-1 px-2 py-0.5 rounded-full bg-warehouse-orange/5 border border-warehouse-orange/15 max-w-full truncate">
+          <h5 className="font-bold text-xs sm:text-sm text-slate-800 dark:text-white leading-snug pointer-events-none">{item.name}</h5>
+          <p className="text-[9px] font-extrabold text-warehouse-orange mt-1 px-2 py-0.5 rounded-full bg-warehouse-orange/5 border border-warehouse-orange/15 max-w-full truncate pointer-events-none">
             {item.role_name} {item.level ? `(${item.level})` : ''}
           </p>
 
-          {/* Warehouse Zone */}
+          {/* Warehouse Zone Dropdown-based Badge */}
           {item.warehouse_area && (
-            <p className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1">
-              <span>โซนคลัง:</span>
-              <span className="text-slate-600 dark:text-slate-300 font-bold">{item.warehouse_area}</span>
+            <p className={`text-[8px] font-bold mt-2 px-2 py-0.5 rounded-lg pointer-events-none ${badgeColorClass}`}>
+              {item.warehouse_area}
             </p>
           )}
 
           {/* Supervisor / Reports To Link */}
           {parentNode && (
-            <div className="mt-2 w-full pt-1.5 border-t border-slate-100 dark:border-white/5 flex flex-col items-center">
+            <div className="mt-2 w-full pt-1.5 border-t border-slate-100 dark:border-white/5 flex flex-col items-center pointer-events-none">
               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">รายงานต่อ (Reports To)</span>
-              <span className="text-[9px] font-bold text-slate-600 dark:text-slate-200 mt-0.5 max-w-full truncate flex items-center gap-0.5">
-                <UserCheck size={10} className="text-emerald-500" />
+              <span className="text-[9px] font-bold text-slate-600 dark:text-slate-200 mt-0.5 max-w-full truncate flex items-center gap-0.5 pointer-events-none">
+                <UserCheck size={10} className="text-emerald-500 pointer-events-none" />
                 {parentNode.name}
               </span>
             </div>
@@ -387,10 +441,13 @@ export default function OrgChartPage() {
 
           {/* Admin actions overlay */}
           {isAdmin && (
-            <div className="absolute top-2 right-2 flex items-center gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200 bg-slate-950/40 backdrop-blur-md p-1.5 rounded-xl">
+            <div className="absolute top-8 right-2 flex items-center gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200 bg-slate-950/40 backdrop-blur-md p-1.5 rounded-xl z-20">
               <button 
                 type="button"
-                onClick={() => handleOpenEditModal(item)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenEditModal(item);
+                }}
                 className="p-1 hover:bg-white/20 text-white rounded transition-colors"
                 title="แก้ไข"
               >
@@ -398,7 +455,10 @@ export default function OrgChartPage() {
               </button>
               <button 
                 type="button"
-                onClick={() => handleDelete(item.id, item.name)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(item.id, item.name);
+                }}
                 className="p-1 hover:bg-rose-500/20 text-rose-400 rounded transition-colors"
                 title="ลบ"
               >
@@ -415,7 +475,7 @@ export default function OrgChartPage() {
     <div className="container mx-auto px-4 py-8 max-w-7xl min-h-screen">
       
       {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1.5">
             <Building2 size={12} />
@@ -425,18 +485,20 @@ export default function OrgChartPage() {
             <Network className="text-warehouse-orange" size={32} />
             <span>โครงสร้างองค์กร (Finished Goods Warehouse)</span>
           </h2>
-          <p className="text-xs text-slate-400 font-semibold mt-1">ผังสายงานและการบังคับบัญชาแผนกคลังสินค้าสำเร็จรูป</p>
+          <p className="text-xs text-slate-400 font-semibold mt-1">ผังสายงานแบบลากอิสระ แยกเส้นสีตามโซนคลังสินค้าและการบังคับบัญชา</p>
         </div>
 
-        {isAdmin && (
-          <button
-            onClick={handleOpenAddModal}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-600/15"
-          >
-            <Plus size={16} />
-            <span>เพิ่มตำแหน่งในผัง</span>
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {isAdmin && (
+            <button
+              onClick={handleOpenAddModal}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-600/15"
+            >
+              <Plus size={16} />
+              <span>เพิ่มตำแหน่งในผัง</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
@@ -445,188 +507,95 @@ export default function OrgChartPage() {
           <p className="text-xs text-slate-400 font-bold">กำลังโหลดผังองค์กร...</p>
         </div>
       ) : (
-        <div className="relative flex flex-col items-center gap-3 py-2 overflow-x-auto min-w-full">
+        <div className="relative w-full overflow-x-auto bg-slate-50/50 dark:bg-slate-950/20 border border-slate-200/50 dark:border-white/5 rounded-3xl p-4 min-h-[750px] shadow-inner">
           
-          {/* Level 1: ผู้จัดการฝ่าย */}
-          {(deptManagers.length > 0 || isAdmin) && (
-            <div 
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDropToLevel(e, 1)}
-              className={`flex flex-col items-center relative w-full p-2 rounded-2xl transition-all duration-300 ${
-                draggedItem && draggedItem.level_order !== 1 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
-              }`}
-            >
-              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-1 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">1. ผู้จัดการฝ่าย (Department Manager)</span>}
-              {deptManagers.length > 0 ? (
-                <div className="flex flex-wrap justify-center gap-4">
-                  {deptManagers.map(item => renderMemberCard(item))}
-                </div>
-              ) : (
-                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
-                  ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "ผู้จัดการฝ่าย"
-                </div>
-              )}
-              {(sectManagers.length > 0 || departmentHeads.length > 0 || supervisors.length > 0 || officers.length > 0 || forkliftDrivers.length > 0 || liftOperators.length > 0 || isAdmin) && (
-                <div className="w-0.5 h-6 bg-slate-300 dark:bg-white/10 mt-2"></div>
-              )}
-            </div>
-          )}
+          {/* pre-defined zone legend indicator */}
+          <div className="absolute top-4 left-4 z-30 flex flex-wrap gap-2 max-w-4xl p-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/40 dark:border-white/5 rounded-2xl text-[10px] font-bold">
+            <span className="text-slate-400 mr-1 uppercase">สัญลักษณ์คลัง:</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>24 Land</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span>Coil</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-orange-500"></span>2PCS</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>โรง 2</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-pink-500"></span>โรง 5</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-teal-500"></span>คลัง 1</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>คลัง 2</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>ฝ่ายวางแผน</span>
+          </div>
 
-          {/* Level 2: ผู้จัดการแผนก */}
-          {(sectManagers.length > 0 || isAdmin) && (
-            <div 
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDropToLevel(e, 2)}
-              className={`flex flex-col items-center relative w-full p-2 rounded-2xl transition-all duration-300 ${
-                draggedItem && draggedItem.level_order !== 2 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
-              }`}
-            >
-              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-1 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">2. ผู้จัดการแผนก (Section Manager)</span>}
-              {sectManagers.length > 0 ? (
-                <div className="flex flex-wrap justify-center gap-4">
-                  {sectManagers.map(item => renderMemberCard(item))}
-                </div>
-              ) : (
-                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
-                  ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "ผู้จัดการแผนก"
-                </div>
-              )}
-              {(departmentHeads.length > 0 || supervisors.length > 0 || officers.length > 0 || forkliftDrivers.length > 0 || liftOperators.length > 0 || isAdmin) && (
-                <div className="w-0.5 h-6 bg-slate-300 dark:bg-white/10 mt-2"></div>
-              )}
-            </div>
-          )}
+          <div className="relative w-[1250px] h-[1050px]" style={{ position: 'relative' }}>
+            
+            {/* SVG Connections Container */}
+            <svg className="absolute inset-0 pointer-events-none w-full h-full" style={{ zIndex: 0 }}>
+              <defs>
+                <marker
+                  id="arrow"
+                  viewBox="0 0 10 10"
+                  refX="6"
+                  refY="5"
+                  markerWidth="6"
+                  markerHeight="6"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 1 L 10 5 L 0 9 z" fill="#94a3b8" />
+                </marker>
+              </defs>
+              {canvasItems.map(item => {
+                if (!item.parent_id) return null;
+                const parent = canvasItems.find(p => p.id === item.parent_id);
+                if (!parent) return null;
 
-          {/* Level 3: หัวหน้าแผนก */}
-          {(departmentHeads.length > 0 || isAdmin) && (
-            <div 
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDropToLevel(e, 3)}
-              className={`flex flex-col items-center relative w-full p-2 rounded-2xl transition-all duration-300 ${
-                draggedItem && draggedItem.level_order !== 3 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
-              }`}
-            >
-              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-1 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">3. หัวหน้าแผนก (Section Head)</span>}
-              {departmentHeads.length > 0 ? (
-                <div className="flex flex-wrap justify-center gap-4">
-                  {departmentHeads.map(item => renderMemberCard(item))}
-                </div>
-              ) : (
-                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
-                  ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "หัวหน้าแผนก"
-                </div>
-              )}
-              {(supervisors.length > 0 || officers.length > 0 || forkliftDrivers.length > 0 || liftOperators.length > 0 || isAdmin) && (
-                <div className="w-0.5 h-6 bg-slate-300 dark:bg-white/10 mt-2"></div>
-              )}
-            </div>
-          )}
+                // Parent bottom-center point calculation
+                const startX = (parent.pos_x || 0) + 104; // w-52 is 208px, center is 104px
+                const startY = (parent.pos_y || 0) + 150; // card bottom estimate
 
-          {/* Level 4: หัวหน้างาน */}
-          {(supervisors.length > 0 || isAdmin) && (
-            <div 
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDropToLevel(e, 4)}
-              className={`flex flex-col items-center relative w-full p-2 rounded-2xl transition-all duration-300 ${
-                draggedItem && draggedItem.level_order !== 4 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
-              }`}
-            >
-              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-1 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">4. หัวหน้างาน (Supervisor)</span>}
-              {supervisors.length > 0 ? (
-                <div className="flex flex-wrap justify-center gap-4">
-                  {supervisors.map(item => renderMemberCard(item))}
-                </div>
-              ) : (
-                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
-                  ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "หัวหน้างาน"
-                </div>
-              )}
-              {(officers.length > 0 || forkliftDrivers.length > 0 || liftOperators.length > 0 || isAdmin) && (
-                <div className="w-0.5 h-6 bg-slate-300 dark:bg-white/10 mt-2"></div>
-              )}
-            </div>
-          )}
+                // Child top-center point
+                const endX = (item.pos_x || 0) + 104;
+                const endY = (item.pos_y || 0);
 
-          {/* Level 5: เจ้าหน้าที่ */}
-          {(officers.length > 0 || isAdmin) && (
-            <div 
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDropToLevel(e, 5)}
-              className={`flex flex-col items-center relative w-full p-2 rounded-2xl transition-all duration-300 ${
-                draggedItem && draggedItem.level_order !== 5 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
-              }`}
-            >
-              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-1 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">5. เจ้าหน้าที่ (Officer / Staff)</span>}
-              {officers.length > 0 ? (
-                <div className="flex flex-wrap justify-center gap-4 max-w-6xl">
-                  {officers.map((item) => renderMemberCard(item))}
-                </div>
-              ) : (
-                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
-                  ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "เจ้าหน้าที่"
-                </div>
-              )}
-              {(forkliftDrivers.length > 0 || liftOperators.length > 0 || isAdmin) && (
-                <div className="w-0.5 h-6 bg-slate-300 dark:bg-white/10 mt-2"></div>
-              )}
-            </div>
-          )}
+                const midY = (startY + endY) / 2;
+                const pathD = `M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY}`;
 
-          {/* Level 6: พนักงานขับรถยก */}
-          {(forkliftDrivers.length > 0 || isAdmin) && (
-            <div 
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDropToLevel(e, 6)}
-              className={`flex flex-col items-center relative w-full p-2 rounded-2xl transition-all duration-300 ${
-                draggedItem && draggedItem.level_order !== 6 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
-              }`}
-            >
-              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-1 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">6. พนักงานขับรถยก (Forklift Driver)</span>}
-              {forkliftDrivers.length > 0 ? (
-                <div className="flex flex-wrap justify-center gap-4 max-w-6xl">
-                  {forkliftDrivers.map((item) => renderMemberCard(item))}
-                </div>
-              ) : (
-                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
-                  ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "พนักงานขับรถยก"
-                </div>
-              )}
-              {(liftOperators.length > 0 || isAdmin) && (
-                <div className="w-0.5 h-6 bg-slate-300 dark:bg-white/10 mt-2"></div>
-              )}
-            </div>
-          )}
+                // Color lines based on subordinate's zone choice
+                const zoneColors: Record<string, string> = {
+                  'คลังสินค้า 24 Land': '#3b82f6',
+                  'คลังสินค้า Coil': '#a855f7',
+                  'คลังสินค้า 2PCS': '#f97316',
+                  'คลังสินค้าโรง2': '#ef4444',
+                  'คลังสินค้าโรง5': '#ec4899',
+                  'คลังสินค้า1': '#14b8a6',
+                  'คลังสินค้า2': '#6366f1',
+                  'ฝ่ายวางแผน': '#22c55e',
+                };
+                const strokeColor = zoneColors[item.warehouse_area || ''] || '#94a3b8';
 
-          {/* Level 7: พนักงานหน้าลิฟท์ */}
-          {(liftOperators.length > 0 || isAdmin) && (
-            <div 
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDropToLevel(e, 7)}
-              className={`flex flex-col items-center relative w-full p-2 rounded-2xl transition-all duration-300 ${
-                draggedItem && draggedItem.level_order !== 7 ? 'bg-emerald-500/5 border border-dashed border-emerald-500/20' : ''
-              }`}
-            >
-              {isAdmin && <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider mb-1 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full uppercase">7. พนักงานหน้าลิฟท์ (Lift Operator)</span>}
-              {liftOperators.length > 0 ? (
-                <div className="flex flex-wrap justify-center gap-4 max-w-6xl">
-                  {liftOperators.map((item) => renderMemberCard(item))}
-                </div>
-              ) : (
-                <div className="text-[10px] text-slate-400 font-bold border border-dashed border-slate-200 dark:border-white/5 px-6 py-2 rounded-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
-                  ลากพนักงานมาวางที่นี่เพื่อมอบหมายระดับ "พนักงานหน้าลิฟท์"
-                </div>
-              )}
-            </div>
-          )}
+                return (
+                  <g key={`line-${item.id}`}>
+                    <path 
+                      d={pathD} 
+                      stroke={strokeColor} 
+                      strokeWidth="2.5" 
+                      fill="none" 
+                      className="opacity-70 dark:opacity-50 transition-all duration-100"
+                      markerEnd="url(#arrow)"
+                    />
+                  </g>
+                );
+              })}
+            </svg>
 
-          {/* Fallback empty message */}
-          {orgItems.length === 0 && (
-            <GlassCard className="p-8 text-center max-w-md">
-              <Network size={48} className="mx-auto text-slate-400 mb-3" />
-              <h4 className="font-bold text-slate-700 dark:text-white mb-1">ยังไม่มีข้อมูลผังองค์กร</h4>
-              <p className="text-xs text-slate-400 mb-4">โปรดเข้าสู่ระบบด้วยสิทธิ์ผู้ดูแลระบบ (Admin) เพื่อเพิ่มรายชื่อพนักงานในผัง</p>
-            </GlassCard>
-          )}
+            {/* Render Canvas Draggable Cards */}
+            {canvasItems.map(item => renderMemberCard(item))}
+
+            {canvasItems.length === 0 && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <GlassCard className="p-8 text-center max-w-md pointer-events-auto">
+                  <Network size={48} className="mx-auto text-slate-400 mb-3" />
+                  <h4 className="font-bold text-slate-700 dark:text-white mb-1">ยังไม่มีข้อมูลผังองค์กร</h4>
+                  <p className="text-xs text-slate-400">โปรดเข้าสู่ระบบด้วยสิทธิ์ผู้ดูแลระบบ (Admin) เพื่อเพิ่มรายชื่อพนักงานในผัง</p>
+                </GlassCard>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -721,13 +690,20 @@ export default function OrgChartPage() {
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase">โซนคลัง (Zone)</label>
-                  <input 
-                    type="text" 
-                    placeholder="เช่น Zone A, Zone B"
+                  <select
                     value={formState.warehouse_area}
                     onChange={(e) => setFormState(prev => ({ ...prev, warehouse_area: e.target.value }))}
                     className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate"
-                  />
+                  >
+                    <option value="คลังสินค้า 24 Land">1. คลังสินค้า 24 Land</option>
+                    <option value="คลังสินค้า Coil">2. คลังสินค้า Coil</option>
+                    <option value="คลังสินค้า 2PCS">3. คลังสินค้า 2PCS</option>
+                    <option value="คลังสินค้าโรง2">4. คลังสินค้าโรง2</option>
+                    <option value="คลังสินค้าโรง5">5. คลังสินค้าโรง5</option>
+                    <option value="คลังสินค้า1">6. คลังสินค้า1</option>
+                    <option value="คลังสินค้า2">7. คลังสินค้า2</option>
+                    <option value="ฝ่ายวางแผน">8. ฝ่ายวางแผน</option>
+                  </select>
                 </div>
               </div>
 

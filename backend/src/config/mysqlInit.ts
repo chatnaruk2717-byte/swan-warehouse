@@ -19,6 +19,8 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         await connection.query('ALTER TABLE org_chart ADD COLUMN parent_id INT NULL').catch(() => {});
         await connection.query("ALTER TABLE org_chart ADD COLUMN photo_size VARCHAR(20) DEFAULT 'md'").catch(() => {});
         await connection.query("ALTER TABLE org_chart ADD COLUMN photo_shape VARCHAR(25) DEFAULT 'circle'").catch(() => {});
+        await connection.query("ALTER TABLE org_chart ADD COLUMN pos_x INT DEFAULT 0").catch(() => {});
+        await connection.query("ALTER TABLE org_chart ADD COLUMN pos_y INT DEFAULT 0").catch(() => {});
         
         // Add performance columns if missing
         await connection.query('ALTER TABLE users ADD COLUMN evaluation_score INT DEFAULT 100').catch(() => {});
@@ -291,6 +293,11 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         warehouse_area VARCHAR(100),
         image_url LONGTEXT,
         display_order INT DEFAULT 0,
+        parent_id INT NULL,
+        photo_size VARCHAR(20) DEFAULT 'md',
+        photo_shape VARCHAR(25) DEFAULT 'circle',
+        pos_x INT DEFAULT 0,
+        pos_y INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )`,

@@ -452,6 +452,8 @@ export interface OrgChartItem {
   parent_id?: number | null;
   photo_size?: string;
   photo_shape?: string;
+  pos_x?: number;
+  pos_y?: number;
 }
 
 export const mockOrgChart: OrgChartItem[] = [

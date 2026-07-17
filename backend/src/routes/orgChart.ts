@@ -24,7 +24,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
 
 // POST /api/org-chart - Add new position (Admin only)
 router.post('/', authenticateToken, requireRole(['admin']), async (req: AuthenticatedRequest, res: Response) => {
-  const { name, role_name, level_order, level, warehouse_area, image_url, display_order, parent_id, photo_size, photo_shape } = req.body;
+  const { name, role_name, level_order, level, warehouse_area, image_url, display_order, parent_id, photo_size, photo_shape, pos_x, pos_y } = req.body;
 
   if (!name || !role_name || !level_order) {
     return res.status(400).json({ message: 'name, role_name, and level_order are required.' });
@@ -33,16 +33,18 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req: Authenti
   const levelOrderNum = parseInt(level_order, 10);
   const displayOrderNum = parseInt(display_order, 10) || 0;
   const parentIdVal = parent_id !== undefined && parent_id !== null && parent_id !== '' ? parseInt(parent_id, 10) : null;
+  const posXVal = parseInt(pos_x, 10) || 0;
+  const posYVal = parseInt(pos_y, 10) || 0;
 
   try {
     if (getMockStatus()) {
       throw new Error('MOCK_MODE');
     }
     const result = await query(
-      `INSERT INTO org_chart (name, role_name, level_order, level, warehouse_area, image_url, display_order, parent_id, photo_size, photo_shape) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+      `INSERT INTO org_chart (name, role_name, level_order, level, warehouse_area, image_url, display_order, parent_id, photo_size, photo_shape, pos_x, pos_y) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
        RETURNING *`,
-      [name, role_name, levelOrderNum, level || '', warehouse_area || '', image_url || '', displayOrderNum, parentIdVal, photo_size || 'md', photo_shape || 'circle']
+      [name, role_name, levelOrderNum, level || '', warehouse_area || '', image_url || '', displayOrderNum, parentIdVal, photo_size || 'md', photo_shape || 'circle', posXVal, posYVal]
     );
     return res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -59,7 +61,9 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req: Authenti
       display_order: displayOrderNum,
       parent_id: parentIdVal,
       photo_size: photo_size || 'md',
-      photo_shape: photo_shape || 'circle'
+      photo_shape: photo_shape || 'circle',
+      pos_x: posXVal,
+      pos_y: posYVal
     };
     mockStore.mockOrgChart.push(newItem);
     return res.status(201).json(newItem);
@@ -69,7 +73,7 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req: Authenti
 // PUT /api/org-chart/:id - Edit position (Admin only)
 router.put('/:id', authenticateToken, requireRole(['admin']), async (req: AuthenticatedRequest, res: Response) => {
   const id = parseInt(req.params.id, 10);
-  const { name, role_name, level_order, level, warehouse_area, image_url, display_order, parent_id, photo_size, photo_shape } = req.body;
+  const { name, role_name, level_order, level, warehouse_area, image_url, display_order, parent_id, photo_size, photo_shape, pos_x, pos_y } = req.body;
 
   if (!name || !role_name || !level_order) {
     return res.status(400).json({ message: 'name, role_name, and level_order are required.' });
@@ -78,6 +82,8 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req: Authen
   const levelOrderNum = parseInt(level_order, 10);
   const displayOrderNum = display_order !== undefined ? parseInt(display_order, 10) : undefined;
   const parentIdVal = parent_id !== undefined && parent_id !== null && parent_id !== '' ? parseInt(parent_id, 10) : null;
+  const posXVal = pos_x !== undefined ? parseInt(pos_x, 10) : undefined;
+  const posYVal = pos_y !== undefined ? parseInt(pos_y, 10) : undefined;
 
   try {
     if (getMockStatus()) {
@@ -90,19 +96,27 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req: Authen
     if (displayOrderNum !== undefined) {
       updateQuery = `
         UPDATE org_chart 
-        SET name = $1, role_name = $2, level_order = $3, level = $4, warehouse_area = $5, image_url = COALESCE($6, image_url), display_order = $7, parent_id = $8, photo_size = $9, photo_shape = $10, updated_at = NOW() 
-        WHERE id = $11 
+        SET name = $1, role_name = $2, level_order = $3, level = $4, warehouse_area = $5, image_url = COALESCE($6, image_url), display_order = $7, parent_id = $8, photo_size = $9, photo_shape = $10, pos_x = COALESCE($11, pos_x), pos_y = COALESCE($12, pos_y), updated_at = NOW() 
+        WHERE id = $13 
         RETURNING *
       `;
-      params = [name, role_name, levelOrderNum, level || '', warehouse_area || '', image_url || null, displayOrderNum, parentIdVal, photo_size || 'md', photo_shape || 'circle', id];
+      params = [
+        name, role_name, levelOrderNum, level || '', warehouse_area || '', image_url || null, 
+        displayOrderNum, parentIdVal, photo_size || 'md', photo_shape || 'circle', 
+        posXVal !== undefined ? posXVal : null, posYVal !== undefined ? posYVal : null, id
+      ];
     } else {
       updateQuery = `
         UPDATE org_chart 
-        SET name = $1, role_name = $2, level_order = $3, level = $4, warehouse_area = $5, image_url = COALESCE($6, image_url), parent_id = $7, photo_size = $8, photo_shape = $9, updated_at = NOW() 
-        WHERE id = $10 
+        SET name = $1, role_name = $2, level_order = $3, level = $4, warehouse_area = $5, image_url = COALESCE($6, image_url), parent_id = $7, photo_size = $8, photo_shape = $9, pos_x = COALESCE($10, pos_x), pos_y = COALESCE($11, pos_y), updated_at = NOW() 
+        WHERE id = $12 
         RETURNING *
       `;
-      params = [name, role_name, levelOrderNum, level || '', warehouse_area || '', image_url || null, parentIdVal, photo_size || 'md', photo_shape || 'circle', id];
+      params = [
+        name, role_name, levelOrderNum, level || '', warehouse_area || '', image_url || null, 
+        parentIdVal, photo_size || 'md', photo_shape || 'circle', 
+        posXVal !== undefined ? posXVal : null, posYVal !== undefined ? posYVal : null, id
+      ];
     }
 
     const result = await query(updateQuery, params);
@@ -131,6 +145,8 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req: Authen
     item.parent_id = parentIdVal;
     item.photo_size = photo_size || 'md';
     item.photo_shape = photo_shape || 'circle';
+    if (posXVal !== undefined) item.pos_x = posXVal;
+    if (posYVal !== undefined) item.pos_y = posYVal;
     return res.json(item);
   }
 });

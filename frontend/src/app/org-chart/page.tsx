@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import GlassCard from '../../components/GlassCard';
 import { 
@@ -29,12 +29,15 @@ interface OrgChartItem {
   parent_id?: number | null;
   photo_size?: string;
   photo_shape?: string;
+  pos_x?: number;
+  pos_y?: number;
 }
 
 export default function OrgChartPage() {
   const { api, user } = useAuth();
   const [orgItems, setOrgItems] = useState<OrgChartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   // Drag and Drop Free Position States
   const [draggingCardId, setDraggingCardId] = useState<number | null>(null);
@@ -66,22 +69,22 @@ export default function OrgChartPage() {
       if (x === 0 && y === 0) {
         // Auto layout grid
         const levelYMap: Record<number, number> = {
-          1: 30,
-          2: 175,
-          3: 320,
-          4: 465,
-          5: 610,
-          6: 755,
-          7: 900
+          1: 50,
+          2: 300,
+          3: 550,
+          4: 800,
+          5: 1050,
+          6: 1300,
+          7: 1550
         };
-        y = levelYMap[item.level_order] || 610;
+        y = levelYMap[item.level_order] || 1050;
 
         const count = levelsCount[item.level_order] || 1;
         const index = levelsIndex[item.level_order] || 0;
         levelsIndex[item.level_order] = index + 1;
 
         // Spread horizontally
-        const canvasWidth = 1200;
+        const canvasWidth = 5800;
         const cardWidth = 208; // w-52 is 208px
         const spacing = canvasWidth / (count + 1);
         x = Math.round(spacing * (index + 1) - cardWidth / 2);
@@ -98,10 +101,16 @@ export default function OrgChartPage() {
     const target = e.target as HTMLElement;
     if (target.closest('button') || target.closest('a') || target.closest('select')) return;
 
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
     setDraggingCardId(item.id);
     setDragOffset({
-      x: e.clientX - (item.pos_x || 0),
-      y: e.clientY - (item.pos_y || 0)
+      x: mouseX - (item.pos_x || 0),
+      y: mouseY - (item.pos_y || 0)
     });
   };
 
@@ -109,18 +118,27 @@ export default function OrgChartPage() {
     const target = e.target as HTMLElement;
     if (target.closest('button') || target.closest('a') || target.closest('select')) return;
 
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
     const touch = e.touches[0];
+    const touchX = touch.clientX - rect.left;
+    const touchY = touch.clientY - rect.top;
+
     setDraggingCardId(item.id);
     setDragOffset({
-      x: touch.clientX - (item.pos_x || 0),
-      y: touch.clientY - (item.pos_y || 0)
+      x: touchX - (item.pos_x || 0),
+      y: touchY - (item.pos_y || 0)
     });
   };
 
   const handleMouseMove = (e: MouseEvent) => {
     if (draggingCardId === null) return;
-    const newX = Math.max(0, e.clientX - dragOffset.x);
-    const newY = Math.max(0, e.clientY - dragOffset.y);
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const newX = Math.max(0, e.clientX - rect.left - dragOffset.x);
+    const newY = Math.max(0, e.clientY - rect.top - dragOffset.y);
 
     setCanvasItems(prev => prev.map(item => 
       item.id === draggingCardId 
@@ -131,9 +149,12 @@ export default function OrgChartPage() {
 
   const handleTouchMove = (e: TouchEvent) => {
     if (draggingCardId === null) return;
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
     const touch = e.touches[0];
-    const newX = Math.max(0, touch.clientX - dragOffset.x);
-    const newY = Math.max(0, touch.clientY - dragOffset.y);
+    const newX = Math.max(0, touch.clientX - rect.left - dragOffset.x);
+    const newY = Math.max(0, touch.clientY - rect.top - dragOffset.y);
 
     setCanvasItems(prev => prev.map(item => 
       item.id === draggingCardId 
@@ -522,7 +543,7 @@ export default function OrgChartPage() {
             <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>ฝ่ายวางแผน</span>
           </div>
 
-          <div className="relative w-[1250px] h-[1050px]" style={{ position: 'relative' }}>
+          <div ref={canvasRef} className="relative w-[6000px] h-[4000px]" style={{ position: 'relative' }}>
             
             {/* SVG Connections Container */}
             <svg className="absolute inset-0 pointer-events-none w-full h-full" style={{ zIndex: 0 }}>

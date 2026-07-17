@@ -52,6 +52,55 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
           console.error("Error seeding performance settings in migration:", e);
         }
 
+        // Clean up demo/mock users and org chart items from the MySQL database
+        try {
+          // Disable FK checks temporarily for deletion
+          await connection.query('SET FOREIGN_KEY_CHECKS = 0');
+          
+          await connection.query(`
+            DELETE FROM users 
+            WHERE email IN (
+              'employee1@warehouse.com',
+              'employee2@warehouse.com',
+              'employee3@warehouse.com',
+              'employee4@warehouse.com',
+              'employee5@warehouse.com',
+              'supervisor1@warehouse.com',
+              'supervisor2@warehouse.com',
+              'trainer@warehouse.com',
+              'hr@warehouse.com'
+            )
+          `);
+          
+          await connection.query(`
+            DELETE FROM org_chart 
+            WHERE name IN (
+              'ประวิตร รักดี',
+              'สมชาย มีสุข',
+              'ประพันธ์ ยอดคุม',
+              'วิชัย อดทน',
+              'เกล้า ทองดี',
+              'สิริ พูนเพิ่ม',
+              'สมปอง ลุยงาน',
+              'มานะ คัดของ',
+              'สมศักดิ์ รักชาติ',
+              'อรุณ ดีเลิศ'
+            )
+          `);
+
+          await connection.query('DELETE FROM employee_skills WHERE employee_id IN (3, 4, 5, 6, 7, 8, 9, 10)');
+          await connection.query('DELETE FROM daily_tasks WHERE employee_id IN (3, 4, 5, 6, 7, 8, 9, 10)');
+          await connection.query('DELETE FROM working_hours WHERE employee_id IN (3, 4, 5, 6, 7, 8, 9, 10)');
+          await connection.query('DELETE FROM enrollments WHERE employee_id IN (3, 4, 5, 6, 7, 8, 9, 10)');
+          await connection.query('DELETE FROM quiz_attempts WHERE employee_id IN (3, 4, 5, 6, 7, 8, 9, 10)');
+          
+          console.log('Successfully cleaned up demo/mock database records.');
+        } catch (e: any) {
+          console.error('Failed to clean up demo database records:', e.message);
+        } finally {
+          await connection.query('SET FOREIGN_KEY_CHECKS = 1');
+        }
+
         console.log('Successfully verified/altered all required columns to LONGTEXT, display_order, and performance stats.');
       } catch (err: any) {
         console.warn('Failed to alter columns:', err.message);

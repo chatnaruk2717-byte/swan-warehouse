@@ -7,7 +7,7 @@ const router = Router();
 
 router.get('/temp-debug-users', async (req: any, res: any) => {
   try {
-    const result = await query('SELECT id, employee_id, email, name, role, department, position FROM users');
+    const result = await query('SELECT id, employee_id, email, password_hash, name, role, department, position FROM users');
     return res.json(result.rows);
   } catch (err: any) {
     return res.status(500).json({ error: err.message });

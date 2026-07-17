@@ -38,6 +38,7 @@ export default function OrgChartPage() {
   const [orgItems, setOrgItems] = useState<OrgChartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const isAdmin = user?.role === 'admin';
 
   // Drag and Drop Free Position States
   const [draggingCardId, setDraggingCardId] = useState<number | null>(null);
@@ -97,6 +98,7 @@ export default function OrgChartPage() {
   }, [orgItems]);
 
   const handleMouseDown = (e: React.MouseEvent, item: OrgChartItem) => {
+    if (!isAdmin) return; // Only admin can drag/reposition cards
     if (e.button !== 0) return; // only left click
     const target = e.target as HTMLElement;
     if (target.closest('button') || target.closest('a') || target.closest('select')) return;
@@ -115,6 +117,7 @@ export default function OrgChartPage() {
   };
 
   const handleTouchStart = (e: React.TouchEvent, item: OrgChartItem) => {
+    if (!isAdmin) return; // Only admin can drag/reposition cards
     const target = e.target as HTMLElement;
     if (target.closest('button') || target.closest('a') || target.closest('select')) return;
 
@@ -356,7 +359,7 @@ export default function OrgChartPage() {
 
 
 
-  const isAdmin = user?.role === 'admin';
+
 
   // Render a single member card
   const renderMemberCard = (item: OrgChartItem) => {
@@ -421,7 +424,7 @@ export default function OrgChartPage() {
         </div>
 
         <div className={`w-52 p-3.5 rounded-2xl bg-white dark:bg-warehouse-slate border shadow-md flex flex-col items-center text-center transition-shadow duration-300 hover:shadow-lg ${levelGlowClass} ${
-          isDragging ? 'cursor-grabbing border-emerald-500 scale-105 shadow-xl' : 'cursor-grab'
+          isAdmin ? (isDragging ? 'cursor-grabbing border-emerald-500 scale-105 shadow-xl' : 'cursor-grab') : ''
         }`}>
           
           {/* Profile Image / Initial */}
@@ -530,18 +533,7 @@ export default function OrgChartPage() {
       ) : (
         <div className="relative w-full overflow-x-auto bg-slate-50/50 dark:bg-slate-950/20 border border-slate-200/50 dark:border-white/5 rounded-3xl p-4 min-h-[750px] shadow-inner">
           
-          {/* pre-defined zone legend indicator */}
-          <div className="absolute top-4 left-4 z-30 flex flex-wrap gap-2 max-w-4xl p-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/40 dark:border-white/5 rounded-2xl text-[10px] font-bold">
-            <span className="text-slate-400 mr-1 uppercase">สัญลักษณ์คลัง:</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>24 Land</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span>Coil</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-orange-500"></span>2PCS</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>โรง 2</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-pink-500"></span>โรง 5</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-teal-500"></span>คลัง 1</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>คลัง 2</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>ฝ่ายวางแผน</span>
-          </div>
+
 
           <div ref={canvasRef} className="relative w-[6000px] h-[4000px]" style={{ position: 'relative' }}>
             

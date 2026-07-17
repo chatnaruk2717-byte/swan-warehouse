@@ -575,7 +575,7 @@ export default function DashboardPage() {
       {/* Employee Greeting Header - Premium Banner Card */}
       <div className="relative w-full min-h-[176px] rounded-3xl overflow-hidden shadow-sm border border-slate-200/50 dark:border-white/5 flex items-end p-6 bg-white dark:bg-slate-900">
         <img 
-          src="/media__1782715533595.png" 
+          src="/warehouse_banner.png" 
           alt="Warehouse Interior" 
           className="absolute inset-0 w-full h-full object-cover opacity-90 dark:opacity-40"
         />

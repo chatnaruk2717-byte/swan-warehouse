@@ -387,11 +387,11 @@ export default function OrgChartPage() {
 
           {/* Admin actions overlay */}
           {isAdmin && (
-            <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-900/10 backdrop-blur-md p-1 rounded-lg">
+            <div className="absolute top-2 right-2 flex items-center gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200 bg-slate-950/40 backdrop-blur-md p-1.5 rounded-xl">
               <button 
                 type="button"
                 onClick={() => handleOpenEditModal(item)}
-                className="p-1 hover:bg-white/20 text-slate-700 dark:text-white rounded transition-colors"
+                className="p-1 hover:bg-white/20 text-white rounded transition-colors"
                 title="แก้ไข"
               >
                 <Edit size={12} />
@@ -399,7 +399,7 @@ export default function OrgChartPage() {
               <button 
                 type="button"
                 onClick={() => handleDelete(item.id, item.name)}
-                className="p-1 hover:bg-rose-500/20 text-rose-500 rounded transition-colors"
+                className="p-1 hover:bg-rose-500/20 text-rose-400 rounded transition-colors"
                 title="ลบ"
               >
                 <Trash2 size={12} />

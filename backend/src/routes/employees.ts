@@ -37,13 +37,9 @@ const getDefaultPasswordHash = async () => {
 router.get('/test-db-query', async (req: any, res: any) => {
   try {
     const result = await query(
-      `SELECT u.*, s.name as supervisor_name 
-       FROM users u 
-       LEFT JOIN users s ON u.supervisor_id = s.id 
-       WHERE u.employee_id NOT IN ('EMP001', 'EMP002', 'EMP003', 'EMP004', 'EMP005', 'EMP006', 'EMP007', 'EMP008', 'EMP009', 'EMP010')
-       ORDER BY u.employee_id ASC`
+      `SELECT id, employee_id, email, name, role, LENGTH(photo_url) as photo_len FROM users`
     );
-    return res.json({ success: true, count: result.rows.length, sample: result.rows.slice(0, 2) });
+    return res.json({ success: true, count: result.rows.length, rows: result.rows });
   } catch (err: any) {
     return res.json({ success: false, error: err.message, stack: err.stack });
   }

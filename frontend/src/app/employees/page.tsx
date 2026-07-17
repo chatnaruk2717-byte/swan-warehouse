@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 import { useAuth } from '../../context/AuthContext';
 import GlassCard from '../../components/GlassCard';
 import { 
@@ -223,25 +224,131 @@ export default function EmployeesPage() {
     document.body.removeChild(link);
   };
 
-  const handleImportMock = () => {
-    const mockImports = [
-      { employee_id: 'EMP011', email: 'imported1@warehouse.com', name: 'กิตติศักดิ์ เร่งยก', role: 'employee', department: 'Operations', position: 'Forklift Driver', warehouse_area: 'Zone A', phone: '082-999-1111', start_date: '2026-06-29', photo_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150' }
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [parsedEmployees, setParsedEmployees] = useState<any[]>([]);
+  const [importFileName, setImportFileName] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
+
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        employee_id: 'EMP001',
+        email: 'somchai.r@swan.com',
+        name: 'สมชาย รักดี',
+        role: 'employee', // admin, hr, supervisor, employee
+        department: 'Operations',
+        position: 'พนักงานขับรถยก',
+        warehouse_area: 'คลังสินค้า1',
+        phone: '0812345678',
+        start_date: '2026-07-01'
+      },
+      {
+        employee_id: 'EMP002',
+        email: 'pranom.y@swan.com',
+        name: 'ประนอม ยอดขยัน',
+        role: 'supervisor',
+        department: 'Operations',
+        position: 'หัวหน้างาน',
+        warehouse_area: 'คลังสินค้า Coil',
+        phone: '0823456789',
+        start_date: '2026-07-01'
+      }
     ];
-    api.post('/api/employees/import-excel', { employees: mockImports })
-      .then((res: any) => {
-        alert(res.data.message);
-        fetchEmployees();
-      })
-      .catch(() => {
-        // Fallback mock import
-        setEmployees([...employees, {
-          id: Date.now(),
-          ...mockImports[0],
-          supervisor_name: 'ประพันธ์ ยอดคุม',
-          status: 'active'
-        }]);
-        alert('นำเข้าข้อมูลพนักงาน 1 รายสำเร็จ (Mock)');
-      });
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Template_พนักงาน');
+    XLSX.writeFile(workbook, 'swan_employee_template.xlsx');
+  };
+
+  const handleExcelImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImportFileName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = event.target?.result;
+        if (!data) return;
+
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rawJson = XLSX.utils.sheet_to_json<any>(sheet);
+        
+        // Map and validate rows
+        const formatted = rawJson.map((row: any) => {
+          const getVal = (possibleKeys: string[]) => {
+            const foundKey = Object.keys(row).find(k => 
+              possibleKeys.includes(k.trim().toLowerCase().replace(/[\s_]+/g, ''))
+            );
+            return foundKey ? String(row[foundKey]).trim() : '';
+          };
+
+          const employee_id = getVal(['employeeid', 'employee_id', 'รหัสพนักงาน']);
+          const email = getVal(['email', 'อีเมล']);
+          const name = getVal(['name', 'ชื่อ', 'ชื่อนามสกุล', 'ชื่อ-นามสกุล', 'ชื่อพนักงาน']);
+          const role = getVal(['role', 'สิทธิ์', 'สิทธิ์การใช้งาน']).toLowerCase() || 'employee';
+          const department = getVal(['department', 'แผนก']) || 'Operations';
+          const position = getVal(['position', 'ตำแหน่ง']) || 'Operator';
+          const warehouse_area = getVal(['warehousearea', 'warehouse_area', 'โซนคลัง', 'คลังสินค้า', 'คลัง']);
+          const phone = getVal(['phone', 'เบอร์โทร', 'เบอร์โทรศัพท์']);
+          
+          let start_date = getVal(['startdate', 'start_date', 'วันที่เริ่มงาน', 'วันที่เข้าทำงาน']);
+          // Parse excel serial date if it's a number
+          if (start_date && !isNaN(Number(start_date))) {
+            const excelDate = new Date((Number(start_date) - (25567 + 2)) * 86400 * 1000);
+            start_date = excelDate.toISOString().split('T')[0];
+          }
+
+          // Validation
+          const isValid = !!(employee_id && email && name && ['admin', 'hr', 'supervisor', 'employee'].includes(role));
+
+          return {
+            employee_id,
+            email,
+            name,
+            role,
+            department,
+            position,
+            warehouse_area,
+            phone,
+            start_date,
+            isValid
+          };
+        });
+
+        setParsedEmployees(formatted);
+      } catch (err) {
+        console.error('Failed to parse excel file', err);
+        alert('ไม่สามารถอ่านไฟล์ Excel ได้ กรุณาตรวจสอบรูปแบบไฟล์');
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handleConfirmImport = async () => {
+    const validRows = parsedEmployees.filter(emp => emp.isValid);
+    if (validRows.length === 0) {
+      alert('ไม่มีข้อมูลพนักงานที่ถูกต้องสำหรับนำเข้า');
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const res = await api.post('/api/employees/import-excel', { employees: validRows });
+      alert(`นำเข้าพนักงานสำเร็จทั้งหมด ${validRows.length} คน`);
+      setShowImportModal(false);
+      setParsedEmployees([]);
+      setImportFileName('');
+      fetchEmployees();
+    } catch (err) {
+      console.error('Failed to import employees', err);
+      alert('เกิดข้อผิดพลาดในการนำเข้าข้อมูลพนักงาน');
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   // Filter lists
@@ -264,7 +371,7 @@ export default function EmployeesPage() {
         </div>
         <div className="flex flex-wrap gap-3">
           <button 
-            onClick={handleImportMock} 
+            onClick={() => { setParsedEmployees([]); setImportFileName(''); setShowImportModal(true); }} 
             className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-white text-xs font-semibold flex items-center gap-1.5 border border-slate-200/50 dark:border-white/5 shadow-sm"
           >
             <Upload size={14} />
@@ -760,6 +867,133 @@ export default function EmployeesPage() {
           >
             ปิดหน้าต่าง
           </button>
+        </div>
+      )}
+
+      {/* EXCEL IMPORT MODAL */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <GlassCard className="w-full max-w-2xl my-8 overflow-hidden border border-white/10" animate={false}>
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200/50 dark:border-white/5 mb-6">
+              <h3 className="font-bold text-base text-slate-800 dark:text-white flex items-center gap-2">
+                <Upload size={18} className="text-warehouse-orange" />
+                <span>นำเข้าข้อมูลพนักงานผ่านไฟล์ Excel / CSV</span>
+              </h3>
+              <button 
+                onClick={() => setShowImportModal(false)} 
+                className="text-slate-400 hover:text-slate-200"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Instructions & Template Download */}
+              <div className="p-4 bg-slate-100/50 dark:bg-white/5 rounded-2xl border border-slate-200/50 dark:border-white/5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-slate-700 dark:text-slate-200">ข้อกำหนดและแบบฟอร์มข้อมูลสำหรับการอัปโหลด:</h4>
+                  <button
+                    type="button"
+                    onClick={handleDownloadTemplate}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold transition-all"
+                  >
+                    <Download size={12} />
+                    <span>ดาวน์โหลดเทมเพลต Excel (.xlsx)</span>
+                  </button>
+                </div>
+                
+                <p className="text-[10px] text-slate-500 leading-relaxed">
+                  กรุณากรอกข้อมูลในไฟล์ Excel ตามหัวข้อคอลัมน์ของเทมเพลต โดยมีช่องข้อมูลที่จำเป็นดังนี้:
+                  <br />
+                  • <b>employee_id</b> (รหัสพนักงาน เช่น EMP001) | • <b>email</b> (อีเมลสำหรับล็อคอิน) | • <b>name</b> (ชื่อพนักงาน) | • <b>role</b> (บทบาทสิทธิ์: <code>admin</code>, <code>hr</code>, <code>supervisor</code>, <code>employee</code>)
+                  <br />
+                  • ช่องข้อมูลเสริม: <b>department</b> (Operations), <b>position</b> (พนักงานขับรถยก), <b>warehouse_area</b> (คลังสินค้า1), <b>phone</b>, <b>start_date</b> (YYYY-MM-DD)
+                </p>
+              </div>
+
+              {/* Upload Input Area */}
+              <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-300 dark:border-white/10 rounded-2xl bg-slate-50/30 dark:bg-white/5 hover:bg-slate-50/50 dark:hover:bg-white/10 transition-colors relative cursor-pointer">
+                <input
+                  type="file"
+                  accept=".xlsx, .xls, .csv"
+                  onChange={handleExcelImport}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                />
+                <Upload size={32} className="text-slate-400 mb-2 pointer-events-none" />
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300 pointer-events-none">
+                  {importFileName ? `ไฟล์ที่เลือก: ${importFileName}` : 'เลือกไฟล์ Excel หรือ CSV ลากมาวางเพื่ออัปโหลด'}
+                </p>
+                <p className="text-[10px] text-slate-400 mt-1 pointer-events-none">รองรับไฟล์สกุล .xlsx, .xls, .csv</p>
+              </div>
+
+              {/* Preview Table of Parsed Records */}
+              {parsedEmployees.length > 0 && (
+                <div className="space-y-2.5">
+                  <h4 className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                    รายการข้อมูลที่ตรวจพบ ({parsedEmployees.length} คน):
+                  </h4>
+                  <div className="max-h-[220px] overflow-y-auto border border-slate-200/50 dark:border-white/5 rounded-xl text-left">
+                    <table className="w-full text-xs">
+                      <thead className="bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-bold sticky top-0">
+                        <tr>
+                          <th className="p-2 border-b border-slate-200/30 dark:border-white/5">รหัส</th>
+                          <th className="p-2 border-b border-slate-200/30 dark:border-white/5">ชื่อ</th>
+                          <th className="p-2 border-b border-slate-200/30 dark:border-white/5">อีเมล</th>
+                          <th className="p-2 border-b border-slate-200/30 dark:border-white/5">สิทธิ์</th>
+                          <th className="p-2 border-b border-slate-200/30 dark:border-white/5">สถานะ</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200/30 dark:divide-white/5 bg-white dark:bg-slate-900/50">
+                        {parsedEmployees.map((emp, idx) => (
+                          <tr key={idx} className={emp.isValid ? "" : "bg-rose-500/10"}>
+                            <td className="p-2 border-b border-slate-200/30 dark:border-white/5 font-mono">{emp.employee_id || '-'}</td>
+                            <td className="p-2 border-b border-slate-200/30 dark:border-white/5">{emp.name || '-'}</td>
+                            <td className="p-2 border-b border-slate-200/30 dark:border-white/5">{emp.email || '-'}</td>
+                            <td className="p-2 border-b border-slate-200/30 dark:border-white/5 font-mono text-[10px]">{emp.role}</td>
+                            <td className="p-2 border-b border-slate-200/30 dark:border-white/5">
+                              {emp.isValid ? (
+                                <span className="text-emerald-500 font-bold">✓ พร้อมนำเข้า</span>
+                              ) : (
+                                <span className="text-rose-500 font-bold">✗ ข้อมูลไม่ครบ/ไม่ถูกต้อง</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200/50 dark:border-white/5">
+              <button
+                type="button"
+                onClick={() => setShowImportModal(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-white rounded-xl text-xs font-bold transition-all"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmImport}
+                disabled={isImporting || parsedEmployees.filter(emp => emp.isValid).length === 0}
+                className="px-5 py-2 bg-warehouse-orange hover:bg-warehouse-orange/95 disabled:bg-slate-300 dark:disabled:bg-white/5 disabled:text-slate-400 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md shadow-warehouse-orange/15"
+              >
+                {isImporting ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>กำลังนำเข้าข้อมูล...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check size={14} />
+                    <span>ยืนยันนำเข้า ({parsedEmployees.filter(emp => emp.isValid).length} คน)</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </GlassCard>
         </div>
       )}
 

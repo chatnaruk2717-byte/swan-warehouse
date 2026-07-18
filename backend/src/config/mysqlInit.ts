@@ -130,27 +130,42 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
               max_stack_level INT DEFAULT 1,
               product_type VARCHAR(255),
               layout_image LONGTEXT,
+              zone_location VARCHAR(255) DEFAULT '',
+              location_rows INT DEFAULT 0,
+              location_stacks INT DEFAULT 0,
               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
               updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             )
           `);
+
+          // Alter table to add columns if table already existed without them
+          try {
+            await connection.query("ALTER TABLE warehouse_layouts ADD COLUMN zone_location VARCHAR(255) DEFAULT ''");
+          } catch (e) {}
+          try {
+            await connection.query("ALTER TABLE warehouse_layouts ADD COLUMN location_rows INT DEFAULT 0");
+          } catch (e) {}
+          try {
+            await connection.query("ALTER TABLE warehouse_layouts ADD COLUMN location_stacks INT DEFAULT 0");
+          } catch (e) {}
           
           // Seed layouts if table is empty
           const layoutsCountRes: any = await connection.query("SELECT COUNT(*) as count FROM warehouse_layouts");
           const count = parseInt(layoutsCountRes?.rows?.[0]?.count || layoutsCountRes?.[0]?.count || '0', 10);
           if (count === 0) {
             await connection.query(`
-              INSERT INTO warehouse_layouts (zone_name, storage_level, area_sqm, max_capacity_pallets, max_stack_level, product_type, layout_image) VALUES
-              ('คลังสินค้า 24 Land', 'ชั้น 1', 1200.00, 800, 3, 'เครื่องใช้ไฟฟ้าและสินค้าบรรจุกล่องทั่วไป', ''),
-              ('คลังสินค้า 24 Land', 'ชั้น 2', 800.00, 500, 2, 'อะไหล่และชิ้นส่วนอิเล็กทรอนิกส์น้ำหนักเบา', ''),
-              ('คลังสินค้า Coil', 'ชั้น 1', 1500.00, 600, 1, 'ม้วนเหล็กแผ่นและเหล็กม้วนอุตสาหกรรมหนัก', ''),
-              ('คลังสินค้า 2PCS', 'ชั้น 1', 950.00, 450, 4, 'ชิ้นส่วนและอุปกรณ์รถยนต์แยกประเภท', ''),
-              ('คลังสินค้าโรง2,5', 'ชั้น 1', 2000.00, 1500, 3, 'วัตถุดิบ บรรจุภัณฑ์ และสินค้าเพื่อรอจำหน่าย', '')
+              INSERT INTO warehouse_layouts (zone_name, storage_level, area_sqm, max_capacity_pallets, max_stack_level, product_type, layout_image, zone_location, location_rows, location_stacks) VALUES
+              ('คลังสินค้า 24 Land', 'ชั้น 1', 1200.00, 800, 3, 'เครื่องใช้ไฟฟ้าและสินค้าบรรจุกล่องทั่วไป', '', 'A', 10, 4),
+              ('คลังสินค้า 24 Land', 'ชั้น 2', 800.00, 500, 2, 'อะไหล่และชิ้นส่วนอิเล็กทรอนิกส์น้ำหนักเบา', '', 'B', 8, 3),
+              ('คลังสินค้า Coil', 'ชั้น 1', 1500.00, 600, 1, 'ม้วนเหล็กแผ่นและเหล็กม้วนอุตสาหกรรมหนัก', '', 'A', 5, 2),
+              ('คลังสินค้า 2PCS', 'ชั้น 1', 950.00, 450, 4, 'ชิ้นส่วนและอุปกรณ์รถยนต์แยกประเภท', '', 'C', 12, 5),
+              ('คลังสินค้าโรง2,5', 'ชั้น 1', 2000.00, 1500, 3, 'วัตถุดิบ บรรจุภัณฑ์ และสินค้าเพื่อรอจำหน่าย', '', 'D', 15, 4),
+              ('คลังสินค้าโรง 6', 'ชั้น 1', 1800.00, 1200, 3, 'สินค้าสำเร็จรูป พร้อมขนส่งและกระจายสินค้า', '', 'E', 12, 4)
             `);
             console.log('Seeded default warehouse layouts successfully in migration block.');
           }
         } catch (e: any) {
-          console.error("Error creating/seeding warehouse_layouts in migration block:", e.message);
+          console.error("Error creating/seeding/altering warehouse_layouts in migration block:", e.message);
         }
 
         console.log('Successfully verified/altered all required columns to LONGTEXT, display_order, and performance stats.');
@@ -420,6 +435,9 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         max_stack_level INT DEFAULT 1,
         product_type VARCHAR(255),
         layout_image LONGTEXT,
+        zone_location VARCHAR(255) DEFAULT '',
+        location_rows INT DEFAULT 0,
+        location_stacks INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )`
@@ -690,12 +708,13 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
       const count = parseInt(layoutsCountRes?.rows?.[0]?.count || layoutsCountRes?.[0]?.count || '0', 10);
       if (count === 0) {
         await connection.query(`
-          INSERT INTO warehouse_layouts (zone_name, storage_level, area_sqm, max_capacity_pallets, max_stack_level, product_type, layout_image) VALUES
-          ('คลังสินค้า 24 Land', 'ชั้น 1', 1200.00, 800, 3, 'เครื่องใช้ไฟฟ้าและสินค้าบรรจุกล่องทั่วไป', ''),
-          ('คลังสินค้า 24 Land', 'ชั้น 2', 800.00, 500, 2, 'อะไหล่และชิ้นส่วนอิเล็กทรอนิกส์น้ำหนักเบา', ''),
-          ('คลังสินค้า Coil', 'ชั้น 1', 1500.00, 600, 1, 'ม้วนเหล็กแผ่นและเหล็กม้วนอุตสาหกรรมหนัก', ''),
-          ('คลังสินค้า 2PCS', 'ชั้น 1', 950.00, 450, 4, 'ชิ้นส่วนและอุปกรณ์รถยนต์แยกประเภท', ''),
-          ('คลังสินค้าโรง2,5', 'ชั้น 1', 2000.00, 1500, 3, 'วัตถุดิบ บรรจุภัณฑ์ และสินค้าเพื่อรอจำหน่าย', '')
+          INSERT INTO warehouse_layouts (zone_name, storage_level, area_sqm, max_capacity_pallets, max_stack_level, product_type, layout_image, zone_location, location_rows, location_stacks) VALUES
+          ('คลังสินค้า 24 Land', 'ชั้น 1', 1200.00, 800, 3, 'เครื่องใช้ไฟฟ้าและสินค้าบรรจุกล่องทั่วไป', '', 'A', 10, 4),
+          ('คลังสินค้า 24 Land', 'ชั้น 2', 800.00, 500, 2, 'อะไหล่และชิ้นส่วนอิเล็กทรอนิกส์น้ำหนักเบา', '', 'B', 8, 3),
+          ('คลังสินค้า Coil', 'ชั้น 1', 1500.00, 600, 1, 'ม้วนเหล็กแผ่นและเหล็กม้วนอุตสาหกรรมหนัก', '', 'A', 5, 2),
+          ('คลังสินค้า 2PCS', 'ชั้น 1', 950.00, 450, 4, 'ชิ้นส่วนและอุปกรณ์รถยนต์แยกประเภท', '', 'C', 12, 5),
+          ('คลังสินค้าโรง2,5', 'ชั้น 1', 2000.00, 1500, 3, 'วัตถุดิบ บรรจุภัณฑ์ และสินค้าเพื่อรอจำหน่าย', '', 'D', 15, 4),
+          ('คลังสินค้าโรง 6', 'ชั้น 1', 1800.00, 1200, 3, 'สินค้าสำเร็จรูป พร้อมขนส่งและกระจายสินค้า', '', 'E', 12, 4)
         `);
         console.log('Seeded default warehouse layouts successfully.');
       }

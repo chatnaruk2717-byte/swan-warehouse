@@ -6,11 +6,12 @@ const router = Router();
 
 // In-memory mock store fallback for warehouse layouts
 let mockLayouts = [
-  { id: 1, zone_name: 'คลังสินค้า 24 Land', storage_level: 'ชั้น 1', area_sqm: 1200.00, max_capacity_pallets: 800, max_stack_level: 3, product_type: 'เครื่องใช้ไฟฟ้าและสินค้าบรรจุกล่องทั่วไป', layout_image: '' },
-  { id: 2, zone_name: 'คลังสินค้า 24 Land', storage_level: 'ชั้น 2', area_sqm: 800.00, max_capacity_pallets: 500, max_stack_level: 2, product_type: 'อะไหล่และชิ้นส่วนอิเล็กทรอนิกส์น้ำหนักเบา', layout_image: '' },
-  { id: 3, zone_name: 'คลังสินค้า Coil', storage_level: 'ชั้น 1', area_sqm: 1500.00, max_capacity_pallets: 600, max_stack_level: 1, product_type: 'ม้วนเหล็กแผ่นและเหล็กม้วนอุตสาหกรรมหนัก', layout_image: '' },
-  { id: 4, zone_name: 'คลังสินค้า 2PCS', storage_level: 'ชั้น 1', area_sqm: 950.00, max_capacity_pallets: 450, max_stack_level: 4, product_type: 'ชิ้นส่วนและอุปกรณ์รถยนต์แยกประเภท', layout_image: '' },
-  { id: 5, zone_name: 'คลังสินค้าโรง2,5', storage_level: 'ชั้น 1', area_sqm: 2000.00, max_capacity_pallets: 1500, max_stack_level: 3, product_type: 'วัตถุดิบ บรรจุภัณฑ์ และสินค้าเพื่อรอจำหน่าย', layout_image: '' }
+  { id: 1, zone_name: 'คลังสินค้า 24 Land', storage_level: 'ชั้น 1', area_sqm: 1200.00, max_capacity_pallets: 800, max_stack_level: 3, product_type: 'เครื่องใช้ไฟฟ้าและสินค้าบรรจุกล่องทั่วไป', layout_image: '', zone_location: 'A', location_rows: 10, location_stacks: 4 },
+  { id: 2, zone_name: 'คลังสินค้า 24 Land', storage_level: 'ชั้น 2', area_sqm: 800.00, max_capacity_pallets: 500, max_stack_level: 2, product_type: 'อะไหล่และชิ้นส่วนอิเล็กทรอนิกส์น้ำหนักเบา', layout_image: '', zone_location: 'B', location_rows: 8, location_stacks: 3 },
+  { id: 3, zone_name: 'คลังสินค้า Coil', storage_level: 'ชั้น 1', area_sqm: 1500.00, max_capacity_pallets: 600, max_stack_level: 1, product_type: 'ม้วนเหล็กแผ่นและเหล็กม้วนอุตสาหกรรมหนัก', layout_image: '', zone_location: 'A', location_rows: 5, location_stacks: 2 },
+  { id: 4, zone_name: 'คลังสินค้า 2PCS', storage_level: 'ชั้น 1', area_sqm: 950.00, max_capacity_pallets: 450, max_stack_level: 4, product_type: 'ชิ้นส่วนและอุปกรณ์รถยนต์แยกประเภท', layout_image: '', zone_location: 'C', location_rows: 12, location_stacks: 5 },
+  { id: 5, zone_name: 'คลังสินค้าโรง2,5', storage_level: 'ชั้น 1', area_sqm: 2000.00, max_capacity_pallets: 1500, max_stack_level: 3, product_type: 'วัตถุดิบ บรรจุภัณฑ์ และสินค้าเพื่อรอจำหน่าย', layout_image: '', zone_location: 'D', location_rows: 15, location_stacks: 4 },
+  { id: 6, zone_name: 'คลังสินค้าโรง 6', storage_level: 'ชั้น 1', area_sqm: 1800.00, max_capacity_pallets: 1200, max_stack_level: 3, product_type: 'สินค้าสำเร็จรูป พร้อมขนส่งและกระจายสินค้า', layout_image: '', zone_location: 'E', location_rows: 12, location_stacks: 4 }
 ];
 
 /**
@@ -35,7 +36,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
  * Create a new warehouse layout entry
  */
 router.post('/', authenticateToken, requireRole(['admin']), async (req: AuthenticatedRequest, res: Response) => {
-  const { zone_name, storage_level, area_sqm, max_capacity_pallets, max_stack_level, product_type, layout_image } = req.body;
+  const { zone_name, storage_level, area_sqm, max_capacity_pallets, max_stack_level, product_type, layout_image, zone_location, location_rows, location_stacks } = req.body;
 
   if (!zone_name || !storage_level) {
     return res.status(400).json({ message: 'Zone name and storage level are required.' });
@@ -51,15 +52,18 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req: Authenti
         max_capacity_pallets: max_capacity_pallets ? parseInt(max_capacity_pallets, 10) : 0,
         max_stack_level: max_stack_level ? parseInt(max_stack_level, 10) : 1,
         product_type: product_type || '',
-        layout_image: layout_image || ''
+        layout_image: layout_image || '',
+        zone_location: zone_location || '',
+        location_rows: location_rows ? parseInt(location_rows, 10) : 0,
+        location_stacks: location_stacks ? parseInt(location_stacks, 10) : 0
       };
       mockLayouts.push(newLayout);
       return res.status(201).json(newLayout);
     }
 
     const insertResult = await query(
-      `INSERT INTO warehouse_layouts (zone_name, storage_level, area_sqm, max_capacity_pallets, max_stack_level, product_type, layout_image)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      `INSERT INTO warehouse_layouts (zone_name, storage_level, area_sqm, max_capacity_pallets, max_stack_level, product_type, layout_image, zone_location, location_rows, location_stacks)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
         zone_name,
         storage_level,
@@ -67,7 +71,10 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req: Authenti
         max_capacity_pallets ? parseInt(max_capacity_pallets, 10) : 0,
         max_stack_level ? parseInt(max_stack_level, 10) : 1,
         product_type || '',
-        layout_image || ''
+        layout_image || '',
+        zone_location || '',
+        location_rows ? parseInt(location_rows, 10) : 0,
+        location_stacks ? parseInt(location_stacks, 10) : 0
       ]
     );
 
@@ -89,7 +96,7 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req: Authenti
  */
 router.put('/:id', authenticateToken, requireRole(['admin']), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
-  const { zone_name, storage_level, area_sqm, max_capacity_pallets, max_stack_level, product_type, layout_image } = req.body;
+  const { zone_name, storage_level, area_sqm, max_capacity_pallets, max_stack_level, product_type, layout_image, zone_location, location_rows, location_stacks } = req.body;
 
   try {
     if (getMockStatus()) {
@@ -105,7 +112,10 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req: Authen
         max_capacity_pallets: max_capacity_pallets !== undefined ? parseInt(max_capacity_pallets, 10) : mockLayouts[index].max_capacity_pallets,
         max_stack_level: max_stack_level !== undefined ? parseInt(max_stack_level, 10) : mockLayouts[index].max_stack_level,
         product_type: product_type !== undefined ? product_type : mockLayouts[index].product_type,
-        layout_image: layout_image !== undefined ? layout_image : mockLayouts[index].layout_image
+        layout_image: layout_image !== undefined ? layout_image : mockLayouts[index].layout_image,
+        zone_location: zone_location !== undefined ? zone_location : mockLayouts[index].zone_location,
+        location_rows: location_rows !== undefined ? parseInt(location_rows, 10) : mockLayouts[index].location_rows,
+        location_stacks: location_stacks !== undefined ? parseInt(location_stacks, 10) : mockLayouts[index].location_stacks
       };
       return res.json(mockLayouts[index]);
     }
@@ -119,8 +129,8 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req: Authen
 
     await query(
       `UPDATE warehouse_layouts 
-       SET zone_name = $1, storage_level = $2, area_sqm = $3, max_capacity_pallets = $4, max_stack_level = $5, product_type = $6, layout_image = $7
-       WHERE id = $8`,
+       SET zone_name = $1, storage_level = $2, area_sqm = $3, max_capacity_pallets = $4, max_stack_level = $5, product_type = $6, layout_image = $7, zone_location = $8, location_rows = $9, location_stacks = $10
+       WHERE id = $11`,
       [
         zone_name !== undefined ? zone_name : current.zone_name,
         storage_level !== undefined ? storage_level : current.storage_level,
@@ -129,6 +139,9 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req: Authen
         max_stack_level !== undefined ? parseInt(max_stack_level, 10) : current.max_stack_level,
         product_type !== undefined ? product_type : current.product_type,
         layout_image !== undefined ? layout_image : current.layout_image,
+        zone_location !== undefined ? zone_location : current.zone_location,
+        location_rows !== undefined ? parseInt(location_rows, 10) : current.location_rows,
+        location_stacks !== undefined ? parseInt(location_stacks, 10) : current.location_stacks,
         id
       ]
     );

@@ -157,11 +157,14 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
           // Clean up duplicate entries (same zone_name and storage_level), keeping the one with the smallest id
           try {
             await connection.query(`
-              DELETE l1 FROM warehouse_layouts l1
-              INNER JOIN warehouse_layouts l2 
-              WHERE l1.id > l2.id 
-                AND l1.zone_name = l2.zone_name 
-                AND l1.storage_level = l2.storage_level
+              DELETE FROM warehouse_layouts 
+              WHERE id NOT IN (
+                SELECT min_id FROM (
+                  SELECT MIN(id) AS min_id 
+                  FROM warehouse_layouts 
+                  GROUP BY zone_name, storage_level
+                ) tmp
+              )
             `);
           } catch (e) {}
           

@@ -153,6 +153,17 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
           try {
             await connection.query("DELETE FROM warehouse_layouts WHERE zone_location = '' OR zone_location IS NULL");
           } catch (e) {}
+
+          // Clean up duplicate entries (same zone_name and storage_level), keeping the one with the smallest id
+          try {
+            await connection.query(`
+              DELETE l1 FROM warehouse_layouts l1
+              INNER JOIN warehouse_layouts l2 
+              WHERE l1.id > l2.id 
+                AND l1.zone_name = l2.zone_name 
+                AND l1.storage_level = l2.storage_level
+            `);
+          } catch (e) {}
           
           // Seed layouts if table is empty
           const layoutsCountRes: any = await connection.query("SELECT COUNT(*) as count FROM warehouse_layouts");

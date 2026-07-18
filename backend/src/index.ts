@@ -36,6 +36,7 @@ import reportsRouter from './routes/reports';
 import documentsRouter from './routes/documents';
 import orgChartRouter from './routes/orgChart';
 import performanceRouter from './routes/performance';
+import warehouseLayoutsRouter from './routes/warehouseLayouts';
 
 dotenv.config();
 
@@ -56,7 +57,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.get('/api/status', (req: Request, res: Response) => {
   return res.json({
     status: 'online',
-    timestamp: new Date(),
+    timestamp: new Date().toISOString(),
     mockModeActive: getMockStatus(),
     environment: process.env.NODE_ENV || 'development'
   });
@@ -73,6 +74,7 @@ app.use('/api/reports', reportsRouter);
 app.use('/api/documents', documentsRouter);
 app.use('/api/org-chart', orgChartRouter);
 app.use('/api/performance', performanceRouter);
+app.use('/api/warehouse-layouts', warehouseLayoutsRouter);
 
 // Swagger Documentation Definition
 const swaggerDocument = {

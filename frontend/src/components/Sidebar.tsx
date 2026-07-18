@@ -20,7 +20,8 @@ import {
   ChevronRight,
   ShieldAlert,
   FileText,
-  Network
+  Network,
+  Map
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -60,6 +61,12 @@ export const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
       name: 'คลังบทเรียน (Library)',
       path: '/courses',
       icon: BookOpen,
+      roles: ['admin', 'staff', 'employee']
+    },
+    {
+      name: 'Layout พื้นที่คลังสินค้า',
+      path: '/warehouse-layout',
+      icon: Map,
       roles: ['admin', 'staff', 'employee']
     },
     {

@@ -169,8 +169,8 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
           } catch (e) {}
           
           // Seed layouts if table is empty
-          const layoutsCountRes: any = await connection.query("SELECT COUNT(*) as count FROM warehouse_layouts");
-          const count = parseInt(layoutsCountRes?.rows?.[0]?.count || layoutsCountRes?.[0]?.count || '0', 10);
+          const [layoutsCountRows]: any = await connection.query("SELECT COUNT(*) as count FROM warehouse_layouts");
+          const count = parseInt(layoutsCountRows?.[0]?.count || '0', 10);
           if (count === 0) {
             await connection.query(`
               INSERT INTO warehouse_layouts (zone_name, storage_level, area_sqm, max_capacity_pallets, max_stack_level, product_type, layout_image, zone_location, location_rows, location_stacks) VALUES
@@ -723,8 +723,8 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
 
     // 13. Warehouse Layouts Seed
     try {
-      const layoutsCountRes: any = await connection.query("SELECT COUNT(*) as count FROM warehouse_layouts");
-      const count = parseInt(layoutsCountRes?.rows?.[0]?.count || layoutsCountRes?.[0]?.count || '0', 10);
+      const [layoutsCountRows]: any = await connection.query("SELECT COUNT(*) as count FROM warehouse_layouts");
+      const count = parseInt(layoutsCountRows?.[0]?.count || '0', 10);
       if (count === 0) {
         await connection.query(`
           INSERT INTO warehouse_layouts (zone_name, storage_level, area_sqm, max_capacity_pallets, max_stack_level, product_type, layout_image, zone_location, location_rows, location_stacks) VALUES

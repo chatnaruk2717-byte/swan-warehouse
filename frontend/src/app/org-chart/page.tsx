@@ -479,7 +479,29 @@ export default function OrgChartPage() {
       'คลังสินค้า2': 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20',
       'ฝ่ายวางแผน': 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400 border border-green-200 dark:border-green-500/20',
     };
-    const badgeColorClass = zoneColors[item.warehouse_area || ''] || 'bg-slate-50 text-slate-600 dark:bg-white/5 dark:text-slate-400 border border-slate-200 dark:border-white/5';
+    const badgeColorClass = zoneColors[item.warehouse_area || ''] || 'bg-slate-50 text-slate-650 dark:bg-white/5 dark:text-slate-400 border border-slate-200 dark:border-white/5';
+
+    const getPositionBadgeStyle = (roleName: string) => {
+      const name = roleName || '';
+      if (name.includes('ผู้จัดการ') || name.toLowerCase().includes('manager')) {
+        return 'text-rose-600 bg-rose-50 border-rose-200 dark:text-rose-450 dark:bg-rose-500/10 dark:border-rose-500/20';
+      }
+      if (name.includes('หัวหน้า') || name.toLowerCase().includes('supervisor') || name.toLowerCase().includes('leader')) {
+        return 'text-purple-650 bg-purple-50 border-purple-200 dark:text-purple-450 dark:bg-purple-500/10 dark:border-purple-500/20';
+      }
+      if (name.includes('เจ้าหน้าที่') || name.toLowerCase().includes('officer') || name.toLowerCase().includes('staff')) {
+        return 'text-sky-600 bg-sky-50 border-sky-200 dark:text-sky-450 dark:bg-sky-500/10 dark:border-sky-500/20';
+      }
+      if (name.includes('ขับรถยก') || name.toLowerCase().includes('forklift')) {
+        return 'text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-450 dark:bg-amber-500/10 dark:border-amber-500/20';
+      }
+      if (name.includes('พนักงาน') || name.toLowerCase().includes('worker') || name.toLowerCase().includes('operator') || name.includes('จัดเตรียม')) {
+        return 'text-slate-600 bg-slate-100 border-slate-200 dark:text-slate-400 dark:bg-slate-500/10 dark:border-slate-500/20';
+      }
+      return 'text-warehouse-orange bg-warehouse-orange/5 border border-warehouse-orange/15';
+    };
+
+    const positionBadgeClass = getPositionBadgeStyle(item.role_name);
 
     return (
       <div 
@@ -517,7 +539,7 @@ export default function OrgChartPage() {
 
           {/* Member Details */}
           <h5 className="font-bold text-xs sm:text-sm text-slate-800 dark:text-white leading-snug pointer-events-none">{item.name}</h5>
-          <p className="text-[9px] font-extrabold text-warehouse-orange mt-1 px-2 py-0.5 rounded-full bg-warehouse-orange/5 border border-warehouse-orange/15 max-w-full truncate pointer-events-none">
+          <p className={`text-[9px] font-extrabold mt-1 px-2 py-0.5 rounded-full border max-w-full truncate pointer-events-none ${positionBadgeClass}`}>
             {item.role_name} {item.level ? `(${item.level})` : ''}
           </p>
 
@@ -526,17 +548,6 @@ export default function OrgChartPage() {
             <p className={`text-[8px] font-bold mt-2 px-2 py-0.5 rounded-lg pointer-events-none ${badgeColorClass}`}>
               {item.warehouse_area}
             </p>
-          )}
-
-          {/* Supervisor / Reports To Link */}
-          {parentNode && (
-            <div className="mt-2 w-full pt-1.5 border-t border-slate-100 dark:border-white/5 flex flex-col items-center pointer-events-none">
-              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">รายงานต่อ (Reports To)</span>
-              <span className="text-[9px] font-bold text-slate-600 dark:text-slate-200 mt-0.5 max-w-full truncate flex items-center gap-0.5 pointer-events-none">
-                <UserCheck size={10} className="text-emerald-500 pointer-events-none" />
-                {parentNode.name}
-              </span>
-            </div>
           )}
 
           {/* Admin actions overlay */}

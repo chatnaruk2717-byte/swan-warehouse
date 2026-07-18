@@ -149,6 +149,11 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
             await connection.query("ALTER TABLE warehouse_layouts ADD COLUMN location_stacks INT DEFAULT 0");
           } catch (e) {}
           
+          // Clean up old duplicate layouts without location metadata
+          try {
+            await connection.query("DELETE FROM warehouse_layouts WHERE zone_location = '' OR zone_location IS NULL");
+          } catch (e) {}
+          
           // Seed layouts if table is empty
           const layoutsCountRes: any = await connection.query("SELECT COUNT(*) as count FROM warehouse_layouts");
           const count = parseInt(layoutsCountRes?.rows?.[0]?.count || layoutsCountRes?.[0]?.count || '0', 10);

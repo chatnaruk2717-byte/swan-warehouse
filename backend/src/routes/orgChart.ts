@@ -42,11 +42,13 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req: Authenti
     }
     const result = await query(
       `INSERT INTO org_chart (name, role_name, level_order, level, warehouse_area, image_url, display_order, parent_id, photo_size, photo_shape, pos_x, pos_y) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
-       RETURNING *`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
       [name, role_name, levelOrderNum, level || '', warehouse_area || '', image_url || '', displayOrderNum, parentIdVal, photo_size || 'md', photo_shape || 'circle', posXVal, posYVal]
     );
-    return res.status(201).json(result.rows[0]);
+    const lastIdRes = await query('SELECT LAST_INSERT_ID() as id');
+    const insertedId = lastIdRes.rows[0].id;
+    const selectResult = await query('SELECT * FROM org_chart WHERE id = $1', [insertedId]);
+    return res.status(201).json(selectResult.rows[0]);
   } catch (err) {
     // Mock Mode Fallback
     const newId = mockStore.mockOrgChart.reduce((max, item) => item.id > max ? item.id : max, 0) + 1;
@@ -97,8 +99,7 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req: Authen
       updateQuery = `
         UPDATE org_chart 
         SET name = $1, role_name = $2, level_order = $3, level = $4, warehouse_area = $5, image_url = COALESCE($6, image_url), display_order = $7, parent_id = $8, photo_size = $9, photo_shape = $10, pos_x = COALESCE($11, pos_x), pos_y = COALESCE($12, pos_y), updated_at = NOW() 
-        WHERE id = $13 
-        RETURNING *
+        WHERE id = $13
       `;
       params = [
         name, role_name, levelOrderNum, level || '', warehouse_area || '', image_url || null, 
@@ -109,8 +110,7 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req: Authen
       updateQuery = `
         UPDATE org_chart 
         SET name = $1, role_name = $2, level_order = $3, level = $4, warehouse_area = $5, image_url = COALESCE($6, image_url), parent_id = $7, photo_size = $8, photo_shape = $9, pos_x = COALESCE($10, pos_x), pos_y = COALESCE($11, pos_y), updated_at = NOW() 
-        WHERE id = $12 
-        RETURNING *
+        WHERE id = $12
       `;
       params = [
         name, role_name, levelOrderNum, level || '', warehouse_area || '', image_url || null, 
@@ -119,11 +119,12 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req: Authen
       ];
     }
 
-    const result = await query(updateQuery, params);
-    if (result.rows.length === 0) {
+    await query(updateQuery, params);
+    const selectResult = await query('SELECT * FROM org_chart WHERE id = $1', [id]);
+    if (selectResult.rows.length === 0) {
       return res.status(404).json({ message: 'Position not found.' });
     }
-    return res.json(result.rows[0]);
+    return res.json(selectResult.rows[0]);
   } catch (err) {
     // Mock Mode Fallback
     const index = mockStore.mockOrgChart.findIndex(item => item.id === id);
@@ -159,10 +160,11 @@ router.delete('/:id', authenticateToken, requireRole(['admin']), async (req: Aut
     if (getMockStatus()) {
       throw new Error('MOCK_MODE');
     }
-    const result = await query('DELETE FROM org_chart WHERE id = $1 RETURNING *', [id]);
-    if (result.rows.length === 0) {
+    const checkResult = await query('SELECT * FROM org_chart WHERE id = $1', [id]);
+    if (checkResult.rows.length === 0) {
       return res.status(404).json({ message: 'Position not found.' });
     }
+    await query('DELETE FROM org_chart WHERE id = $1', [id]);
     return res.json({ message: 'Position deleted successfully.' });
   } catch (err) {
     // Mock Mode Fallback

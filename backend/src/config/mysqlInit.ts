@@ -101,22 +101,7 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
           await connection.query('SET FOREIGN_KEY_CHECKS = 1');
         }
 
-        // Shrink existing bloated images (>50KB) in database to default placeholder url
-        try {
-          await connection.query(`
-            UPDATE users 
-            SET photo_url = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150' 
-            WHERE LENGTH(photo_url) > 50000
-          `);
-          await connection.query(`
-            UPDATE org_chart 
-            SET image_url = '' 
-            WHERE LENGTH(image_url) > 50000
-          `);
-          console.log('Successfully optimized bloated images in database.');
-        } catch (e: any) {
-          console.error('Failed to optimize bloated images in database:', e.message);
-        }
+
 
         // Create warehouse_layouts table if it doesn't exist (e.g. for existing DB updates)
         try {

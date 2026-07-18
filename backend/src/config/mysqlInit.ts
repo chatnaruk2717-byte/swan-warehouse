@@ -118,6 +118,41 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
           console.error('Failed to optimize bloated images in database:', e.message);
         }
 
+        // Create warehouse_layouts table if it doesn't exist (e.g. for existing DB updates)
+        try {
+          await connection.query(`
+            CREATE TABLE IF NOT EXISTS warehouse_layouts (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              zone_name VARCHAR(100) NOT NULL,
+              storage_level VARCHAR(50) NOT NULL,
+              area_sqm DECIMAL(10, 2) DEFAULT 0.00,
+              max_capacity_pallets INT DEFAULT 0,
+              max_stack_level INT DEFAULT 1,
+              product_type VARCHAR(255),
+              layout_image LONGTEXT,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+          `);
+          
+          // Seed layouts if table is empty
+          const layoutsCountRes: any = await connection.query("SELECT COUNT(*) as count FROM warehouse_layouts");
+          const count = parseInt(layoutsCountRes?.rows?.[0]?.count || layoutsCountRes?.[0]?.count || '0', 10);
+          if (count === 0) {
+            await connection.query(`
+              INSERT INTO warehouse_layouts (zone_name, storage_level, area_sqm, max_capacity_pallets, max_stack_level, product_type, layout_image) VALUES
+              ('คลังสินค้า 24 Land', 'ชั้น 1', 1200.00, 800, 3, 'เครื่องใช้ไฟฟ้าและสินค้าบรรจุกล่องทั่วไป', ''),
+              ('คลังสินค้า 24 Land', 'ชั้น 2', 800.00, 500, 2, 'อะไหล่และชิ้นส่วนอิเล็กทรอนิกส์น้ำหนักเบา', ''),
+              ('คลังสินค้า Coil', 'ชั้น 1', 1500.00, 600, 1, 'ม้วนเหล็กแผ่นและเหล็กม้วนอุตสาหกรรมหนัก', ''),
+              ('คลังสินค้า 2PCS', 'ชั้น 1', 950.00, 450, 4, 'ชิ้นส่วนและอุปกรณ์รถยนต์แยกประเภท', ''),
+              ('คลังสินค้าโรง2,5', 'ชั้น 1', 2000.00, 1500, 3, 'วัตถุดิบ บรรจุภัณฑ์ และสินค้าเพื่อรอจำหน่าย', '')
+            `);
+            console.log('Seeded default warehouse layouts successfully in migration block.');
+          }
+        } catch (e: any) {
+          console.error("Error creating/seeding warehouse_layouts in migration block:", e.message);
+        }
+
         console.log('Successfully verified/altered all required columns to LONGTEXT, display_order, and performance stats.');
       } catch (err: any) {
         console.warn('Failed to alter columns:', err.message);

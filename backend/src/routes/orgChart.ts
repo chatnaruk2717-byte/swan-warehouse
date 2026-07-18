@@ -23,6 +23,23 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
 });
 
 
+// GET /api/org-chart/delete-nopadol - Delete Nopadol and promote child nodes
+router.get('/delete-nopadol', authenticateToken, requireRole(['admin']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const nopadolResult = await query("SELECT id FROM org_chart WHERE name LIKE '%นพดล%'");
+    if (nopadolResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Nopadol not found in org_chart.' });
+    }
+    const nopadolId = nopadolResult.rows[0].id;
+    await query("UPDATE org_chart SET parent_id = NULL WHERE parent_id = $1", [nopadolId]);
+    await query("DELETE FROM org_chart WHERE id = $1", [nopadolId]);
+    return res.json({ message: 'Nopadol deleted successfully, children promoted to root nodes.' });
+  } catch (err: any) {
+    console.error('Failed to delete Nopadol:', err.message);
+    return res.status(500).json({ message: err.message });
+  }
+});
+
 // POST /api/org-chart - Add new position (Admin only)
 router.post('/', authenticateToken, requireRole(['admin']), async (req: AuthenticatedRequest, res: Response) => {
   const { name, role_name, level_order, level, warehouse_area, image_url, display_order, parent_id, photo_size, photo_shape, pos_x, pos_y } = req.body;

@@ -22,6 +22,128 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
   }
 });
 
+// GET /api/org-chart/sync-employees - Rebuild org chart from users database table
+router.get('/sync-employees', authenticateToken, requireRole(['admin']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const usersResult = await query("SELECT id, name, position, department, photo_url, supervisor_id FROM users");
+    const users = usersResult.rows;
+
+    // Delete existing org chart entries
+    await query("DELETE FROM org_chart");
+
+    // Identify Manager
+    const manager = users.find((u: any) => 
+      u.position === 'Manager' || 
+      u.position === 'ผู้จัดการ' || 
+      u.supervisor_id === null || 
+      u.supervisor_id === undefined
+    );
+
+    if (manager) {
+      manager.level_order = 1;
+      manager.pos_x = 0;
+      manager.pos_y = 50;
+    }
+
+    // Identify Supervisors (referenced by others as supervisor_id)
+    const supervisorIds = new Set(users.map((u: any) => u.supervisor_id).filter(Boolean));
+    const supervisors = users.filter((u: any) => supervisorIds.has(u.id) && u.id !== manager?.id);
+
+    supervisors.forEach((s: any, idx: number) => {
+      s.level_order = 2;
+      s.pos_y = 250;
+      s.pos_x = idx === 0 ? -400 : 400;
+    });
+
+    // Identify Staff
+    const supervisorsSet = new Set(supervisors.map((s: any) => s.id));
+    const staff = users.filter((u: any) => 
+      u.id !== manager?.id && 
+      !supervisorsSet.has(u.id) && 
+      (u.position.includes('เจ้าหน้าที่') || u.position.includes('Staff') || u.position.includes('บันทึกข้อมูล'))
+    );
+
+    const staffBySupervisor: Record<number, any[]> = {};
+    staff.forEach((st: any) => {
+      const pid = st.supervisor_id || 0;
+      if (!staffBySupervisor[pid]) staffBySupervisor[pid] = [];
+      staffBySupervisor[pid].push(st);
+    });
+
+    Object.keys(staffBySupervisor).forEach((pidStr) => {
+      const pid = parseInt(pidStr, 10);
+      const group = staffBySupervisor[pid];
+      const parentNode = supervisors.find((s: any) => s.id === pid);
+      const parentX = parentNode ? parentNode.pos_x : 0;
+      const startX = parentX - ((group.length - 1) * 200) / 2;
+      
+      group.forEach((st: any, idx: number) => {
+        st.level_order = 3;
+        st.pos_y = 450;
+        st.pos_x = Math.round(startX + idx * 200);
+      });
+    });
+
+    // Identify Workers
+    const staffIds = new Set(staff.map((u: any) => u.id));
+    const workers = users.filter((u: any) => 
+      u.id !== manager?.id && 
+      !supervisorsSet.has(u.id) && 
+      !staffIds.has(u.id)
+    );
+
+    const workersBySupervisor: Record<number, any[]> = {};
+    workers.forEach((w: any) => {
+      const pid = w.supervisor_id || 0;
+      if (!workersBySupervisor[pid]) workersBySupervisor[pid] = [];
+      workersBySupervisor[pid].push(w);
+    });
+
+    Object.keys(workersBySupervisor).forEach((pidStr) => {
+      const pid = parseInt(pidStr, 10);
+      const group = workersBySupervisor[pid];
+      const parentNode = supervisors.find((s: any) => s.id === pid);
+      const parentX = parentNode ? parentNode.pos_x : 0;
+      const cols = 5;
+      
+      group.forEach((w: any, idx: number) => {
+        const row = Math.floor(idx / cols);
+        const col = idx % cols;
+        w.level_order = 4;
+        w.pos_y = 650 + row * 180;
+        const startX = parentX - ((cols - 1) * 220) / 2;
+        w.pos_x = Math.round(startX + col * 220);
+      });
+    });
+
+    // Insert mapped nodes
+    const allNodes = [...(manager ? [manager] : []), ...supervisors, ...staff, ...workers];
+    for (const u of allNodes) {
+      await query(
+        `INSERT INTO org_chart (id, name, role_name, level_order, level, warehouse_area, image_url, parent_id, pos_x, pos_y)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [
+          u.id,
+          u.name,
+          u.position,
+          u.level_order || 4,
+          `L${u.level_order || 4}`,
+          u.department || 'Warehouse',
+          u.photo_url || '',
+          u.supervisor_id || null,
+          u.pos_x || 0,
+          u.pos_y || 0
+        ]
+      );
+    }
+
+    return res.json({ message: 'Org chart synchronized successfully from users database table.', count: allNodes.length });
+  } catch (err: any) {
+    console.error('Failed to sync org chart:', err.message);
+    return res.status(500).json({ message: err.message });
+  }
+});
+
 // POST /api/org-chart - Add new position (Admin only)
 router.post('/', authenticateToken, requireRole(['admin']), async (req: AuthenticatedRequest, res: Response) => {
   const { name, role_name, level_order, level, warehouse_area, image_url, display_order, parent_id, photo_size, photo_shape, pos_x, pos_y } = req.body;

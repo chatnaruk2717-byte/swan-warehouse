@@ -42,9 +42,10 @@ router.get('/', authenticateToken, requireRole(['admin', 'staff', 'employee']), 
 
   } catch (err: any) {
     // Mock Mode Fallback
-    const list = mockStore.mockUsers
-      .filter(user => !['EMP001', 'EMP002', 'EMP003', 'EMP004', 'EMP005', 'EMP006', 'EMP007', 'EMP008', 'EMP009', 'EMP010'].includes(user.employee_id))
-      .map(user => {
+    const filtered = mockStore.mockUsers
+      .filter(user => !['EMP001', 'EMP002', 'EMP003', 'EMP004', 'EMP005', 'EMP006', 'EMP007', 'EMP008', 'EMP009', 'EMP010'].includes(user.employee_id));
+    const sourceUsers = filtered.length > 0 ? filtered : mockStore.mockUsers;
+    const list = sourceUsers.map(user => {
         const supervisor = mockStore.mockUsers.find(u => u.id === user.supervisor_id);
         const copy = {
           ...user,

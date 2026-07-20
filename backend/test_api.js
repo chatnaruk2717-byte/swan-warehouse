@@ -1,6 +1,6 @@
 const https = require('https');
 
-const baseUrl = 'swan-warehouse-api.onrender.com';
+const baseUrl = 'swan-warehouse.onrender.com';
 
 function request(method, path, body, headers = {}) {
   return new Promise((resolve, reject) => {

@@ -20,6 +20,8 @@ import {
   Maximize
 } from 'lucide-react';
 
+import { uploadToImgBB } from '../../utils/uploadToImgBB';
+
 interface OrgChartItem {
   id: number;
   name: string;
@@ -340,8 +342,8 @@ export default function OrgChartPage() {
     fetchOrgItems();
   }, []);
 
-  // Handle image upload converting to Base64
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle image upload converting to ImgBB CDN URL or Base64 fallback
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
@@ -350,40 +352,48 @@ export default function OrgChartPage() {
       }
       setUploadedFileName(file.name);
       setIsUploading(true);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const max_size = 150;
-          let width = img.width;
-          let height = img.height;
+      
+      try {
+        const cdnUrl = await uploadToImgBB(file);
+        setFormState(prev => ({ ...prev, image_url: cdnUrl }));
+        setIsUploading(false);
+      } catch (err) {
+        console.warn('Falling back to local image compression:', err);
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const max_size = 150;
+            let width = img.width;
+            let height = img.height;
 
-          if (width > height) {
-            if (width > max_size) {
-              height *= max_size / width;
-              width = max_size;
+            if (width > height) {
+              if (width > max_size) {
+                height *= max_size / width;
+                width = max_size;
+              }
+            } else {
+              if (height > max_size) {
+                width *= max_size / height;
+                height = max_size;
+              }
             }
-          } else {
-            if (height > max_size) {
-              width *= max_size / height;
-              height = max_size;
-            }
-          }
 
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height);
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-            setFormState(prev => ({ ...prev, image_url: compressedBase64 }));
-          }
-          setIsUploading(false);
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height);
+              const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+              setFormState(prev => ({ ...prev, image_url: compressedBase64 }));
+            }
+            setIsUploading(false);
+          };
+          img.src = event.target?.result as string;
         };
-        img.src = event.target?.result as string;
-      };
-      reader.readAsDataURL(file);
+        reader.readAsDataURL(file);
+      }
     }
   };
 

@@ -21,6 +21,7 @@ import {
   AlertCircle,
   Clock
 } from 'lucide-react';
+import { uploadToImgBB } from '../../utils/uploadToImgBB';
 
 export default function EmployeesPage() {
   const { api, user } = useAuth();
@@ -192,45 +193,51 @@ export default function EmployeesPage() {
     setSelectedEmp(null);
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const max_size = 150;
-          let width = img.width;
-          let height = img.height;
+      try {
+        const cdnUrl = await uploadToImgBB(file);
+        setFormFields(prev => ({ ...prev, photo_url: cdnUrl }));
+      } catch (err) {
+        console.warn('Falling back to local image compression:', err);
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const max_size = 150;
+            let width = img.width;
+            let height = img.height;
 
-          if (width > height) {
-            if (width > max_size) {
-              height *= max_size / width;
-              width = max_size;
+            if (width > height) {
+              if (width > max_size) {
+                height *= max_size / width;
+                width = max_size;
+              }
+            } else {
+              if (height > max_size) {
+                width *= max_size / height;
+                height = max_size;
+              }
             }
-          } else {
-            if (height > max_size) {
-              width *= max_size / height;
-              height = max_size;
-            }
-          }
 
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height);
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-            setFormFields(prev => ({
-              ...prev,
-              photo_url: compressedBase64
-            }));
-          }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height);
+              const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+              setFormFields(prev => ({
+                ...prev,
+                photo_url: compressedBase64
+              }));
+            }
+          };
+          img.src = event.target?.result as string;
         };
-        img.src = event.target?.result as string;
-      };
-      reader.readAsDataURL(file);
+        reader.readAsDataURL(file);
+      }
     }
   };
 

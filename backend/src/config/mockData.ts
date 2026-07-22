@@ -56,6 +56,7 @@ export interface Course {
   estimated_time: string;
   certificate_enabled: boolean;
   cover_image?: string;
+  evaluation_points?: number;
 }
 
 export interface Chapter {
@@ -73,6 +74,7 @@ export interface Lesson {
   content_url?: string;
   body_text?: string;
   sort_order: number;
+  evaluation_points?: number;
 }
 
 export interface Enrollment {

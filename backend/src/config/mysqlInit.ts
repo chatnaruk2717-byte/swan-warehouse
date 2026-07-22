@@ -16,6 +16,8 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         await connection.query('ALTER TABLE daily_tasks MODIFY COLUMN proof_file LONGTEXT');
         await connection.query('ALTER TABLE daily_tasks ADD COLUMN task_image LONGTEXT NULL').catch(() => {});
         await connection.query('ALTER TABLE daily_tasks ADD COLUMN evaluation_points INT DEFAULT 0').catch(() => {});
+        await connection.query('ALTER TABLE lessons ADD COLUMN evaluation_points INT DEFAULT 0').catch(() => {});
+        await connection.query('ALTER TABLE courses ADD COLUMN evaluation_points INT DEFAULT 0').catch(() => {});
         await connection.query('ALTER TABLE org_chart MODIFY COLUMN image_url LONGTEXT');
         await connection.query('ALTER TABLE org_chart ADD COLUMN display_order INT DEFAULT 0').catch(() => {});
         await connection.query('ALTER TABLE org_chart ADD COLUMN parent_id INT NULL').catch(() => {});
@@ -253,6 +255,7 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         estimated_time VARCHAR(50),
         certificate_enabled BOOLEAN DEFAULT TRUE,
         cover_image LONGTEXT,
+        evaluation_points INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )`,
@@ -274,6 +277,7 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         content_url LONGTEXT,
         body_text TEXT,
         sort_order INT DEFAULT 0,
+        evaluation_points INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE
       )`,
@@ -704,6 +708,8 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
 
     await connection.query('ALTER TABLE daily_tasks ADD COLUMN task_image LONGTEXT NULL').catch(() => {});
     await connection.query('ALTER TABLE daily_tasks ADD COLUMN evaluation_points INT DEFAULT 0').catch(() => {});
+    await connection.query('ALTER TABLE lessons ADD COLUMN evaluation_points INT DEFAULT 0').catch(() => {});
+    await connection.query('ALTER TABLE courses ADD COLUMN evaluation_points INT DEFAULT 0').catch(() => {});
 
     await connection.query('ALTER TABLE org_chart MODIFY COLUMN image_url LONGTEXT').catch((e) => {
       console.warn('Altering org_chart.image_url failed (might already be LONGTEXT):', e.message);

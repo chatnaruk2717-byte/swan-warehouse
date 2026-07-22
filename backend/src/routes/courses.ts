@@ -322,6 +322,13 @@ router.post('/lesson/:id/progress', authenticateToken, async (req: Authenticated
       throw new Error('MOCK_MODE');
     }
 
+    // Check if lesson was already completed
+    const checkProgress = await query(
+      'SELECT completed FROM lesson_progress WHERE employee_id = $1 AND lesson_id = $2 AND completed = TRUE',
+      [employeeId, lessonId]
+    );
+    const alreadyCompleted = checkProgress.rows.length > 0;
+
     // Insert or update lesson progress
     if (completed) {
       await query(
@@ -329,6 +336,15 @@ router.post('/lesson/:id/progress', authenticateToken, async (req: Authenticated
          VALUES ($1, $2, TRUE)`,
         [employeeId, lessonId]
       );
+
+      // Add points if not already completed
+      if (!alreadyCompleted) {
+        const lessonRes = await query('SELECT evaluation_points FROM lessons WHERE id = $1', [lessonId]);
+        const lessonPts = lessonRes.rows.length > 0 ? (lessonRes.rows[0].evaluation_points || 0) : 0;
+        if (lessonPts > 0) {
+          await query('UPDATE users SET accumulated_points = accumulated_points + $1 WHERE id = $2', [lessonPts, employeeId]);
+        }
+      }
     } else {
       await query(
         `DELETE FROM lesson_progress WHERE employee_id = $1 AND lesson_id = $2`,
@@ -348,6 +364,13 @@ router.post('/lesson/:id/progress', authenticateToken, async (req: Authenticated
 
     if (courseRes.rows.length > 0) {
       const courseId = courseRes.rows[0].id;
+
+      // Check current enrollment status before updating progress
+      const checkEnrollment = await query(
+        'SELECT status FROM enrollments WHERE employee_id = $1 AND course_id = $2',
+        [employeeId, courseId]
+      );
+      const wasCompleted = checkEnrollment.rows.length > 0 && checkEnrollment.rows[0].status === 'completed';
 
       // Ensure enrollment exists!
       await query(
@@ -385,6 +408,15 @@ router.post('/lesson/:id/progress', authenticateToken, async (req: Authenticated
          WHERE employee_id = $4 AND course_id = $5`,
         [progress, status, certId, employeeId, courseId]
       );
+
+      // If just completed, add course completion points!
+      if (progress === 100 && !wasCompleted) {
+        const courseDetailsRes = await query('SELECT evaluation_points FROM courses WHERE id = $1', [courseId]);
+        const coursePts = courseDetailsRes.rows.length > 0 ? (courseDetailsRes.rows[0].evaluation_points || 0) : 0;
+        if (coursePts > 0) {
+          await query('UPDATE users SET accumulated_points = accumulated_points + $1 WHERE id = $2', [coursePts, employeeId]);
+        }
+      }
     }
 
     return res.json({ message: 'Progress updated.' });
@@ -404,6 +436,8 @@ router.post('/lesson/:id/progress', authenticateToken, async (req: Authenticated
 
     // Update progress log
     const progressIndex = mockStore.mockLessonProgress.findIndex(lp => lp.employee_id === employeeId && lp.lesson_id === lessonId);
+    const mockAlreadyCompleted = progressIndex !== -1 && mockStore.mockLessonProgress[progressIndex].completed;
+
     if (completed) {
       if (progressIndex === -1) {
         mockStore.mockLessonProgress.push({
@@ -413,6 +447,14 @@ router.post('/lesson/:id/progress', authenticateToken, async (req: Authenticated
           completed: true,
           completed_at: new Date().toISOString()
         });
+
+        // Add points
+        if (!mockAlreadyCompleted && lesson.evaluation_points && lesson.evaluation_points > 0) {
+          const empIndex = mockStore.mockUsers.findIndex(u => u.id === employeeId);
+          if (empIndex !== -1) {
+            mockStore.mockUsers[empIndex].accumulated_points = (mockStore.mockUsers[empIndex].accumulated_points || 0) + lesson.evaluation_points;
+          }
+        }
       }
     } else {
       if (progressIndex !== -1) {
@@ -438,6 +480,8 @@ router.post('/lesson/:id/progress', authenticateToken, async (req: Authenticated
     const percent = total > 0 ? Math.round((done / total) * 100) : 0;
 
     let enrollment = mockStore.mockEnrollments.find(e => e.employee_id === employeeId && e.course_id === courseId);
+    const mockWasCompleted = enrollment && enrollment.status === 'completed';
+
     if (!enrollment) {
       enrollment = {
         id: mockStore.mockEnrollments.length + 1,
@@ -459,6 +503,16 @@ router.post('/lesson/:id/progress', authenticateToken, async (req: Authenticated
       } else {
         enrollment.completed_at = undefined;
         enrollment.certificate_id = undefined;
+      }
+    }
+
+    if (percent === 100 && !mockWasCompleted) {
+      const course = mockStore.mockCourses.find(c => c.id === courseId);
+      if (course && course.evaluation_points && course.evaluation_points > 0) {
+        const empIndex = mockStore.mockUsers.findIndex(u => u.id === employeeId);
+        if (empIndex !== -1) {
+          mockStore.mockUsers[empIndex].accumulated_points = (mockStore.mockUsers[empIndex].accumulated_points || 0) + course.evaluation_points;
+        }
       }
     }
 
@@ -565,11 +619,27 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
 
     // If passed, mark this lesson as completed!
     if (passed) {
+      // Check if already completed
+      const checkProgress = await query(
+        'SELECT completed FROM lesson_progress WHERE employee_id = $1 AND lesson_id = $2 AND completed = TRUE',
+        [employeeId, lessonId]
+      );
+      const alreadyCompleted = checkProgress.rows.length > 0;
+
       await query(
         `INSERT IGNORE INTO lesson_progress (employee_id, lesson_id, completed) 
          VALUES ($1, $2, TRUE)`,
         [employeeId, lessonId]
       );
+
+      // Add points if not already completed
+      if (!alreadyCompleted) {
+        const lessonRes = await query('SELECT evaluation_points FROM lessons WHERE id = $1', [lessonId]);
+        const lessonPts = lessonRes.rows.length > 0 ? (lessonRes.rows[0].evaluation_points || 0) : 0;
+        if (lessonPts > 0) {
+          await query('UPDATE users SET accumulated_points = accumulated_points + $1 WHERE id = $2', [lessonPts, employeeId]);
+        }
+      }
 
       // Recalculate enrollment progress
       const courseRes = await query(
@@ -582,6 +652,13 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
 
       if (courseRes.rows.length > 0) {
         const courseId = courseRes.rows[0].id;
+
+        // Check if enrollment was already completed
+        const checkEnrollment = await query(
+          'SELECT status FROM enrollments WHERE employee_id = $1 AND course_id = $2',
+          [employeeId, courseId]
+        );
+        const wasCompleted = checkEnrollment.rows.length > 0 && checkEnrollment.rows[0].status === 'completed';
 
         // Ensure enrollment exists!
         await query(
@@ -619,6 +696,15 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
            WHERE employee_id = $4 AND course_id = $5`,
           [progress, status, certId, employeeId, courseId]
         );
+
+        // If just completed, add course completion points!
+        if (progress === 100 && !wasCompleted) {
+          const courseDetailsRes = await query('SELECT evaluation_points FROM courses WHERE id = $1', [courseId]);
+          const coursePts = courseDetailsRes.rows.length > 0 ? (courseDetailsRes.rows[0].evaluation_points || 0) : 0;
+          if (coursePts > 0) {
+            await query('UPDATE users SET accumulated_points = accumulated_points + $1 WHERE id = $2', [coursePts, employeeId]);
+          }
+        }
       }
     }
 
@@ -694,6 +780,8 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
 
     if (passed) {
       const progressIndex = mockStore.mockLessonProgress.findIndex(lp => lp.employee_id === employeeId && lp.lesson_id === lessonId);
+      const mockAlreadyCompleted = progressIndex !== -1 && mockStore.mockLessonProgress[progressIndex].completed;
+
       if (progressIndex === -1) {
         mockStore.mockLessonProgress.push({
           id: mockStore.mockLessonProgress.length + 1,
@@ -702,6 +790,15 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
           completed: true,
           completed_at: new Date().toISOString()
         });
+      }
+
+      // Add points
+      const lessonObj = mockStore.mockLessons.find(l => l.id === lessonId);
+      if (!mockAlreadyCompleted && lessonObj && lessonObj.evaluation_points && lessonObj.evaluation_points > 0) {
+        const empIndex = mockStore.mockUsers.findIndex(u => u.id === employeeId);
+        if (empIndex !== -1) {
+          mockStore.mockUsers[empIndex].accumulated_points = (mockStore.mockUsers[empIndex].accumulated_points || 0) + lessonObj.evaluation_points;
+        }
       }
 
       // Recalculate Course Progress
@@ -724,6 +821,8 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
 
         const percent = Math.round((completedCourseLessons.length / allCourseLessons.length) * 100);
         let enrollment = mockStore.mockEnrollments.find(e => e.employee_id === employeeId && e.course_id === courseId);
+        const mockWasCompleted = enrollment && enrollment.status === 'completed';
+
         if (!enrollment) {
           enrollment = {
             id: mockStore.mockEnrollments.length + 1,
@@ -742,6 +841,16 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
           if (percent === 100) {
             enrollment.completed_at = new Date().toISOString();
             enrollment.certificate_id = enrollment.certificate_id || `CERT-${courseId}-${employeeId}-${Math.floor(Math.random() * 9000 + 1000)}`;
+          }
+        }
+
+        if (percent === 100 && !mockWasCompleted) {
+          const course = mockStore.mockCourses.find(c => c.id === courseId);
+          if (course && course.evaluation_points && course.evaluation_points > 0) {
+            const empIndex = mockStore.mockUsers.findIndex(u => u.id === employeeId);
+            if (empIndex !== -1) {
+              mockStore.mockUsers[empIndex].accumulated_points = (mockStore.mockUsers[empIndex].accumulated_points || 0) + course.evaluation_points;
+            }
           }
         }
       }
@@ -763,7 +872,7 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
  *     summary: Create a new training course
  */
 router.post('/', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
-  const { name, description, duration_minutes, category, instructor, difficulty, estimated_time } = req.body;
+  const { name, description, duration_minutes, category, instructor, difficulty, estimated_time, evaluation_points } = req.body;
 
   if (!name || !category) {
     return res.status(400).json({ message: 'Course name and category are required.' });
@@ -775,10 +884,10 @@ router.post('/', authenticateToken, requireRole(['admin', 'staff']), async (req:
     }
 
     const result = await query(
-      `INSERT INTO courses (name, description, duration_minutes, category, instructor, difficulty, estimated_time) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) 
+      `INSERT INTO courses (name, description, duration_minutes, category, instructor, difficulty, estimated_time, evaluation_points) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
        RETURNING *`,
-      [name, description || '', parseInt(duration_minutes, 10) || 0, category, instructor || '', difficulty || 'beginner', estimated_time || '']
+      [name, description || '', parseInt(duration_minutes, 10) || 0, category, instructor || '', difficulty || 'beginner', estimated_time || '', parseInt(evaluation_points, 10) || 0]
     );
     return res.status(201).json(result.rows[0]);
 
@@ -799,7 +908,8 @@ router.post('/', authenticateToken, requireRole(['admin', 'staff']), async (req:
       instructor: instructor || '',
       difficulty: (difficulty || 'beginner') as any,
       estimated_time: estimated_time || '',
-      certificate_enabled: true
+      certificate_enabled: true,
+      evaluation_points: parseInt(evaluation_points, 10) || 0
     };
 
     mockStore.mockCourses.push(newCourse);
@@ -813,7 +923,7 @@ router.post('/', authenticateToken, requireRole(['admin', 'staff']), async (req:
  */
 router.put('/:id', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
   const courseId = parseInt(req.params.id, 10);
-  const { name, description, duration_minutes, category, instructor, difficulty, estimated_time, cover_image } = req.body;
+  const { name, description, duration_minutes, category, instructor, difficulty, estimated_time, cover_image, evaluation_points } = req.body;
 
   try {
     if (getMockStatus()) {
@@ -831,13 +941,14 @@ router.put('/:id', authenticateToken, requireRole(['admin', 'staff']), async (re
         difficulty = COALESCE($6, difficulty),
         estimated_time = COALESCE($7, estimated_time),
         cover_image = COALESCE($8, cover_image),
+        evaluation_points = COALESCE($9, evaluation_points),
         updated_at = NOW()
-      WHERE id = $9
+      WHERE id = $10
       RETURNING *
     `;
     const result = await query(updateQuery, [
       name, description, duration_minutes ? parseInt(duration_minutes, 10) : null,
-      category, instructor, difficulty, estimated_time, cover_image, courseId
+      category, instructor, difficulty, estimated_time, cover_image, evaluation_points ? parseInt(evaluation_points, 10) : null, courseId
     ]);
 
     if (result.rows.length === 0) {
@@ -859,6 +970,7 @@ router.put('/:id', authenticateToken, requireRole(['admin', 'staff']), async (re
     if (difficulty !== undefined) course.difficulty = difficulty;
     if (estimated_time !== undefined) course.estimated_time = estimated_time;
     if (cover_image !== undefined) course.cover_image = cover_image;
+    if (evaluation_points !== undefined) course.evaluation_points = parseInt(evaluation_points, 10);
 
     return res.json(course);
   }
@@ -908,7 +1020,7 @@ router.post('/:id/chapters', authenticateToken, requireRole(['admin', 'staff']),
  */
 router.post('/chapters/:id/lessons', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
   const chapterId = parseInt(req.params.id, 10);
-  const { title, content_type, content_url, body_text, sort_order } = req.body;
+  const { title, content_type, content_url, body_text, sort_order, evaluation_points } = req.body;
 
   if (!title || !content_type) {
     return res.status(400).json({ message: 'Lesson title and content_type are required.' });
@@ -920,10 +1032,10 @@ router.post('/chapters/:id/lessons', authenticateToken, requireRole(['admin', 's
     }
 
     const result = await query(
-      `INSERT INTO lessons (chapter_id, title, content_type, content_url, body_text, sort_order) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
+      `INSERT INTO lessons (chapter_id, title, content_type, content_url, body_text, sort_order, evaluation_points) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) 
        RETURNING *`,
-      [chapterId, title, content_type, content_url || null, body_text || null, parseInt(sort_order, 10) || 0]
+      [chapterId, title, content_type, content_url || null, body_text || null, parseInt(sort_order, 10) || 0, parseInt(evaluation_points, 10) || 0]
     );
     return res.status(201).json(result.rows[0]);
 
@@ -936,7 +1048,8 @@ router.post('/chapters/:id/lessons', authenticateToken, requireRole(['admin', 's
       content_type: content_type as any,
       content_url,
       body_text,
-      sort_order: parseInt(sort_order, 10) || 0
+      sort_order: parseInt(sort_order, 10) || 0,
+      evaluation_points: parseInt(evaluation_points, 10) || 0
     };
     mockStore.mockLessons.push(newLesson);
     return res.status(201).json(newLesson);
@@ -1196,7 +1309,7 @@ router.delete('/lessons/:id', authenticateToken, requireRole(['admin', 'staff'])
  */
 router.put('/lessons/:id', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
   const lessonId = parseInt(req.params.id, 10);
-  const { title, content_type, content_url, body_text } = req.body;
+  const { title, content_type, content_url, body_text, evaluation_points } = req.body;
 
   try {
     if (getMockStatus()) {
@@ -1210,11 +1323,12 @@ router.put('/lessons/:id', authenticateToken, requireRole(['admin', 'staff']), a
         content_type = COALESCE($2, content_type),
         content_url = COALESCE($3, content_url),
         body_text = COALESCE($4, body_text),
+        evaluation_points = COALESCE($5, evaluation_points),
         updated_at = NOW() 
-      WHERE id = $5 
+      WHERE id = $6 
       RETURNING *
     `;
-    const result = await query(updateQuery, [title, content_type, content_url || null, body_text || null, lessonId]);
+    const result = await query(updateQuery, [title, content_type, content_url || null, body_text || null, evaluation_points ? parseInt(evaluation_points, 10) : null, lessonId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Lesson not found.' });
     }
@@ -1230,6 +1344,7 @@ router.put('/lessons/:id', authenticateToken, requireRole(['admin', 'staff']), a
     if (content_type !== undefined) lesson.content_type = content_type as any;
     if (content_url !== undefined) lesson.content_url = content_url;
     if (body_text !== undefined) lesson.body_text = body_text;
+    if (evaluation_points !== undefined) lesson.evaluation_points = parseInt(evaluation_points, 10);
 
     return res.json(lesson);
   }

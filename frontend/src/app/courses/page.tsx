@@ -69,7 +69,8 @@ export default function CoursesPage() {
     title: '',
     content_type: 'video',
     content_url: '',
-    body_text: ''
+    body_text: '',
+    evaluation_points: '0'
   });
   const [newQuestionForm, setNewQuestionForm] = useState({
     question_text: '',
@@ -89,7 +90,8 @@ export default function CoursesPage() {
     category: 'Safety',
     instructor: user?.name || 'Senior Trainer',
     difficulty: 'beginner',
-    estimated_time: '2 ชั่วโมง'
+    estimated_time: '2 ชั่วโมง',
+    evaluation_points: '0'
   });
 
   const [editingCourseId, setEditingCourseId] = useState<number | null>(null);
@@ -217,7 +219,8 @@ export default function CoursesPage() {
 
     const formattedLessonForm = {
       ...newLessonForm,
-      content_url: formattedUrl
+      content_url: formattedUrl,
+      evaluation_points: parseInt(newLessonForm.evaluation_points, 10) || 0
     };
 
     try {
@@ -230,7 +233,7 @@ export default function CoursesPage() {
         setBuilderLessons([...builderLessons, res.data]);
         setActiveLessonId(res.data.id);
       }
-      setNewLessonForm({ title: '', content_type: 'video', content_url: '', body_text: '' });
+      setNewLessonForm({ title: '', content_type: 'video', content_url: '', body_text: '', evaluation_points: '0' });
       setUploadedFileName('');
     } catch {
       if (editingLessonId) {
@@ -241,7 +244,7 @@ export default function CoursesPage() {
         setBuilderLessons([...builderLessons, mockLesson]);
         setActiveLessonId(mockLesson.id);
       }
-      setNewLessonForm({ title: '', content_type: 'video', content_url: '', body_text: '' });
+      setNewLessonForm({ title: '', content_type: 'video', content_url: '', body_text: '', evaluation_points: '0' });
       setUploadedFileName('');
     }
   };
@@ -252,7 +255,8 @@ export default function CoursesPage() {
       title: les.title,
       content_type: les.content_type,
       content_url: les.content_url || '',
-      body_text: les.body_text || ''
+      body_text: les.body_text || '',
+      evaluation_points: String(les.evaluation_points || 0)
     });
     setUploadMode(les.content_url && les.content_url.startsWith('data:') ? 'file' : 'link');
     if (les.content_url && les.content_url.startsWith('data:')) {
@@ -422,13 +426,15 @@ export default function CoursesPage() {
         setCourses(courses.map(c => c.id === editingCourseId ? {
           ...c,
           ...courseForm,
-          duration_minutes: parseInt(courseForm.duration_minutes, 10)
+          duration_minutes: parseInt(courseForm.duration_minutes, 10),
+          evaluation_points: parseInt(courseForm.evaluation_points, 10) || 0
         } : c));
       } else {
         const mockCourse = {
           id: Date.now(),
           ...courseForm,
-          duration_minutes: parseInt(courseForm.duration_minutes, 10)
+          duration_minutes: parseInt(courseForm.duration_minutes, 10),
+          evaluation_points: parseInt(courseForm.evaluation_points, 10) || 0
         };
         setCourses([...courses, mockCourse]);
       }
@@ -446,7 +452,8 @@ export default function CoursesPage() {
       category: course.category,
       instructor: course.instructor,
       difficulty: course.difficulty,
-      estimated_time: course.estimated_time
+      estimated_time: course.estimated_time,
+      evaluation_points: String(course.evaluation_points || 0)
     });
     setShowCreateCourseModal(true);
   };
@@ -540,7 +547,8 @@ export default function CoursesPage() {
       category: 'Safety',
       instructor: user?.name || 'Senior Trainer',
       difficulty: 'beginner',
-      estimated_time: '2 ชั่วโมง'
+      estimated_time: '2 ชั่วโมง',
+      evaluation_points: '0'
     });
   };
 
@@ -645,9 +653,16 @@ export default function CoursesPage() {
                   </div>
                 )}
                 <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-                  <span className="text-[9px] uppercase font-bold text-white bg-warehouse-orange px-2 py-0.5 rounded shadow-sm">
-                    {course.category}
-                  </span>
+                  <div className="flex gap-1.5">
+                    <span className="text-[9px] uppercase font-bold text-white bg-warehouse-orange px-2 py-0.5 rounded shadow-sm">
+                      {course.category}
+                    </span>
+                    {course.evaluation_points !== undefined && course.evaluation_points > 0 && (
+                      <span className="text-[9px] font-bold text-emerald-500 bg-white dark:bg-slate-900 px-2 py-0.5 rounded shadow-sm border border-emerald-500/20 flex items-center gap-0.5">
+                        ★ +{course.evaluation_points} คะแนน
+                      </span>
+                    )}
+                  </div>
                   <span className={`text-[9px] font-bold px-2 py-0.5 rounded shadow-sm ${getDifficultyColor(course.difficulty)}`}>
                     {getDifficultyLabel(course.difficulty)}
                   </span>
@@ -811,14 +826,18 @@ export default function CoursesPage() {
                   </select>
                 </div>
               </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400">วิทยากร/ครูสอน (Instructor)</label>
+                <input type="text" value={courseForm.instructor} onChange={(e) => setCourseForm({ ...courseForm, instructor: e.target.value })} className="glass-input text-xs" />
+              </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400">วิทยากร/ครูสอน (Instructor)</label>
-                  <input type="text" value={courseForm.instructor} onChange={(e) => setCourseForm({ ...courseForm, instructor: e.target.value })} className="glass-input text-xs" />
-                </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-400">ระยะเวลาคาดการณ์ (เช่น 2 ชั่วโมง)</label>
                   <input type="text" value={courseForm.estimated_time} onChange={(e) => setCourseForm({ ...courseForm, estimated_time: e.target.value })} className="glass-input text-xs" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-400">คะแนนโบนัสสำเร็จหลักสูตร (Bonus Points)</label>
+                  <input type="number" min="0" value={courseForm.evaluation_points} onChange={(e) => setCourseForm({ ...courseForm, evaluation_points: e.target.value })} className="glass-input text-xs" placeholder="0" />
                 </div>
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/50 dark:border-white/5">
@@ -1124,14 +1143,26 @@ export default function CoursesPage() {
 
                       <form onSubmit={handleCreateLesson} className="space-y-3 bg-slate-50/50 dark:bg-white/5 p-3.5 rounded-2xl border border-slate-200/50 dark:border-white/5">
                         <p className="text-[10px] font-bold text-slate-400">{editingLessonId ? 'แก้ไขเนื้อหา (Edit Lesson)' : 'เพิ่มเนื้อหาใหม่ (Add Lesson)'}</p>
-                        <input 
-                          type="text" 
-                          required 
-                          value={newLessonForm.title} 
-                          onChange={(e) => setNewLessonForm({ ...newLessonForm, title: e.target.value })} 
-                          className="w-full glass-input text-[11px] py-1.5 px-2.5" 
-                          placeholder="ชื่อเนื้อหาเรียน..." 
-                        />
+                        <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            required 
+                            value={newLessonForm.title} 
+                            onChange={(e) => setNewLessonForm({ ...newLessonForm, title: e.target.value })} 
+                            className="flex-1 glass-input text-[11px] py-1.5 px-2.5" 
+                            placeholder="ชื่อเนื้อหาเรียน..." 
+                          />
+                          <input 
+                            type="number" 
+                            min="0"
+                            required
+                            value={newLessonForm.evaluation_points} 
+                            onChange={(e) => setNewLessonForm({ ...newLessonForm, evaluation_points: e.target.value })} 
+                            className="w-24 glass-input text-[11px] py-1.5 px-2.5 text-center" 
+                            placeholder="คะแนน" 
+                            title="คะแนนที่ได้รับเมื่อผ่าน/จบเนื้อหานี้"
+                          />
+                        </div>
                         
                         <div className="flex flex-col gap-2">
                           <div className="grid grid-cols-2 gap-2">
@@ -1233,7 +1264,7 @@ export default function CoursesPage() {
                               type="button"
                               onClick={() => {
                                 setEditingLessonId(null);
-                                setNewLessonForm({ title: '', content_type: 'video', content_url: '', body_text: '' });
+                                setNewLessonForm({ title: '', content_type: 'video', content_url: '', body_text: '', evaluation_points: '0' });
                                 setUploadedFileName('');
                               }}
                               className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-white text-[11px] font-bold rounded-xl"

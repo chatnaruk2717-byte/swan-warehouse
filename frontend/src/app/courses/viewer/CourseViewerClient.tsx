@@ -42,6 +42,21 @@ export default function CourseViewerClient() {
   const [activeLesson, setActiveLesson] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [lessonProgress, setLessonProgress] = useState<number[]>([]); // Array of completed lesson IDs
+  const [maxTimeWatched, setMaxTimeWatched] = useState<number>(0);
+  const ytPlayerRef = React.useRef<any>(null);
+
+  // Load YouTube script on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const windowAny = window as any;
+      if (!windowAny.YT) {
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+      }
+    }
+  }, []);
   
   // Quiz states
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number[]>>({}); // { questionId: [selectedOptions] }
@@ -280,7 +295,125 @@ export default function CourseViewerClient() {
     setQuizAnswers({});
     setQuizTimer(300);
     setCurrentQuizQuestions([]);
+    setMaxTimeWatched(0);
   };
+
+  const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    const currentTime = video.currentTime;
+    if (currentTime > maxTimeWatched + 1) {
+      video.currentTime = maxTimeWatched;
+    } else {
+      setMaxTimeWatched(Math.max(maxTimeWatched, currentTime));
+    }
+  };
+
+  const handleSeeking = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    if (video.currentTime > maxTimeWatched) {
+      video.currentTime = maxTimeWatched;
+    }
+  };
+
+  const handleVideoEnded = async () => {
+    if (!activeLesson) return;
+    if (!lessonProgress.includes(activeLesson.id)) {
+      try {
+        await api.post(`/api/courses/lesson/${activeLesson.id}/progress`, {
+          completed: true
+        });
+        setLessonProgress([...lessonProgress, activeLesson.id]);
+        alert('ดูวิดีโอบทเรียนจบแล้ว! บันทึกความคืบหน้าการเข้าเรียนสำเร็จ');
+      } catch (err) {
+        setLessonProgress([...lessonProgress, activeLesson.id]);
+        alert('ดูวิดีโอบทเรียนจบแล้ว (Mock)! บันทึกความคืบหน้าการเข้าเรียนสำเร็จ');
+      }
+    }
+  };
+
+  const extractYoutubeVideoId = (url: string) => {
+    if (!url) return '';
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : '';
+  };
+
+  // YouTube player effect
+  useEffect(() => {
+    let checkInterval: any = null;
+    if (activeLesson?.content_type === 'video' && activeLesson.content_url && (activeLesson.content_url.includes('youtube') || activeLesson.content_url.includes('youtu.be') || activeLesson.content_url.includes('embed'))) {
+      const videoId = extractYoutubeVideoId(activeLesson.content_url);
+      if (videoId) {
+        const initPlayer = () => {
+          const windowAny = window as any;
+          if (!windowAny.YT || !windowAny.YT.Player) {
+            setTimeout(initPlayer, 100);
+            return;
+          }
+
+          if (ytPlayerRef.current) {
+            try {
+              ytPlayerRef.current.destroy();
+            } catch (e) {}
+          }
+
+          let ytMaxWatched = 0;
+
+          ytPlayerRef.current = new windowAny.YT.Player('youtube-player-div', {
+            height: '100%',
+            width: '100%',
+            videoId: videoId,
+            playerVars: {
+              rel: 0,
+              modestbranding: 1,
+              controls: 1
+            },
+            events: {
+              onStateChange: (event: any) => {
+                if (event.data === windowAny.YT.PlayerState.PLAYING) {
+                  if (!checkInterval) {
+                    checkInterval = setInterval(() => {
+                      if (ytPlayerRef.current && ytPlayerRef.current.getCurrentTime) {
+                        const currentTime = ytPlayerRef.current.getCurrentTime();
+                        if (currentTime > ytMaxWatched + 2) {
+                          ytPlayerRef.current.seekTo(ytMaxWatched, true);
+                        } else {
+                          ytMaxWatched = Math.max(ytMaxWatched, currentTime);
+                        }
+                      }
+                    }, 500);
+                  }
+                } else {
+                  if (checkInterval) {
+                    clearInterval(checkInterval);
+                    checkInterval = null;
+                  }
+                }
+
+                if (event.data === windowAny.YT.PlayerState.ENDED) {
+                  handleVideoEnded();
+                }
+              }
+            }
+          });
+        };
+
+        initPlayer();
+      }
+    }
+
+    return () => {
+      if (checkInterval) {
+        clearInterval(checkInterval);
+      }
+      if (ytPlayerRef.current) {
+        try {
+          ytPlayerRef.current.destroy();
+        } catch (e) {}
+        ytPlayerRef.current = null;
+      }
+    };
+  }, [activeLesson]);
 
   // Toggle lesson complete checkmark
   const handleMarkComplete = async () => {
@@ -539,6 +672,11 @@ export default function CourseViewerClient() {
                         <div className="flex items-center gap-2 min-w-0">
                           {getLessonIcon(lesson.content_type)}
                           <span className="truncate">{lesson.title}</span>
+                          {lesson.evaluation_points !== undefined && lesson.evaluation_points > 0 && (
+                            <span className="text-[8px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded shrink-0 border border-emerald-500/10">
+                              ★+{lesson.evaluation_points}
+                            </span>
+                          )}
                         </div>
                         {isDone && <CheckCircle className="text-emerald-500 shrink-0" size={14} />}
                       </button>
@@ -563,16 +701,24 @@ export default function CourseViewerClient() {
                       <video
                         src={activeLesson.content_url}
                         controls
+                        onTimeUpdate={handleTimeUpdate}
+                        onSeeking={handleSeeking}
+                        onEnded={handleVideoEnded}
                         className="w-full h-full object-contain bg-black"
+                        controlsList="nodownload"
                       />
                     ) : (
-                      <iframe
-                        src={formatYoutubeUrl(activeLesson.content_url)}
-                        title={activeLesson.title}
-                        className="w-full h-full border-none"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
+                      activeLesson.content_url.includes('youtube') || activeLesson.content_url.includes('youtu.be') ? (
+                        <div id="youtube-player-div" className="w-full h-full bg-black" />
+                      ) : (
+                        <iframe
+                          src={formatYoutubeUrl(activeLesson.content_url)}
+                          title={activeLesson.title}
+                          className="w-full h-full border-none"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      )
                     )}
                   </div>
                 </GlassCard>
@@ -738,21 +884,39 @@ export default function CourseViewerClient() {
                   </div>
                   {/* Mark Completed button */}
                   <div className="pt-4 border-t border-slate-100 dark:border-white/5 flex justify-end">
-                    <button 
-                      onClick={handleMarkComplete}
-                      className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm ${
-                        lessonProgress.includes(activeLesson.id)
-                          ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                          : 'bg-warehouse-orange hover:bg-warehouse-orange/95 text-white shadow-warehouse-orange/10'
-                      }`}
-                    >
-                      <Check size={14} />
-                      <span>
-                        {lessonProgress.includes(activeLesson.id) 
-                          ? 'เรียนสำเร็จแล้ว (Completed)' 
-                          : 'ทำเครื่องหมายเรียนสำเร็จ'}
-                      </span>
-                    </button>
+                    {activeLesson.content_type === 'video' ? (
+                      <button 
+                        disabled
+                        className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border ${
+                          lessonProgress.includes(activeLesson.id)
+                            ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                            : 'bg-slate-100 dark:bg-white/5 text-slate-450 dark:text-slate-400 border-slate-200 dark:border-white/5 cursor-not-allowed'
+                        }`}
+                      >
+                        <Check size={14} />
+                        <span>
+                          {lessonProgress.includes(activeLesson.id) 
+                            ? 'เรียนสำเร็จแล้ว (Completed)' 
+                            : 'กรุณาดูวิดีโอให้จบเพื่อบันทึกการเรียน'}
+                        </span>
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={handleMarkComplete}
+                        className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm ${
+                          lessonProgress.includes(activeLesson.id)
+                            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                            : 'bg-warehouse-orange hover:bg-warehouse-orange/95 text-white shadow-warehouse-orange/10'
+                        }`}
+                      >
+                        <Check size={14} />
+                        <span>
+                          {lessonProgress.includes(activeLesson.id) 
+                            ? 'เรียนสำเร็จแล้ว (Completed)' 
+                            : 'ทำเครื่องหมายเรียนสำเร็จ'}
+                        </span>
+                      </button>
+                    )}
                   </div>
                 </GlassCard>
               )}

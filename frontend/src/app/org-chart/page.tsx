@@ -497,12 +497,12 @@ export default function OrgChartPage() {
       ? { clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }
       : undefined;
 
-    // Card border glow color based on level
+    // Card border glow color based on level (Green, White, Orange corporate theme)
     const levelGlowClass = item.level_order === 1
-      ? 'border-amber-400/50 hover:border-amber-400 shadow-amber-500/5 dark:shadow-none'
+      ? 'border-orange-500/60 hover:border-orange-500 shadow-orange-500/10'
       : item.level_order === 2 || item.level_order === 3
-      ? 'border-emerald-500/35 hover:border-emerald-500 shadow-emerald-500/5 dark:shadow-none'
-      : 'border-slate-200/60 dark:border-white/5 hover:border-warehouse-orange/30';
+      ? 'border-emerald-500/60 hover:border-emerald-500 shadow-emerald-500/10'
+      : 'border-emerald-500/20 hover:border-orange-500/40 shadow-slate-500/5';
 
     const isDragging = draggingCardId === item.id;
 
@@ -522,21 +522,21 @@ export default function OrgChartPage() {
     const getPositionBadgeStyle = (roleName: string) => {
       const name = roleName || '';
       if (name.includes('ผู้จัดการ') || name.toLowerCase().includes('manager')) {
-        return 'text-rose-600 bg-rose-50 border-rose-200 dark:text-rose-450 dark:bg-rose-500/10 dark:border-rose-500/20';
+        return 'text-white bg-rose-650 border-transparent shadow-sm dark:bg-rose-700';
       }
       if (name.includes('หัวหน้า') || name.toLowerCase().includes('supervisor') || name.toLowerCase().includes('leader')) {
-        return 'text-purple-650 bg-purple-50 border-purple-200 dark:text-purple-450 dark:bg-purple-500/10 dark:border-purple-500/20';
+        return 'text-white bg-purple-600 border-transparent shadow-sm dark:bg-purple-750';
       }
       if (name.includes('เจ้าหน้าที่') || name.toLowerCase().includes('officer') || name.toLowerCase().includes('staff')) {
-        return 'text-sky-600 bg-sky-50 border-sky-200 dark:text-sky-450 dark:bg-sky-500/10 dark:border-sky-500/20';
+        return 'text-white bg-sky-500 border-transparent shadow-sm dark:bg-sky-650';
       }
       if (name.includes('ขับรถยก') || name.toLowerCase().includes('forklift')) {
-        return 'text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-450 dark:bg-amber-500/10 dark:border-amber-500/20';
+        return 'text-white bg-amber-500 border-transparent shadow-sm dark:bg-amber-650';
       }
       if (name.includes('พนักงาน') || name.toLowerCase().includes('worker') || name.toLowerCase().includes('operator') || name.includes('จัดเตรียม')) {
-        return 'text-slate-600 bg-slate-100 border-slate-200 dark:text-slate-400 dark:bg-slate-500/10 dark:border-slate-500/20';
+        return 'text-white bg-slate-500 border-transparent shadow-sm dark:bg-slate-650';
       }
-      return 'text-warehouse-orange bg-warehouse-orange/5 border border-warehouse-orange/15';
+      return 'text-white bg-orange-500 border-transparent shadow-sm';
     };
 
     const positionBadgeClass = getPositionBadgeStyle(item.role_name);
@@ -559,19 +559,21 @@ export default function OrgChartPage() {
           Level {item.level_order}
         </div>
 
-        <div className={`w-52 p-3.5 rounded-2xl bg-white dark:bg-warehouse-slate border shadow-md flex flex-col items-center text-center transition-shadow duration-300 hover:shadow-lg ${levelGlowClass} ${
+        <div className={`w-52 p-3.5 rounded-2xl bg-white dark:bg-slate-900 border shadow-md flex flex-col items-center text-center transition-all duration-300 hover:shadow-lg relative overflow-hidden ${levelGlowClass} ${
           isAdmin ? (isDragging ? 'cursor-grabbing border-emerald-500 scale-105 shadow-xl' : 'cursor-grab') : ''
         }`}>
+          {/* Top colored accent bar in corporate colors (Green - Orange) */}
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 via-emerald-400 to-orange-500 rounded-t-2xl pointer-events-none" />
           
-          {/* Profile Image / Initial */}
+          {/* Profile Image / Initial with Orange border */}
           <div 
             style={clipStyle}
-            className={`${sizeClass} ${shapeClass} overflow-hidden border-2 border-emerald-500 bg-emerald-50 dark:bg-white/5 flex items-center justify-center mb-2.5 shadow-md pointer-events-none`}
+            className={`${sizeClass} ${shapeClass} overflow-hidden border-2 border-orange-500 bg-orange-50 dark:bg-white/5 flex items-center justify-center mb-2.5 shadow-md pointer-events-none`}
           >
             {item.image_url ? (
               <img src={item.image_url} alt={item.name} className="w-full h-full object-cover pointer-events-none" />
             ) : (
-              <User size={item.photo_size === 'sm' ? 24 : item.photo_size === 'lg' ? 44 : 32} className="text-emerald-600 dark:text-emerald-400 pointer-events-none" />
+              <User size={item.photo_size === 'sm' ? 24 : item.photo_size === 'lg' ? 44 : 32} className="text-orange-600 dark:text-orange-400 pointer-events-none" />
             )}
           </div>
 
@@ -740,14 +742,14 @@ export default function OrgChartPage() {
 
                     // Parent bottom-center point calculation
                     const startX = (parent.pos_x || 0) + 104; // w-52 is 208px, center is 104px
-                    const startY = (parent.pos_y || 0) + 150; // card bottom estimate
+                    const startY = (parent.pos_y || 0) + 181; // card bottom edge
 
                     // Child top-center point
                     const endX = (item.pos_x || 0) + 104;
-                    const endY = (item.pos_y || 0);
+                    const endY = (item.pos_y || 0) + 15; // card top edge (below level label)
 
                     const midY = (startY + endY) / 2;
-                    const pathD = `M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY}`;
+                    const pathD = `M ${startX} ${startY} L ${startX} ${midY} L ${endX} ${midY} L ${endX} ${endY}`;
 
                     // Color lines based on subordinate's zone choice
                     const zoneColors: Record<string, string> = {

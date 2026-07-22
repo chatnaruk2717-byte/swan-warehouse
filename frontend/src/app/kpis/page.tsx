@@ -545,11 +545,11 @@ export default function KpisPage() {
             {cumulativeGrade}
           </div>
           <div>
-            <p className="text-xs text-slate-400 font-bold">เกรดเฉลี่ยสะสมรวม (Cumulative GPA)</p>
+            <p className="text-xs text-slate-400 font-bold">ผลการดำเนินงานสะสมรวม (Cumulative KPI %)</p>
             <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">
-              {cumulativeScore.toFixed(2)} / 4.00
+              {((cumulativeScore / 4.0) * 100).toFixed(1)}%
             </h3>
-            <span className="text-[10px] text-slate-400 font-medium">รวมผลงานตั้งแต่ต้นปี</span>
+            <span className="text-[10px] text-slate-400 font-medium">เกรดเฉลี่ยสะสม: {cumulativeScore.toFixed(2)}</span>
           </div>
         </GlassCard>
 
@@ -558,13 +558,13 @@ export default function KpisPage() {
             {getMonthlyPerformance('June').grade}
           </div>
           <div>
-            <p className="text-xs text-slate-400 font-bold">เกรดประจำเดือนมิถุนายน (June KPI)</p>
+            <p className="text-xs text-slate-400 font-bold">ผลการดำเนินงานมิถุนายน (June KPI %)</p>
             <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">
-              {getMonthlyPerformance('June').score.toFixed(2)} / 4.00
+              {((getMonthlyPerformance('June').score / 4.0) * 100).toFixed(1)}%
             </h3>
             <span className="text-[10px] text-emerald-500 font-semibold flex items-center gap-0.5">
               <ChevronUp size={12} />
-              <span>เกรดสูงสุดรายเดือน</span>
+              <span>ประสิทธิภาพสูงสุดของปี</span>
             </span>
           </div>
         </GlassCard>
@@ -574,9 +574,9 @@ export default function KpisPage() {
             {getMonthlyPerformance('May').grade}
           </div>
           <div>
-            <p className="text-xs text-slate-400 font-bold">เกรดประจำเดือนพฤษภาคม (May KPI)</p>
+            <p className="text-xs text-slate-400 font-bold">ผลการดำเนินงานพฤษภาคม (May KPI %)</p>
             <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">
-              {getMonthlyPerformance('May').score.toFixed(2)} / 4.00
+              {((getMonthlyPerformance('May').score / 4.0) * 100).toFixed(1)}%
             </h3>
             <span className="text-[10px] text-slate-400 font-medium">ระดับผลดำเนินงานระดับดี</span>
           </div>
@@ -587,9 +587,9 @@ export default function KpisPage() {
             {getMonthlyPerformance('April').grade}
           </div>
           <div>
-            <p className="text-xs text-slate-400 font-bold">เกรดประจำเดือนเมษายน (April KPI)</p>
+            <p className="text-xs text-slate-400 font-bold">ผลการดำเนินงานเมษายน (April KPI %)</p>
             <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">
-              {getMonthlyPerformance('April').score.toFixed(2)} / 4.00
+              {((getMonthlyPerformance('April').score / 4.0) * 100).toFixed(1)}%
             </h3>
             <span className="text-[10px] text-slate-400 font-medium">ระดับผลดำเนินงานพอใช้</span>
           </div>
@@ -653,8 +653,8 @@ export default function KpisPage() {
         {/* Bar comparison chart */}
         <GlassCard className="lg:col-span-2 h-[400px] flex flex-col p-6" delay={0.15}>
           <div className="mb-4">
-            <h4 className="font-bold text-sm text-slate-800 dark:text-white">กราฟแสดงแนวโน้มเกรดเฉลี่ยรายเดือน (Monthly GPA Trend)</h4>
-            <p className="text-xs text-slate-400 mt-0.5">ผลงานเกรดเฉลี่ยถ่วงน้ำหนักรวมของแผนกคลังสินค้า ตั้งแต่ต้นปีถึงปัจจุบัน</p>
+            <h4 className="font-bold text-sm text-slate-800 dark:text-white">กราฟแสดงแนวโน้มผลดำเนินงานรายเดือน (Monthly KPI Performance % Trend)</h4>
+            <p className="text-xs text-slate-400 mt-0.5">ผลงานเฉลี่ยคิดเป็นเปอร์เซ็นต์รวมของแผนกคลังสินค้า ตั้งแต่ต้นปีถึงปัจจุบัน</p>
           </div>
           <div className="flex-1 w-full text-xs">
             <ResponsiveContainer width="100%" height="90%">
@@ -676,14 +676,14 @@ export default function KpisPage() {
                   };
 
                   const defaultMonths = [
-                    { monthName: 'January', monthThai: 'ม.ค.', defaultScore: 3.10 },
-                    { monthName: 'February', monthThai: 'ก.พ.', defaultScore: 3.20 },
-                    { monthName: 'March', monthThai: 'มี.ค.', defaultScore: 2.95 }
+                    { monthName: 'January', monthThai: 'ม.ค.', defaultScore: 77.5 },
+                    { monthName: 'February', monthThai: 'ก.พ.', defaultScore: 80.0 },
+                    { monthName: 'March', monthThai: 'มี.ค.', defaultScore: 73.8 }
                   ];
 
                   const data = [...defaultMonths.map(d => ({
                     month: d.monthThai,
-                    'เกรดเฉลี่ย': d.defaultScore
+                    'เปอร์เซ็นต์ผลงาน': d.defaultScore
                   }))];
 
                   const stateMonthsOrder = ['April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -693,9 +693,10 @@ export default function KpisPage() {
 
                   sortedStateMonths.forEach(m => {
                     if (m !== 'January' && m !== 'February' && m !== 'March') {
+                      const perf = getMonthlyPerformance(m);
                       data.push({
                         month: thaiMonthMap[m] || m,
-                        'เกรดเฉลี่ย': parseFloat(getMonthlyPerformance(m).score.toFixed(2))
+                        'เปอร์เซ็นต์ผลงาน': parseFloat(((perf.score / 4.0) * 100).toFixed(1))
                       });
                     }
                   });
@@ -712,16 +713,17 @@ export default function KpisPage() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" className="dark:stroke-slate-800" />
                 <XAxis dataKey="month" tickLine={false} stroke="#94A3B8" />
-                <YAxis domain={[0, 4.0]} axisLine={false} tickLine={false} stroke="#94A3B8" />
+                <YAxis domain={[0, 100]} unit="%" axisLine={false} tickLine={false} stroke="#94A3B8" />
                 <Tooltip 
                   contentStyle={{ borderRadius: '12px', background: 'rgba(30, 41, 59, 0.95)', border: 'none', color: '#fff' }}
                   formatter={(value: any) => {
                     const val = parseFloat(value);
-                    return [`${val.toFixed(2)} / 4.00 (เกรด ${getOverallGrade(val)})`, 'เกรดเฉลี่ยรวม'];
+                    const equivalentGpa = (val / 100) * 4.0;
+                    return [`${val.toFixed(1)}% (เกรด ${getOverallGrade(equivalentGpa)})`, 'ผลการดำเนินงาน'];
                   }}
                 />
                 <Legend wrapperStyle={{ fontSize: 10 }} />
-                <Area type="monotone" dataKey="เกรดเฉลี่ย" stroke="#F97316" strokeWidth={2.5} fillOpacity={1} fill="url(#colorGpa)" />
+                <Area type="monotone" dataKey="เปอร์เซ็นต์ผลงาน" stroke="#F97316" strokeWidth={2.5} fillOpacity={1} fill="url(#colorGpa)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>

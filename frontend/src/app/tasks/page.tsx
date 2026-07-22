@@ -43,7 +43,9 @@ export default function TasksPage() {
     task_name: '',
     category: 'Kaizen',
     description: '',
-    due_date: new Date().toISOString().split('T')[0]
+    due_date: new Date().toISOString().split('T')[0],
+    task_image: '',
+    evaluation_points: '10'
   });
 
   const [selectedEmpIds, setSelectedEmpIds] = useState<number[]>([]);
@@ -77,6 +79,19 @@ export default function TasksPage() {
   useEffect(() => {
     loadData();
   }, [user]);
+
+  const handleTaskImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setTaskForm(prev => ({
+        ...prev,
+        task_image: reader.result as string
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,7 +132,9 @@ export default function TasksPage() {
           status: 'pending' as const,
           progress_percentage: 0,
           supervisor_approved: false,
-          due_date: taskForm.due_date
+          due_date: taskForm.due_date,
+          task_image: taskForm.task_image || undefined,
+          evaluation_points: parseInt(taskForm.evaluation_points, 10) || 0
         };
       });
       setTasks([...mockNewTasks, ...tasks]);
@@ -259,7 +276,9 @@ export default function TasksPage() {
       task_name: '',
       category: 'Kaizen',
       description: '',
-      due_date: new Date().toISOString().split('T')[0]
+      due_date: new Date().toISOString().split('T')[0],
+      task_image: '',
+      evaluation_points: '10'
     });
     setSelectedEmpIds([]);
     setAssignAll(false);
@@ -370,6 +389,11 @@ export default function TasksPage() {
                 <span className="text-[9px] uppercase font-bold text-warehouse-orange bg-warehouse-orange/10 px-2 py-0.5 rounded">
                   {task.category}
                 </span>
+                {task.evaluation_points !== undefined && task.evaluation_points > 0 && (
+                  <span className="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded flex items-center gap-0.5">
+                    ★ +{task.evaluation_points} คะแนน
+                  </span>
+                )}
                 <span className="text-[10px] text-slate-400 font-medium">กำหนดส่ง: {task.due_date}</span>
                 {task.employee_name && user?.role !== 'employee' && (
                   <span className="text-[10px] text-warehouse-navy dark:text-sky-400 font-semibold">• พนักงาน: {task.employee_name} ({task.emp_code})</span>
@@ -379,6 +403,19 @@ export default function TasksPage() {
                 {task.task_name}
               </h4>
               <p className="text-slate-400 text-xs line-clamp-1">{task.description || 'ไม่มีคำอธิบายเพิ่มเติม'}</p>
+              {task.task_image && (
+                <div className="mt-2">
+                  <p className="text-[10px] font-bold text-slate-400 mb-1">รูปภาพประกอบจากหัวหน้างาน:</p>
+                  <div className="relative w-48 h-28 rounded-lg overflow-hidden border border-slate-200/50 dark:border-white/5 cursor-zoom-in hover:opacity-90 transition-opacity">
+                    <img 
+                      src={task.task_image} 
+                      alt="Task Reference" 
+                      className="w-full h-full object-cover" 
+                      onClick={() => window.open(task.task_image, '_blank')}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Task stats indicators */}
@@ -535,9 +572,42 @@ export default function TasksPage() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5 col-span-2">
+                <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-400">กำหนดส่งงาน (Due Date)</label>
                   <input type="date" required value={taskForm.due_date} onChange={(e) => setTaskForm({ ...taskForm, due_date: e.target.value })} className="glass-input text-xs" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-400">คะแนนประเมิน (Evaluation Points)</label>
+                  <input type="number" required min="0" max="100" value={taskForm.evaluation_points} onChange={(e) => setTaskForm({ ...taskForm, evaluation_points: e.target.value })} className="glass-input text-xs" placeholder="10" />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400">แนบรูปภาพประกอบภารกิจ (Task Image)</label>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-650 dark:text-slate-200 text-xs font-bold cursor-pointer border border-slate-200/50 dark:border-white/5 transition-all">
+                    <Upload size={14} />
+                    <span>เลือกไฟล์ / ถ่ายรูป</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      capture="environment"
+                      onChange={handleTaskImageUpload} 
+                      className="hidden" 
+                    />
+                  </label>
+                  {taskForm.task_image && (
+                    <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200/50 dark:border-white/10">
+                      <img src={taskForm.task_image} className="w-full h-full object-cover" />
+                      <button 
+                        type="button" 
+                        onClick={() => setTaskForm(prev => ({ ...prev, task_image: '' }))}
+                        className="absolute top-0 right-0 p-0.5 bg-rose-500 text-white rounded-full hover:bg-rose-600 transition-colors"
+                      >
+                        <X size={8} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/50 dark:border-white/5">

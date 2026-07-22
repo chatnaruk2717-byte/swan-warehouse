@@ -79,7 +79,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
  *     summary: Assign a new warehouse task
  */
 router.post('/', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
-  const { employee_id, employee_ids, task_name, category, description, due_date } = req.body;
+  const { employee_id, employee_ids, task_name, category, description, due_date, task_image, evaluation_points } = req.body;
 
   if ((!employee_id && (!employee_ids || employee_ids.length === 0)) || !task_name || !category || !due_date) {
     return res.status(400).json({ message: 'employee_id or employee_ids, task_name, category, and due_date are required.' });
@@ -98,10 +98,10 @@ router.post('/', authenticateToken, requireRole(['admin', 'staff']), async (req:
 
     for (const empId of targetIds) {
       const result = await query(
-        `INSERT INTO daily_tasks (employee_id, task_name, category, description, due_date, status) 
-         VALUES ($1, $2, $3, $4, $5, 'pending') 
+        `INSERT INTO daily_tasks (employee_id, task_name, category, description, due_date, status, task_image, evaluation_points) 
+         VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7) 
          RETURNING *`,
-        [empId, task_name, category, description || '', due_date]
+        [empId, task_name, category, description || '', due_date, task_image || null, parseInt(evaluation_points, 10) || 0]
       );
       createdTasks.push(result.rows[0]);
     }
@@ -121,6 +121,8 @@ router.post('/', authenticateToken, requireRole(['admin', 'staff']), async (req:
         progress_percentage: 0,
         supervisor_approved: false,
         due_date,
+        task_image: task_image || null,
+        evaluation_points: parseInt(evaluation_points, 10) || 0,
         created_at: new Date().toISOString()
       };
       mockStore.mockDailyTasks.push(newTask);
@@ -201,6 +203,10 @@ router.post('/:id/approve', authenticateToken, requireRole(['admin', 'staff']), 
       throw new Error('MOCK_MODE');
     }
 
+    // Fetch the task first to check its previous supervisor_approved status
+    const checkTaskRes = await query('SELECT supervisor_approved, employee_id, evaluation_points FROM daily_tasks WHERE id = $1', [taskId]);
+    const prevTask = checkTaskRes.rows ? checkTaskRes.rows[0] : null;
+
     const approveQuery = `
       UPDATE daily_tasks 
       SET supervisor_approved = TRUE, approved_by = $1, approved_at = NOW(), updated_at = NOW() 
@@ -213,6 +219,11 @@ router.post('/:id/approve', authenticateToken, requireRole(['admin', 'staff']), 
     }
 
     const task = result.rows[0];
+
+    // Add points to employee if they weren't approved before
+    if (prevTask && !prevTask.supervisor_approved && prevTask.evaluation_points > 0) {
+      await query('UPDATE users SET accumulated_points = accumulated_points + $1 WHERE id = $2', [prevTask.evaluation_points, prevTask.employee_id]);
+    }
     
     // Auto-save proof_file to warehouse documents if present on approval
     if (task.proof_file) {
@@ -241,9 +252,18 @@ router.post('/:id/approve', authenticateToken, requireRole(['admin', 'staff']), 
     }
 
     const task = mockStore.mockDailyTasks[index];
+    const wasApproved = task.supervisor_approved;
     task.supervisor_approved = true;
     task.approved_by = supervisorId;
     task.approved_at = new Date().toISOString();
+
+    // Add points to employee
+    if (!wasApproved && task.evaluation_points && task.evaluation_points > 0) {
+      const empIndex = mockStore.mockUsers.findIndex(u => u.id === task.employee_id);
+      if (empIndex !== -1) {
+        mockStore.mockUsers[empIndex].accumulated_points = (mockStore.mockUsers[empIndex].accumulated_points || 0) + task.evaluation_points;
+      }
+    }
 
     // Auto-save to mockDocuments
     if (task.proof_file) {

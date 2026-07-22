@@ -14,6 +14,8 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         await connection.query('ALTER TABLE questions MODIFY COLUMN media_url LONGTEXT');
         await connection.query('ALTER TABLE documents MODIFY COLUMN file_url LONGTEXT NOT NULL');
         await connection.query('ALTER TABLE daily_tasks MODIFY COLUMN proof_file LONGTEXT');
+        await connection.query('ALTER TABLE daily_tasks ADD COLUMN task_image LONGTEXT NULL').catch(() => {});
+        await connection.query('ALTER TABLE daily_tasks ADD COLUMN evaluation_points INT DEFAULT 0').catch(() => {});
         await connection.query('ALTER TABLE org_chart MODIFY COLUMN image_url LONGTEXT');
         await connection.query('ALTER TABLE org_chart ADD COLUMN display_order INT DEFAULT 0').catch(() => {});
         await connection.query('ALTER TABLE org_chart ADD COLUMN parent_id INT NULL').catch(() => {});
@@ -343,6 +345,8 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         approved_at TIMESTAMP NULL,
         due_date DATE NOT NULL,
         proof_file LONGTEXT,
+        task_image LONGTEXT NULL,
+        evaluation_points INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (employee_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -697,6 +701,9 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
     await connection.query('ALTER TABLE daily_tasks MODIFY COLUMN proof_file LONGTEXT').catch((e) => {
       console.warn('Altering daily_tasks.proof_file failed (might already be LONGTEXT):', e.message);
     });
+
+    await connection.query('ALTER TABLE daily_tasks ADD COLUMN task_image LONGTEXT NULL').catch(() => {});
+    await connection.query('ALTER TABLE daily_tasks ADD COLUMN evaluation_points INT DEFAULT 0').catch(() => {});
 
     await connection.query('ALTER TABLE org_chart MODIFY COLUMN image_url LONGTEXT').catch((e) => {
       console.warn('Altering org_chart.image_url failed (might already be LONGTEXT):', e.message);

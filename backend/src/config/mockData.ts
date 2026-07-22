@@ -129,6 +129,8 @@ export interface DailyTask {
   approved_at?: string;
   due_date: string;
   proof_file?: string;
+  task_image?: string | null;
+  evaluation_points?: number;
   created_at: string;
 }
 

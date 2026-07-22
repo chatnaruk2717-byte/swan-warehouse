@@ -96,7 +96,7 @@ export default function KpisPage() {
       { id: '5.2', name: 'อุบัติเหตุการทำงาน', formula: 'อุบัติเหตุที่มีเอกสารสอบสวนความปลอดภัยจาก จป. = 0 ครั้ง', wt: 5.0, target: '0 ครั้ง', actual: 0, unit: 'ครั้ง', category: 'Safety' },
       { id: '7', name: 'Operation Cost +-5%', formula: 'Actual Sales unit (can+eoe+sot) / ค่าใช้จ่ายจริง x 100', wt: 10.0, target: '-5.00%', actual: -5.1, unit: '%', category: 'Cost' },
       { id: '8', name: 'จำนวนรายการที่ Adjust ในระบบ ERP (ต่อเดือน)', formula: 'การ Adjust = 0 ครั้ง/ตู้ (รวมทุกคลังสินค้า)', wt: 5.0, target: '0 ครั้ง', actual: 1, unit: 'ครั้ง', category: 'System' },
-      { id: '9', name: 'ความถูกต้องของการจัดสินค้าเพื่อจัดส่ง', formula: 'จำนวน Job งานถูกต้อง / จำนวน Job งานทั้งหมด x 100', wt: 5.0, target: '100.00%', actual: 100.0, unit: '%', category: 'Quality' },
+      { id: '9', name: 'ความถูกต้องของการจัดสินค้าเพื่อจัดส่ง', formula: 'จำนวน Job งานถูกต้อง / จำนวน Job งานทั้งหมด x 100', wt: 5.0, target: '100.00%', actual: 100.0, unit: '%', category: 'Quality', manualScore: 4.0, manualGrade: 'A' },
       { id: '10', name: 'จำนวนกิจกรรม FI/Kaizen ที่สำเร็จและนำไปใช้จริง', formula: 'กิจกรรมประดิษฐ์นวัตกรรม/การปรับปรุงงาน (สะสมต่อปี)', wt: 10.0, target: '12 เรื่อง', actual: 11, unit: 'เรื่อง', category: 'Improvement' },
       { id: '11.1', name: 'ผลประเมิน 5S & Work Instruction (WI)', formula: 'คะแนนการผ่านประเมินมาตรฐานพื้นที่ 5S และหน้างาน', wt: 10.0, target: '28 เรื่อง', actual: 28, unit: 'เรื่อง', category: '5S' },
       { id: '11.2', name: 'ประเด็นที่ไม่แก้ไข', formula: 'จำนวนประเด็นค้างแก้ไขเกิน 3 วัน', wt: 5.0, target: '0 เคส', actual: 1, unit: 'เคส', category: '5S' }
@@ -117,7 +117,7 @@ export default function KpisPage() {
       { id: '9', name: 'ความถูกต้องของการจัดสินค้าเพื่อจัดส่ง', formula: 'จำนวน Job งานถูกต้อง / จำนวน Job งานทั้งหมด x 100', wt: 5.0, target: '100.00%', actual: 99.8, unit: '%', category: 'Quality' },
       { id: '10', name: 'จำนวนกิจกรรม FI/Kaizen ที่สำเร็จและนำไปใช้จริง', formula: 'กิจกรรมประดิษฐ์นวัตกรรม/การปรับปรุงงาน (สะสมต่อปี)', wt: 10.0, target: '12 เรื่อง', actual: 10, unit: 'เรื่อง', category: 'Improvement' },
       { id: '11.1', name: 'ผลประเมิน 5S & Work Instruction (WI)', formula: 'คะแนนการผ่านประเมินมาตรฐานพื้นที่ 5S และหน้างาน', wt: 10.0, target: '28 เรื่อง', actual: 27, unit: 'เรื่อง', category: '5S' },
-      { id: '11.2', name: 'ประเด็นที่ไม่แก้ไข', formula: 'จำนวนประเด็นค้างแก้ไขเกิน 3 วัน', wt: 5.0, target: '0 เคส', actual: 2, unit: 'เคส', category: '5S' }
+      { id: '11.2', name: 'ประเด็นที่ไม่แก้ไข', formula: 'จำนวนประเด็นค้างแก้ไขเกิน 3 วัน', wt: 5.0, target: '0 เคส', actual: 2, unit: 'เคส', category: '5S', manualScore: 1.0, manualGrade: 'E' }
     ],
     'April': [
       { id: '1.1', name: 'การจ่ายสินค้าออกตามลำดับ FIFO 100%', formula: '(จำนวนรายการที่จ่ายตรงตาม FIFO / จำนวนรายการจ่ายทั้งหมด) x 100', wt: 15.0, target: '98%', actual: 95.8, unit: '%', category: 'FIFO' },
@@ -280,6 +280,35 @@ export default function KpisPage() {
     if (avgScore >= 1.5) return 'D';
     return 'E';
   };
+
+  const getMonthlyPerformance = (monthName: string) => {
+    const list = kpis[monthName] || [];
+    let totalWeightedScore = 0;
+    let totalWeight = 0;
+    list.forEach(item => {
+      const autoResult = getKpiGradeAndScore(item.id, item.actual);
+      const score = item.manualScore !== undefined ? item.manualScore : autoResult.score;
+      totalWeightedScore += (score * (item.wt / 100));
+      totalWeight += (item.wt / 100);
+    });
+    const score = totalWeight > 0 ? (totalWeightedScore / totalWeight) : 0;
+    const grade = getOverallGrade(score);
+    return { score, grade };
+  };
+
+  // Calculate Cumulative Performance for all months
+  const allMonthsList = Object.keys(kpis);
+  let totalScoreSum = 0;
+  let monthsWithDataCount = 0;
+  allMonthsList.forEach(m => {
+    const perf = getMonthlyPerformance(m);
+    if (perf.score > 0) {
+      totalScoreSum += perf.score;
+      monthsWithDataCount++;
+    }
+  });
+  const cumulativeScore = monthsWithDataCount > 0 ? (totalScoreSum / monthsWithDataCount) : 0;
+  const cumulativeGrade = getOverallGrade(cumulativeScore);
 
   const overallGradeLetter = getOverallGrade(finalWeightedScore);
 
@@ -512,49 +541,57 @@ export default function KpisPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
         <GlassCard className="flex items-center gap-5 border border-slate-200/50 dark:border-white/5" hoverEffect>
-          <div className="w-12 h-12 rounded-2xl bg-warehouse-orange/10 text-warehouse-orange flex items-center justify-center">
-            <Gauge size={22} />
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-lg">
+            {cumulativeGrade}
           </div>
           <div>
-            <p className="text-xs text-slate-400 font-bold">ประสิทธิภาพเฉลี่ย (Efficiency)</p>
-            <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">94.2%</h3>
+            <p className="text-xs text-slate-400 font-bold">เกรดเฉลี่ยสะสมรวม (Cumulative GPA)</p>
+            <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">
+              {cumulativeScore.toFixed(2)} / 4.00
+            </h3>
+            <span className="text-[10px] text-slate-400 font-medium">รวมผลงานตั้งแต่ต้นปี</span>
+          </div>
+        </GlassCard>
+
+        <GlassCard className="flex items-center gap-5 border border-slate-200/50 dark:border-white/5" hoverEffect>
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold text-lg">
+            {getMonthlyPerformance('June').grade}
+          </div>
+          <div>
+            <p className="text-xs text-slate-400 font-bold">เกรดประจำเดือนมิถุนายน (June KPI)</p>
+            <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">
+              {getMonthlyPerformance('June').score.toFixed(2)} / 4.00
+            </h3>
             <span className="text-[10px] text-emerald-500 font-semibold flex items-center gap-0.5">
               <ChevronUp size={12} />
-              <span>+1.5% สูงกว่าเป้า</span>
+              <span>เกรดสูงสุดรายเดือน</span>
             </span>
           </div>
         </GlassCard>
 
         <GlassCard className="flex items-center gap-5 border border-slate-200/50 dark:border-white/5" hoverEffect>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-            <ShieldCheck size={22} />
+          <div className="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-500 flex items-center justify-center font-bold text-lg">
+            {getMonthlyPerformance('May').grade}
           </div>
           <div>
-            <p className="text-xs text-slate-400 font-bold">คะแนนความปลอดภัย (Safety)</p>
-            <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">99.8%</h3>
-            <span className="text-[10px] text-slate-400 font-medium">เกิดอุบัติเหตุสะสม: 0 ครั้ง</span>
+            <p className="text-xs text-slate-400 font-bold">เกรดประจำเดือนพฤษภาคม (May KPI)</p>
+            <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">
+              {getMonthlyPerformance('May').score.toFixed(2)} / 4.00
+            </h3>
+            <span className="text-[10px] text-slate-400 font-medium">ระดับผลดำเนินงานระดับดี</span>
           </div>
         </GlassCard>
 
         <GlassCard className="flex items-center gap-5 border border-slate-200/50 dark:border-white/5" hoverEffect>
-          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
-            <Flame size={22} />
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center font-bold text-lg">
+            {getMonthlyPerformance('April').grade}
           </div>
           <div>
-            <p className="text-xs text-slate-400 font-bold">ชั่วโมงสะสมรวม (KPI Hours)</p>
-            <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">840 ชม.</h3>
-            <span className="text-[10px] text-slate-400 font-medium">ข้อมูลรอบ 30 วัน</span>
-          </div>
-        </GlassCard>
-
-        <GlassCard className="flex items-center gap-5 border border-slate-200/50 dark:border-white/5" hoverEffect>
-          <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
-            <Activity size={22} />
-          </div>
-          <div>
-            <p className="text-xs text-slate-400 font-bold">ความถูกต้องหยิบสินค้า (Accuracy)</p>
-            <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">98.5%</h3>
-            <span className="text-[10px] text-slate-400 font-medium">อัตราการคืนของต่ำกว่า 0.2%</span>
+            <p className="text-xs text-slate-400 font-bold">เกรดประจำเดือนเมษายน (April KPI)</p>
+            <h3 className="text-2xl font-bold font-sans text-slate-800 dark:text-white mt-1">
+              {getMonthlyPerformance('April').score.toFixed(2)} / 4.00
+            </h3>
+            <span className="text-[10px] text-slate-400 font-medium">ระดับผลดำเนินงานพอใช้</span>
           </div>
         </GlassCard>
 
@@ -616,62 +653,75 @@ export default function KpisPage() {
         {/* Bar comparison chart */}
         <GlassCard className="lg:col-span-2 h-[400px] flex flex-col p-6" delay={0.15}>
           <div className="mb-4">
-            <h4 className="font-bold text-sm text-slate-800 dark:text-white">กราฟแสดงแนวโน้มรายเดือน (Monthly Trend Graph)</h4>
-            <p className="text-xs text-slate-400 mt-0.5">กราฟแสดงความก้าวหน้าผลงานจริงเทียบกับค่าเป้าหมายของแต่ละเดือน</p>
+            <h4 className="font-bold text-sm text-slate-800 dark:text-white">กราฟแสดงแนวโน้มเกรดเฉลี่ยรายเดือน (Monthly GPA Trend)</h4>
+            <p className="text-xs text-slate-400 mt-0.5">ผลงานเกรดเฉลี่ยถ่วงน้ำหนักรวมของแผนกคลังสินค้า ตั้งแต่ต้นปีถึงปัจจุบัน</p>
           </div>
           <div className="flex-1 w-full text-xs">
             <ResponsiveContainer width="100%" height="90%">
               <AreaChart
                 data={(() => {
-                  const monthsOrder = ['April', 'May', 'June'];
                   const thaiMonthMap: Record<string, string> = {
-                    'April': 'เมษายน',
-                    'May': 'พฤษภาคม',
-                    'June': 'มิถุนายน'
+                    'January': 'ม.ค.',
+                    'February': 'ก.พ.',
+                    'March': 'มี.ค.',
+                    'April': 'เม.ย.',
+                    'May': 'พ.ค.',
+                    'June': 'มิ.ย.',
+                    'July': 'ก.ค.',
+                    'August': 'ส.ค.',
+                    'September': 'ก.ย.',
+                    'October': 'ต.ค.',
+                    'November': 'พ.ย.',
+                    'December': 'ธ.ค.'
                   };
-                  
-                  const allMonths = Object.keys(kpis).sort((a, b) => {
-                    const idxA = monthsOrder.indexOf(a);
-                    const idxB = monthsOrder.indexOf(b);
-                    if (idxA === -1 && idxB === -1) return a.localeCompare(b);
-                    if (idxA === -1) return 1;
-                    if (idxB === -1) return -1;
-                    return idxA - idxB;
+
+                  const defaultMonths = [
+                    { monthName: 'January', monthThai: 'ม.ค.', defaultScore: 3.10 },
+                    { monthName: 'February', monthThai: 'ก.พ.', defaultScore: 3.20 },
+                    { monthName: 'March', monthThai: 'มี.ค.', defaultScore: 2.95 }
+                  ];
+
+                  const data = [...defaultMonths.map(d => ({
+                    month: d.monthThai,
+                    'เกรดเฉลี่ย': d.defaultScore
+                  }))];
+
+                  const stateMonthsOrder = ['April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                  const sortedStateMonths = Object.keys(kpis).sort((a, b) => {
+                    return stateMonthsOrder.indexOf(a) - stateMonthsOrder.indexOf(b);
                   });
 
-                  return allMonths.map(m => {
-                    const item = kpis[m].find(k => k.id === trendKpiId);
-                    let targetVal = 0;
-                    if (item) {
-                      const cleanTarget = item.target.replace(/[^d.-]/g, '');
-                      targetVal = parseFloat(cleanTarget) || 0;
+                  sortedStateMonths.forEach(m => {
+                    if (m !== 'January' && m !== 'February' && m !== 'March') {
+                      data.push({
+                        month: thaiMonthMap[m] || m,
+                        'เกรดเฉลี่ย': parseFloat(getMonthlyPerformance(m).score.toFixed(2))
+                      });
                     }
-                    return {
-                      month: thaiMonthMap[m] || m,
-                      'ผลงานจริง': item ? item.actual : 0,
-                      'เป้าหมาย': targetVal
-                    };
                   });
+
+                  return data;
                 })()}
                 margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
               >
                 <defs>
-                  <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="colorGpa" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#F97316" stopOpacity={0.3}/>
                     <stop offset="95%" stopColor="#F97316" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorTarget" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.15}/>
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" className="dark:stroke-slate-800" />
                 <XAxis dataKey="month" tickLine={false} stroke="#94A3B8" />
-                <YAxis axisLine={false} tickLine={false} stroke="#94A3B8" />
-                <Tooltip contentStyle={{ borderRadius: '12px', background: 'rgba(30, 41, 59, 0.95)', border: 'none', color: '#fff' }} />
+                <YAxis domain={[0, 4.0]} axisLine={false} tickLine={false} stroke="#94A3B8" />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '12px', background: 'rgba(30, 41, 59, 0.95)', border: 'none', color: '#fff' }}
+                  formatter={(value: any) => {
+                    const val = parseFloat(value);
+                    return [`${val.toFixed(2)} / 4.00 (เกรด ${getOverallGrade(val)})`, 'เกรดเฉลี่ยรวม'];
+                  }}
+                />
                 <Legend wrapperStyle={{ fontSize: 10 }} />
-                <Area type="monotone" dataKey="ผลงานจริง" stroke="#F97316" strokeWidth={2.5} fillOpacity={1} fill="url(#colorActual)" />
-                <Area type="monotone" dataKey="เป้าหมาย" stroke="#3B82F6" strokeWidth={2} strokeDasharray="5 5" fillOpacity={1} fill="url(#colorTarget)" />
+                <Area type="monotone" dataKey="เกรดเฉลี่ย" stroke="#F97316" strokeWidth={2.5} fillOpacity={1} fill="url(#colorGpa)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -817,6 +867,41 @@ export default function KpisPage() {
             </div>
           </GlassCard>
 
+          {/* Adjusted KPIs Notification Banner */}
+          {kpiItemsWithScores.some(k => k.manualScore !== undefined || k.manualGrade !== undefined) && (
+            <GlassCard className="p-4 border border-amber-500/30 bg-amber-500/5 rounded-2xl flex items-start gap-4" delay={0.05}>
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center flex-shrink-0">
+                <Target size={20} />
+              </div>
+              <div className="flex-1">
+                <h5 className="text-xs font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+                  <span>ตัวชี้วัดที่มีการปรับ เพิ่ม/ลด คะแนน (Adjusted KPIs)</span>
+                  <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[8px] uppercase tracking-wider font-extrabold">
+                    Manual Override
+                  </span>
+                </h5>
+                <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                  ในเดือนนี้นะครับ มีตัวชี้วัดที่หัวหน้างานได้ปรับ เพิ่ม/ลด คะแนน ตามความเหมาะสมดังนี้:
+                </p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {kpiItemsWithScores
+                    .filter(k => k.manualScore !== undefined || k.manualGrade !== undefined)
+                    .map(k => {
+                      const autoVal = getKpiGradeAndScore(k.id, k.actual);
+                      return (
+                        <div key={k.id} className="text-[10px] bg-slate-100 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-lg px-2.5 py-1 flex items-center gap-1.5">
+                          <span className="font-mono text-slate-400 font-bold">{k.id}</span>
+                          <span className="text-slate-500 dark:text-slate-350 line-clamp-1 max-w-[150px]">{k.name}</span>
+                          <span className="text-slate-400">({autoVal.grade})</span>
+                          <span className="text-amber-500 font-bold">➔ เกรด {k.grade}</span>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            </GlassCard>
+          )}
+
           {/* Detailed KPI Table */}
           <GlassCard className="p-0 overflow-hidden border border-slate-200/50 dark:border-white/5">
             <div className="overflow-x-auto text-xs">
@@ -862,11 +947,23 @@ export default function KpisPage() {
                         <td className="px-4 py-4 text-center text-warehouse-orange font-mono font-bold">
                           {kpi.actual.toFixed(kpi.unit === '%' ? 1 : 0)}{kpi.unit}
                         </td>
-                        <td className="px-4 py-4 text-center font-mono text-slate-400">{kpi.score.toFixed(1)}</td>
+                        <td className="px-4 py-4 text-center font-mono">
+                          <span className="text-slate-800 dark:text-white font-bold">{kpi.score.toFixed(1)}</span>
+                          {kpi.manualScore !== undefined && (
+                            <span className="block text-[8px] text-amber-500 font-bold mt-0.5" title={`ค่าคำนวณอัตโนมัติ: ${getKpiGradeAndScore(kpi.id, kpi.actual).score.toFixed(1)}`}>
+                              (ปรับแก้)
+                            </span>
+                          )}
+                        </td>
                         <td className="px-4 py-4 text-center">
                           <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${getGradeColor(kpi.grade)}`}>
                             {kpi.grade}
                           </span>
+                          {kpi.manualGrade !== undefined && (
+                            <span className="block text-[8px] text-amber-500 font-bold mt-0.5" title={`เกรดคำนวณอัตโนมัติ: ${getKpiGradeAndScore(kpi.id, kpi.actual).grade}`}>
+                              (ปรับแก้)
+                            </span>
+                          )}
                         </td>
                         {(user?.role === 'admin' || user?.role === 'staff') && (
                           <td className="px-4 py-4 text-center">

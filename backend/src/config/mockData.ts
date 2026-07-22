@@ -483,3 +483,5 @@ export interface PerformanceSettings {
 export const mockPerformanceSettings: PerformanceSettings[] = [
   { id: 1, points_per_task: 10, points_per_course: 20, points_per_quiz: 15 }
 ];
+
+export const mockAwardedPoints: string[] = [];

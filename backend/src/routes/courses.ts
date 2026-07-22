@@ -342,7 +342,15 @@ router.post('/lesson/:id/progress', authenticateToken, async (req: Authenticated
         const lessonRes = await query('SELECT evaluation_points FROM lessons WHERE id = $1', [lessonId]);
         const lessonPts = lessonRes.rows.length > 0 ? (lessonRes.rows[0].evaluation_points || 0) : 0;
         if (lessonPts > 0) {
-          await query('UPDATE users SET accumulated_points = accumulated_points + $1 WHERE id = $2', [lessonPts, employeeId]);
+          try {
+            await query(
+              'INSERT INTO awarded_points (employee_id, entity_type, entity_id, points) VALUES ($1, $2, $3, $4)',
+              [employeeId, 'lesson', lessonId, lessonPts]
+            );
+            await query('UPDATE users SET accumulated_points = accumulated_points + $1 WHERE id = $2', [lessonPts, employeeId]);
+          } catch (e: any) {
+            console.log('[Lesson Points Blocked]: Points already awarded.', e.message);
+          }
         }
       }
     } else {
@@ -414,7 +422,15 @@ router.post('/lesson/:id/progress', authenticateToken, async (req: Authenticated
         const courseDetailsRes = await query('SELECT evaluation_points FROM courses WHERE id = $1', [courseId]);
         const coursePts = courseDetailsRes.rows.length > 0 ? (courseDetailsRes.rows[0].evaluation_points || 0) : 0;
         if (coursePts > 0) {
-          await query('UPDATE users SET accumulated_points = accumulated_points + $1 WHERE id = $2', [coursePts, employeeId]);
+          try {
+            await query(
+              'INSERT INTO awarded_points (employee_id, entity_type, entity_id, points) VALUES ($1, $2, $3, $4)',
+              [employeeId, 'course', courseId, coursePts]
+            );
+            await query('UPDATE users SET accumulated_points = accumulated_points + $1 WHERE id = $2', [coursePts, employeeId]);
+          } catch (e: any) {
+            console.log('[Course Points Blocked]: Points already awarded.', e.message);
+          }
         }
       }
     }
@@ -450,9 +466,13 @@ router.post('/lesson/:id/progress', authenticateToken, async (req: Authenticated
 
         // Add points
         if (!mockAlreadyCompleted && lesson.evaluation_points && lesson.evaluation_points > 0) {
-          const empIndex = mockStore.mockUsers.findIndex(u => u.id === employeeId);
-          if (empIndex !== -1) {
-            mockStore.mockUsers[empIndex].accumulated_points = (mockStore.mockUsers[empIndex].accumulated_points || 0) + lesson.evaluation_points;
+          const key = `${employeeId}-lesson-${lessonId}`;
+          if (!mockStore.mockAwardedPoints.includes(key)) {
+            mockStore.mockAwardedPoints.push(key);
+            const empIndex = mockStore.mockUsers.findIndex(u => u.id === employeeId);
+            if (empIndex !== -1) {
+              mockStore.mockUsers[empIndex].accumulated_points = (mockStore.mockUsers[empIndex].accumulated_points || 0) + lesson.evaluation_points;
+            }
           }
         }
       }
@@ -509,9 +529,13 @@ router.post('/lesson/:id/progress', authenticateToken, async (req: Authenticated
     if (percent === 100 && !mockWasCompleted) {
       const course = mockStore.mockCourses.find(c => c.id === courseId);
       if (course && course.evaluation_points && course.evaluation_points > 0) {
-        const empIndex = mockStore.mockUsers.findIndex(u => u.id === employeeId);
-        if (empIndex !== -1) {
-          mockStore.mockUsers[empIndex].accumulated_points = (mockStore.mockUsers[empIndex].accumulated_points || 0) + course.evaluation_points;
+        const key = `${employeeId}-course-${courseId}`;
+        if (!mockStore.mockAwardedPoints.includes(key)) {
+          mockStore.mockAwardedPoints.push(key);
+          const empIndex = mockStore.mockUsers.findIndex(u => u.id === employeeId);
+          if (empIndex !== -1) {
+            mockStore.mockUsers[empIndex].accumulated_points = (mockStore.mockUsers[empIndex].accumulated_points || 0) + course.evaluation_points;
+          }
         }
       }
     }
@@ -637,7 +661,15 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
         const lessonRes = await query('SELECT evaluation_points FROM lessons WHERE id = $1', [lessonId]);
         const lessonPts = lessonRes.rows.length > 0 ? (lessonRes.rows[0].evaluation_points || 0) : 0;
         if (lessonPts > 0) {
-          await query('UPDATE users SET accumulated_points = accumulated_points + $1 WHERE id = $2', [lessonPts, employeeId]);
+          try {
+            await query(
+              'INSERT INTO awarded_points (employee_id, entity_type, entity_id, points) VALUES ($1, $2, $3, $4)',
+              [employeeId, 'lesson', lessonId, lessonPts]
+            );
+            await query('UPDATE users SET accumulated_points = accumulated_points + $1 WHERE id = $2', [lessonPts, employeeId]);
+          } catch (e: any) {
+            console.log('[Quiz Lesson Points Blocked]: Points already awarded.', e.message);
+          }
         }
       }
 
@@ -702,7 +734,15 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
           const courseDetailsRes = await query('SELECT evaluation_points FROM courses WHERE id = $1', [courseId]);
           const coursePts = courseDetailsRes.rows.length > 0 ? (courseDetailsRes.rows[0].evaluation_points || 0) : 0;
           if (coursePts > 0) {
-            await query('UPDATE users SET accumulated_points = accumulated_points + $1 WHERE id = $2', [coursePts, employeeId]);
+            try {
+              await query(
+                'INSERT INTO awarded_points (employee_id, entity_type, entity_id, points) VALUES ($1, $2, $3, $4)',
+                [employeeId, 'course', courseId, coursePts]
+              );
+              await query('UPDATE users SET accumulated_points = accumulated_points + $1 WHERE id = $2', [coursePts, employeeId]);
+            } catch (e: any) {
+              console.log('[Quiz Course Points Blocked]: Points already awarded.', e.message);
+            }
           }
         }
       }
@@ -795,9 +835,13 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
       // Add points
       const lessonObj = mockStore.mockLessons.find(l => l.id === lessonId);
       if (!mockAlreadyCompleted && lessonObj && lessonObj.evaluation_points && lessonObj.evaluation_points > 0) {
-        const empIndex = mockStore.mockUsers.findIndex(u => u.id === employeeId);
-        if (empIndex !== -1) {
-          mockStore.mockUsers[empIndex].accumulated_points = (mockStore.mockUsers[empIndex].accumulated_points || 0) + lessonObj.evaluation_points;
+        const key = `${employeeId}-lesson-${lessonId}`;
+        if (!mockStore.mockAwardedPoints.includes(key)) {
+          mockStore.mockAwardedPoints.push(key);
+          const empIndex = mockStore.mockUsers.findIndex(u => u.id === employeeId);
+          if (empIndex !== -1) {
+            mockStore.mockUsers[empIndex].accumulated_points = (mockStore.mockUsers[empIndex].accumulated_points || 0) + lessonObj.evaluation_points;
+          }
         }
       }
 
@@ -847,9 +891,13 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
         if (percent === 100 && !mockWasCompleted) {
           const course = mockStore.mockCourses.find(c => c.id === courseId);
           if (course && course.evaluation_points && course.evaluation_points > 0) {
-            const empIndex = mockStore.mockUsers.findIndex(u => u.id === employeeId);
-            if (empIndex !== -1) {
-              mockStore.mockUsers[empIndex].accumulated_points = (mockStore.mockUsers[empIndex].accumulated_points || 0) + course.evaluation_points;
+            const key = `${employeeId}-course-${courseId}`;
+            if (!mockStore.mockAwardedPoints.includes(key)) {
+              mockStore.mockAwardedPoints.push(key);
+              const empIndex = mockStore.mockUsers.findIndex(u => u.id === employeeId);
+              if (empIndex !== -1) {
+                mockStore.mockUsers[empIndex].accumulated_points = (mockStore.mockUsers[empIndex].accumulated_points || 0) + course.evaluation_points;
+              }
             }
           }
         }

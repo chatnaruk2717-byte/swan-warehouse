@@ -222,7 +222,15 @@ router.post('/:id/approve', authenticateToken, requireRole(['admin', 'staff']), 
 
     // Add points to employee if they weren't approved before
     if (prevTask && !prevTask.supervisor_approved && prevTask.evaluation_points > 0) {
-      await query('UPDATE users SET accumulated_points = accumulated_points + $1 WHERE id = $2', [prevTask.evaluation_points, prevTask.employee_id]);
+      try {
+        await query(
+          'INSERT INTO awarded_points (employee_id, entity_type, entity_id, points) VALUES ($1, $2, $3, $4)',
+          [prevTask.employee_id, 'task', prevTask.id, prevTask.evaluation_points]
+        );
+        await query('UPDATE users SET accumulated_points = accumulated_points + $1 WHERE id = $2', [prevTask.evaluation_points, prevTask.employee_id]);
+      } catch (e: any) {
+        console.log('[Task Points Blocked]: Points already awarded or duplicate key.', e.message);
+      }
     }
     
     // Auto-save proof_file to warehouse documents if present on approval
@@ -259,9 +267,13 @@ router.post('/:id/approve', authenticateToken, requireRole(['admin', 'staff']), 
 
     // Add points to employee
     if (!wasApproved && task.evaluation_points && task.evaluation_points > 0) {
-      const empIndex = mockStore.mockUsers.findIndex(u => u.id === task.employee_id);
-      if (empIndex !== -1) {
-        mockStore.mockUsers[empIndex].accumulated_points = (mockStore.mockUsers[empIndex].accumulated_points || 0) + task.evaluation_points;
+      const key = `${task.employee_id}-task-${task.id}`;
+      if (!mockStore.mockAwardedPoints.includes(key)) {
+        mockStore.mockAwardedPoints.push(key);
+        const empIndex = mockStore.mockUsers.findIndex(u => u.id === task.employee_id);
+        if (empIndex !== -1) {
+          mockStore.mockUsers[empIndex].accumulated_points = (mockStore.mockUsers[empIndex].accumulated_points || 0) + task.evaluation_points;
+        }
       }
     }
 

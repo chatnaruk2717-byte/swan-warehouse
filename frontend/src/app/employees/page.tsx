@@ -55,19 +55,36 @@ export default function EmployeesPage() {
   });
 
   const fetchEmployees = async () => {
+    // Check sessionStorage cache first
+    const cachedData = sessionStorage.getItem('swan_employees_cache');
+    if (cachedData) {
+      try {
+        const parsed = JSON.parse(cachedData);
+        setEmployees(parsed);
+        setLoading(false);
+      } catch (e) {
+        console.warn('Failed to parse employees cache', e);
+      }
+    } else {
+      setLoading(true);
+    }
+
     try {
       const res = await api.get('/api/employees');
       setEmployees(res.data);
+      sessionStorage.setItem('swan_employees_cache', JSON.stringify(res.data));
     } catch (err) {
       console.warn('API error fetching employees, using fallback mock list.');
       // Mock fallback
-      setEmployees([
+      const mockList = [
         { id: 6, employee_id: 'EMP006', email: 'employee1@warehouse.com', name: 'สมปอง ลุยงาน', role: 'employee', department: 'Operations', position: 'Forklift Driver', warehouse_area: 'Zone A', phone: '086-789-0123', status: 'active', supervisor_name: 'ประพันธ์ ยอดคุม', start_date: '2023-01-10', photo_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', working_shift: 'A' },
         { id: 7, employee_id: 'EMP007', email: 'employee2@warehouse.com', name: 'อรอนงค์ แพ็กเก่ง', role: 'employee', department: 'Operations', position: 'Packer', warehouse_area: 'Zone A', phone: '087-890-1234', status: 'active', supervisor_name: 'ประพันธ์ ยอดคุม', start_date: '2023-04-15', photo_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', working_shift: 'A' },
         { id: 8, employee_id: 'EMP008', email: 'employee3@warehouse.com', name: 'มานะ คัดของ', role: 'employee', department: 'Operations', position: 'Picker', warehouse_area: 'Zone B', phone: '088-901-2345', status: 'active', supervisor_name: 'สมศรี มีคุม', start_date: '2023-08-01', photo_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150', working_shift: 'B' },
         { id: 9, employee_id: 'EMP009', email: 'employee4@warehouse.com', name: 'เกษม รับสินค้า', role: 'employee', department: 'Operations', position: 'Receiving Clerk', warehouse_area: 'Loading Dock', phone: '089-012-3456', status: 'active', supervisor_name: 'สมศรี มีคุม', start_date: '2023-10-12', photo_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150', working_shift: 'B' },
         { id: 10, employee_id: 'EMP010', email: 'employee5@warehouse.com', name: 'จารุณี นับสต็อก', role: 'employee', department: 'Operations', position: 'Inventory Counter', warehouse_area: 'Zone B', phone: '081-111-2222', status: 'active', supervisor_name: 'สมศรี มีคุม', start_date: '2024-01-05', photo_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150', working_shift: 'B' }
-      ]);
+      ];
+      setEmployees(mockList);
+      sessionStorage.setItem('swan_employees_cache', JSON.stringify(mockList));
     } finally {
       setLoading(false);
     }
@@ -81,7 +98,9 @@ export default function EmployeesPage() {
     e.preventDefault();
     try {
       const res = await api.post('/api/employees', formFields);
-      setEmployees([...employees, res.data]);
+      const newEmployees = [...employees, res.data];
+      setEmployees(newEmployees);
+      sessionStorage.setItem('swan_employees_cache', JSON.stringify(newEmployees));
       setShowCreateModal(false);
       resetForm();
     } catch (err: any) {
@@ -99,7 +118,9 @@ export default function EmployeesPage() {
         supervisor_name: selectedSup ? selectedSup.name : 'ไม่มี',
         status: 'active'
       };
-      setEmployees([...employees, mockNew]);
+      const newEmployees = [...employees, mockNew];
+      setEmployees(newEmployees);
+      sessionStorage.setItem('swan_employees_cache', JSON.stringify(newEmployees));
       setShowCreateModal(false);
       resetForm();
     }
@@ -111,7 +132,9 @@ export default function EmployeesPage() {
 
     try {
       const res = await api.put(`/api/employees/${selectedEmp.id}`, formFields);
-      setEmployees(employees.map(emp => emp.id === selectedEmp.id ? res.data : emp));
+      const updatedList = employees.map(emp => emp.id === selectedEmp.id ? res.data : emp);
+      setEmployees(updatedList);
+      sessionStorage.setItem('swan_employees_cache', JSON.stringify(updatedList));
       setShowEditModal(false);
       resetForm();
     } catch (err: any) {
@@ -128,7 +151,9 @@ export default function EmployeesPage() {
         supervisor_id: formFields.supervisor_id ? parseInt(formFields.supervisor_id, 10) : null,
         supervisor_name: selectedSup ? selectedSup.name : 'ไม่มี'
       };
-      setEmployees(employees.map(emp => emp.id === selectedEmp.id ? updated : emp));
+      const updatedList = employees.map(emp => emp.id === selectedEmp.id ? updated : emp);
+      setEmployees(updatedList);
+      sessionStorage.setItem('swan_employees_cache', JSON.stringify(updatedList));
       setShowEditModal(false);
       resetForm();
     }
@@ -138,14 +163,18 @@ export default function EmployeesPage() {
     if (!confirm('คุณแน่ใจว่าต้องการลบข้อมูลพนักงานคนนี้ออกจากระบบ?')) return;
     try {
       await api.delete(`/api/employees/${id}`);
-      setEmployees(employees.filter(emp => emp.id !== id));
+      const updatedList = employees.filter(emp => emp.id !== id);
+      setEmployees(updatedList);
+      sessionStorage.setItem('swan_employees_cache', JSON.stringify(updatedList));
     } catch (err: any) {
       console.error(err);
       if (err.response) {
         alert('ลบพนักงานไม่สำเร็จ: ' + (err.response.data?.message || err.message));
         return;
       }
-      setEmployees(employees.filter(emp => emp.id !== id));
+      const updatedList = employees.filter(emp => emp.id !== id);
+      setEmployees(updatedList);
+      sessionStorage.setItem('swan_employees_cache', JSON.stringify(updatedList));
     }
   };
 

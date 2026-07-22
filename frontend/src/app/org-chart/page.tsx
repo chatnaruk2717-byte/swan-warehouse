@@ -206,11 +206,15 @@ export default function OrgChartPage() {
         });
         
         // Update main state so everything remains in sync
-        setOrgItems(prev => prev.map(p => 
-          p.id === item.id 
-            ? { ...p, pos_x: item.pos_x, pos_y: item.pos_y }
-            : p
-        ));
+        setOrgItems(prev => {
+          const updated = prev.map(p => 
+            p.id === item.id 
+              ? { ...p, pos_x: item.pos_x, pos_y: item.pos_y }
+              : p
+          );
+          sessionStorage.setItem('swan_org_chart_cache', JSON.stringify(updated));
+          return updated;
+        });
       } catch (err) {
         console.error('Failed to save card coordinate position', err);
       }
@@ -325,12 +329,27 @@ export default function OrgChartPage() {
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
-  // Fetch organization items
+  // Fetch organization items with local cache (sessionStorage)
   const fetchOrgItems = async () => {
-    setIsLoading(true);
+    // Check sessionStorage cache first
+    const cachedData = sessionStorage.getItem('swan_org_chart_cache');
+    if (cachedData) {
+      try {
+        const parsed = JSON.parse(cachedData);
+        setOrgItems(parsed);
+        setIsLoading(false);
+      } catch (e) {
+        console.warn('Failed to parse org chart cache', e);
+      }
+    } else {
+      setIsLoading(true);
+    }
+
     try {
       const res = await api.get('/api/org-chart');
       setOrgItems(res.data);
+      // Save to cache
+      sessionStorage.setItem('swan_org_chart_cache', JSON.stringify(res.data));
     } catch (err) {
       console.error('Failed to load org chart items', err);
     } finally {

@@ -799,8 +799,8 @@ export default function KpisPage() {
                   )}
                 </div>
 
-                {/* Add Month & KPI Buttons (visible only to Admin/Staff) */}
-                {(user?.role === 'admin' || user?.role === 'staff') && (
+                {/* Add Month & KPI Buttons (visible only to Admin) */}
+                {user?.role === 'admin' && (
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => {
@@ -918,7 +918,7 @@ export default function KpisPage() {
                     <th className="px-4 py-3 text-center w-24">ผลงานจริง (Actual)</th>
                     <th className="px-4 py-3 text-center w-20">คะแนน (4.0)</th>
                     <th className="px-4 py-3 text-center w-20">เกรด</th>
-                    {(user?.role === 'admin' || user?.role === 'staff') && (
+                    {user?.role === 'admin' && (
                       <th className="px-4 py-3 text-center w-24">จัดการ</th>
                     )}
                   </tr>
@@ -967,7 +967,7 @@ export default function KpisPage() {
                             </span>
                           )}
                         </td>
-                        {(user?.role === 'admin' || user?.role === 'staff') && (
+                        {user?.role === 'admin' && (
                           <td className="px-4 py-4 text-center">
                             <div className="flex items-center justify-center gap-1.5">
                               <button

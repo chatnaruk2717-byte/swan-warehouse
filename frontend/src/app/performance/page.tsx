@@ -552,13 +552,17 @@ export default function PerformancePage() {
                       </div>
                     </td>
                     <td className="py-4 px-6 text-right">
-                      <button 
-                        onClick={() => openEditScore(emp)}
-                        className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 hover:border-warehouse-orange hover:text-warehouse-orange text-[10px] font-bold transition-all inline-flex items-center gap-1"
-                      >
-                        <Edit3 size={11} />
-                        <span>ปรับข้อมูลผลงาน</span>
-                      </button>
+                      {user?.role === 'admin' ? (
+                        <button 
+                          onClick={() => openEditScore(emp)}
+                          className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 hover:border-warehouse-orange hover:text-warehouse-orange text-[10px] font-bold transition-all inline-flex items-center gap-1"
+                        >
+                          <Edit3 size={11} />
+                          <span>ปรับข้อมูลผลงาน</span>
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 font-semibold">(เฉพาะ Admin)</span>
+                      )}
                     </td>
                   </tr>
                 );

@@ -577,8 +577,21 @@ export default function TasksPage() {
                   <input type="date" required value={taskForm.due_date} onChange={(e) => setTaskForm({ ...taskForm, due_date: e.target.value })} className="glass-input text-xs" />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400">คะแนนประเมิน (Evaluation Points)</label>
-                  <input type="number" required min="0" max="100" value={taskForm.evaluation_points} onChange={(e) => setTaskForm({ ...taskForm, evaluation_points: e.target.value })} className="glass-input text-xs" placeholder="10" />
+                  <label className="text-[10px] font-bold text-slate-400">
+                    คะแนนประเมิน (Evaluation Points)
+                    {user?.role !== 'admin' && <span className="text-amber-500 ml-1 font-normal">(เฉพาะ Admin)</span>}
+                  </label>
+                  <input 
+                    type="number" 
+                    required 
+                    min="0" 
+                    max="100" 
+                    disabled={user?.role !== 'admin'}
+                    value={user?.role === 'admin' ? taskForm.evaluation_points : '0'} 
+                    onChange={(e) => setTaskForm({ ...taskForm, evaluation_points: e.target.value })} 
+                    className="glass-input text-xs disabled:opacity-50 disabled:cursor-not-allowed" 
+                    placeholder="10" 
+                  />
                 </div>
               </div>
 

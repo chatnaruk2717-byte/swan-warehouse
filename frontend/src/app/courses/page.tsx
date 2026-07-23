@@ -836,8 +836,19 @@ export default function CoursesPage() {
                   <input type="text" value={courseForm.estimated_time} onChange={(e) => setCourseForm({ ...courseForm, estimated_time: e.target.value })} className="glass-input text-xs" />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400">คะแนนโบนัสสำเร็จหลักสูตร (Bonus Points)</label>
-                  <input type="number" min="0" value={courseForm.evaluation_points} onChange={(e) => setCourseForm({ ...courseForm, evaluation_points: e.target.value })} className="glass-input text-xs" placeholder="0" />
+                  <label className="text-[10px] font-bold text-slate-400">
+                    คะแนนโบนัสสำเร็จหลักสูตร (Bonus Points)
+                    {user?.role !== 'admin' && <span className="text-amber-500 ml-1 font-normal">(เฉพาะ Admin)</span>}
+                  </label>
+                  <input 
+                    type="number" 
+                    min="0" 
+                    disabled={user?.role !== 'admin'}
+                    value={user?.role === 'admin' ? courseForm.evaluation_points : '0'} 
+                    onChange={(e) => setCourseForm({ ...courseForm, evaluation_points: e.target.value })} 
+                    className="glass-input text-xs disabled:opacity-50 disabled:cursor-not-allowed" 
+                    placeholder="0" 
+                  />
                 </div>
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/50 dark:border-white/5">
@@ -1156,11 +1167,12 @@ export default function CoursesPage() {
                             type="number" 
                             min="0"
                             required
-                            value={newLessonForm.evaluation_points} 
+                            disabled={user?.role !== 'admin'}
+                            value={user?.role === 'admin' ? newLessonForm.evaluation_points : '0'} 
                             onChange={(e) => setNewLessonForm({ ...newLessonForm, evaluation_points: e.target.value })} 
-                            className="w-24 glass-input text-[11px] py-1.5 px-2.5 text-center" 
+                            className="w-24 glass-input text-[11px] py-1.5 px-2.5 text-center disabled:opacity-50 disabled:cursor-not-allowed" 
                             placeholder="คะแนน" 
-                            title="คะแนนที่ได้รับเมื่อผ่าน/จบเนื้อหานี้"
+                            title={user?.role === 'admin' ? "คะแนนที่ได้รับเมื่อผ่าน/จบเนื้อหานี้" : "เฉพาะ Admin เท่านั้นที่กำหนดคะแนนได้"}
                           />
                         </div>
                         

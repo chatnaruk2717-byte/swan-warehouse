@@ -89,6 +89,9 @@ router.post('/', authenticateToken, requireRole(['admin', 'staff']), async (req:
     ? employee_ids.map((id: any) => parseInt(id, 10))
     : [parseInt(employee_id, 10)];
 
+  const isAdmin = req.user?.role === 'admin';
+  const finalEvaluationPoints = isAdmin ? (parseInt(evaluation_points, 10) || 0) : 0;
+
   const createdTasks: any[] = [];
 
   try {
@@ -101,7 +104,7 @@ router.post('/', authenticateToken, requireRole(['admin', 'staff']), async (req:
         `INSERT INTO daily_tasks (employee_id, task_name, category, description, due_date, status, task_image, evaluation_points) 
          VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7) 
          RETURNING *`,
-        [empId, task_name, category, description || '', due_date, task_image || null, parseInt(evaluation_points, 10) || 0]
+        [empId, task_name, category, description || '', due_date, task_image || null, finalEvaluationPoints]
       );
       createdTasks.push(result.rows[0]);
     }
@@ -122,7 +125,7 @@ router.post('/', authenticateToken, requireRole(['admin', 'staff']), async (req:
         supervisor_approved: false,
         due_date,
         task_image: task_image || null,
-        evaluation_points: parseInt(evaluation_points, 10) || 0,
+        evaluation_points: finalEvaluationPoints,
         created_at: new Date().toISOString()
       };
       mockStore.mockDailyTasks.push(newTask);

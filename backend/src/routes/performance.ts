@@ -67,7 +67,7 @@ router.get('/settings', authenticateToken, async (req: AuthenticatedRequest, res
  * PUT /api/performance/settings
  * Update point configuration rules (Admin/Staff only)
  */
-router.put('/settings', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
+router.put('/settings', authenticateToken, requireRole(['admin']), async (req: AuthenticatedRequest, res: Response) => {
   const { points_per_task, points_per_course, points_per_quiz } = req.body;
 
   if (points_per_task === undefined || points_per_course === undefined || points_per_quiz === undefined) {
@@ -275,7 +275,7 @@ router.get('/employees', authenticateToken, requireRole(['admin', 'staff']), asy
  * PUT /api/performance/employee/:id
  * Update score and attendance stats for an employee/staff (Admin/Staff only)
  */
-router.put('/employee/:id', authenticateToken, requireRole(['admin', 'staff']), async (req: AuthenticatedRequest, res: Response) => {
+router.put('/employee/:id', authenticateToken, requireRole(['admin']), async (req: AuthenticatedRequest, res: Response) => {
   const employeeId = parseInt(req.params.id, 10);
   const { 
     evaluation_score, 

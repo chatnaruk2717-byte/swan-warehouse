@@ -564,6 +564,12 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
       throw new Error('MOCK_MODE');
     }
 
+    const checkAwarded = await query(
+      'SELECT id FROM awarded_points WHERE employee_id = $1 AND entity_type = $2 AND entity_id = $3',
+      [employeeId, 'lesson', lessonId]
+    );
+    const pointsAlreadyAwarded = checkAwarded.rows.length > 0;
+
     // Retrieve full questions and their correct answers from database
     const questionsResult = await query(
       'SELECT id, correct_answers, points FROM questions WHERE lesson_id = $1',
@@ -752,7 +758,8 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
       score: pct,
       passed,
       earnedPoints,
-      totalPoints
+      totalPoints,
+      pointsAlreadyAwarded
     });
 
   } catch (err: any) {
@@ -808,6 +815,9 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
 
     const pct = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
     const passed = pct >= 80;
+
+    const key = `${employeeId}-lesson-${lessonId}`;
+    const pointsAlreadyAwarded = mockStore.mockAwardedPoints.includes(key);
 
     mockStore.mockQuizAttempts.push({
       id: mockStore.mockQuizAttempts.length + 1,
@@ -908,7 +918,8 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
       score: pct,
       passed,
       earnedPoints,
-      totalPoints
+      totalPoints,
+      pointsAlreadyAwarded
     });
   }
 });

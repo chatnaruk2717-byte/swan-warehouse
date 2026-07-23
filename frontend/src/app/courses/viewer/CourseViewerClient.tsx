@@ -506,6 +506,12 @@ export default function CourseViewerClient() {
       if (res.data.passed) {
         setLessonProgress([...lessonProgress, activeLesson.id]);
         
+        if (res.data.pointsAlreadyAwarded) {
+          alert('คุณสอบผ่านเกณฑ์แล้ว! (หมายเหตุ: คุณจะไม่ได้รับคะแนนเพิ่มเนื่องจากเคยทำแบบทดสอบนี้ผ่านเกณฑ์แล้ว)');
+        } else {
+          alert('ยินดีด้วย! คุณสอบผ่านเกณฑ์ 80% และได้รับคะแนนสะสมเรียบร้อยแล้ว!');
+        }
+        
         // Show cert popup if all course requirements met
         const allLessonIds = course.chapters.flatMap((c: any) => c.lessons).map((l: any) => l.id);
         const finalProgress = [...lessonProgress, activeLesson.id];
@@ -547,18 +553,26 @@ export default function CourseViewerClient() {
 
       const pct = Math.round((earned / total) * 100);
       const passed = pct >= 80;
+      const mockAlreadyCompleted = lessonProgress.includes(activeLesson.id);
 
       const scoreResult = {
         score: pct,
         passed,
         earnedPoints: earned,
-        totalPoints: total
+        totalPoints: total,
+        pointsAlreadyAwarded: mockAlreadyCompleted
       };
 
       setQuizScore(scoreResult);
 
       if (passed) {
         setLessonProgress([...lessonProgress, activeLesson.id]);
+        
+        if (mockAlreadyCompleted) {
+          alert('คุณสอบผ่านเกณฑ์แล้ว! (โหมดจำลอง: คุณจะไม่ได้รับคะแนนเพิ่มเนื่องจากเคยทำแบบทดสอบนี้ผ่านเกณฑ์แล้ว)');
+        } else {
+          alert('ยินดีด้วย! คุณสอบผ่านเกณฑ์ 80% และได้รับคะแนนสะสมเรียบร้อยแล้ว! (โหมดจำลอง)');
+        }
         
         // Mock all completed -> show certificate
         const mockIds = [1, 2, 3, 4, 5];
@@ -861,6 +875,18 @@ export default function CourseViewerClient() {
                           คุณทำคะแนนได้ <strong className="text-slate-800 dark:text-white font-mono text-sm">{quizScore.score}%</strong> ({quizScore.earnedPoints} จาก {quizScore.totalPoints} คะแนน)
                         </p>
                         <p className="text-[10px] text-slate-400 mt-1">เกณฑ์การสอบผ่านคือ 80% ขึ้นไป</p>
+                        {quizScore.passed && quizScore.pointsAlreadyAwarded && (
+                          <div className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold mt-3 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20 text-left flex items-start gap-1.5">
+                            <span className="shrink-0 text-xs">⚠️</span>
+                            <span>คุณทำแบบทดสอบนี้ผ่านเกณฑ์แล้วในรอบก่อนหน้า ดังนั้นคุณจะไม่ได้รับคะแนนสะสมเพิ่มในครั้งนี้เพื่อป้องกันแต้มซ้ำ</span>
+                          </div>
+                        )}
+                        {quizScore.passed && !quizScore.pointsAlreadyAwarded && (
+                          <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-3 bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/20 text-left flex items-start gap-1.5">
+                            <span className="shrink-0 text-xs">🎉</span>
+                            <span>ยินดีด้วย! คุณได้รับคะแนนสะสมเพิ่มเข้ากระเป๋าเรียบร้อยแล้ว</span>
+                          </div>
+                        )}
                       </div>
                       <div className="flex gap-3 justify-center">
                         <button 

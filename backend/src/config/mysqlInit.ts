@@ -506,6 +506,20 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
     try {
       await connection.query("ALTER TABLE lessons MODIFY COLUMN content_url LONGTEXT");
     } catch (e) {}
+    try {
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS awarded_points (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          employee_id INT NOT NULL,
+          entity_type VARCHAR(20) NOT NULL,
+          entity_id INT NOT NULL,
+          points INT NOT NULL,
+          awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE KEY uq_emp_entity (employee_id, entity_type, entity_id),
+          FOREIGN KEY (employee_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+    } catch (e) {}
 
     // Seed default performance settings if not exists
     try {

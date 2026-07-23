@@ -564,11 +564,16 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
       throw new Error('MOCK_MODE');
     }
 
-    const checkAwarded = await query(
-      'SELECT id FROM awarded_points WHERE employee_id = $1 AND entity_type = $2 AND entity_id = $3',
-      [employeeId, 'lesson', lessonId]
-    );
-    const pointsAlreadyAwarded = checkAwarded.rows.length > 0;
+    let pointsAlreadyAwarded = false;
+    try {
+      const checkAwarded = await query(
+        'SELECT id FROM awarded_points WHERE employee_id = $1 AND entity_type = $2 AND entity_id = $3',
+        [employeeId, 'lesson', lessonId]
+      );
+      pointsAlreadyAwarded = checkAwarded.rows.length > 0;
+    } catch (e) {
+      pointsAlreadyAwarded = false;
+    }
 
     // Retrieve full questions and their correct answers from database
     const questionsResult = await query(
@@ -647,10 +652,14 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
     const passed = pct >= 80; // 80% passing grade
 
     // Log the quiz attempt
-    await query(
-      'INSERT INTO quiz_attempts (employee_id, lesson_id, score, passed) VALUES ($1, $2, $3, $4)',
-      [employeeId, lessonId, pct, passed]
-    );
+    try {
+      await query(
+        'INSERT INTO quiz_attempts (employee_id, lesson_id, score, passed) VALUES ($1, $2, $3, $4)',
+        [employeeId, lessonId, pct, passed]
+      );
+    } catch (e) {
+      console.warn('[QuizAttempt Log Warn]:', e);
+    }
 
     // If passed, mark this lesson as completed!
     if (passed) {

@@ -484,4 +484,7 @@ export const mockPerformanceSettings: PerformanceSettings[] = [
   { id: 1, points_per_task: 10, points_per_course: 20, points_per_quiz: 15 }
 ];
 
-export const mockAwardedPoints: string[] = [];
+export const mockAwardedPoints: string[] = [
+  '6-lesson-1', '6-lesson-2', '6-lesson-3', '6-lesson-4', '6-lesson-5', '6-course-1',
+  '7-lesson-1', '7-lesson-2', '7-lesson-3', '7-lesson-4', '7-lesson-5', '7-course-1'
+];

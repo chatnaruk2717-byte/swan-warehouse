@@ -77,6 +77,44 @@ export default function CourseViewerClient() {
 
   const timerRef = useRef<any>(null);
 
+  const updateLessonProgress = (lessonIdToMark: number) => {
+    setLessonProgress((prev) => {
+      if (prev.includes(lessonIdToMark)) return prev;
+      const updated = [...prev, lessonIdToMark];
+      if (typeof window !== 'undefined' && user?.id && id) {
+        try {
+          localStorage.setItem(`swan_completed_lessons_emp_${user.id}_course_${id}`, JSON.stringify(updated));
+        } catch (e) {}
+      }
+      return updated;
+    });
+  };
+
+  const checkAwardedPointsLocal = (entityType: string, entityId: number): boolean => {
+    if (typeof window === 'undefined' || !user?.id) return false;
+    try {
+      const stored = localStorage.getItem(`swan_awarded_points_emp_${user.id}`);
+      if (stored) {
+        const list: string[] = JSON.parse(stored);
+        return list.includes(`${entityType}-${entityId}`);
+      }
+    } catch (e) {}
+    return false;
+  };
+
+  const markAwardedPointsLocal = (entityType: string, entityId: number) => {
+    if (typeof window === 'undefined' || !user?.id) return;
+    try {
+      const stored = localStorage.getItem(`swan_awarded_points_emp_${user.id}`);
+      const list: string[] = stored ? JSON.parse(stored) : [];
+      const key = `${entityType}-${entityId}`;
+      if (!list.includes(key)) {
+        list.push(key);
+        localStorage.setItem(`swan_awarded_points_emp_${user.id}`, JSON.stringify(list));
+      }
+    } catch (e) {}
+  };
+
   const fetchCourseData = async () => {
     try {
       const courseId = parseInt(id as string, 10);
@@ -103,8 +141,17 @@ export default function CourseViewerClient() {
         }
 
         try {
-          // Fallback progress state matching seeds
-          if (user.id === 6 && courseId === 1) {
+          let initialCompleted: number[] = [];
+          if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem(`swan_completed_lessons_emp_${user.id}_course_${courseId}`);
+            if (saved) {
+              try { initialCompleted = JSON.parse(saved); } catch (e) {}
+            }
+          }
+
+          if (initialCompleted.length > 0) {
+            setLessonProgress(initialCompleted);
+          } else if (user.id === 6 && courseId === 1) {
             setLessonProgress([1, 2, 3, 4, 5]);
           } else if (user.id === 7 && courseId === 1) {
             setLessonProgress([1, 2, 3, 4, 5]);
@@ -496,6 +543,8 @@ export default function CourseViewerClient() {
     setQuizActive(false);
     if (timerRef.current) clearInterval(timerRef.current);
 
+    const alreadyAwardedLocal = checkAwardedPointsLocal('lesson', activeLesson.id) || lessonProgress.includes(activeLesson.id);
+
     let scoreData: any = null;
 
     try {
@@ -511,14 +560,17 @@ export default function CourseViewerClient() {
     }
 
     if (scoreData) {
+      const effectiveAlreadyAwarded = scoreData.pointsAlreadyAwarded || alreadyAwardedLocal;
+      scoreData.pointsAlreadyAwarded = effectiveAlreadyAwarded;
       setQuizScore(scoreData);
 
       if (scoreData.passed) {
-        setLessonProgress([...lessonProgress, activeLesson.id]);
+        updateLessonProgress(activeLesson.id);
         
-        if (scoreData.pointsAlreadyAwarded) {
+        if (effectiveAlreadyAwarded) {
           alert('คุณสอบผ่านเกณฑ์แล้ว! (หมายเหตุ: คุณจะไม่ได้รับคะแนนเพิ่มเนื่องจากเคยทำแบบทดสอบนี้ผ่านเกณฑ์แล้ว)');
         } else {
+          markAwardedPointsLocal('lesson', activeLesson.id);
           alert('ยินดีด้วย! คุณสอบผ่านเกณฑ์ 80% และได้รับคะแนนสะสมเรียบร้อยแล้ว!');
         }
         
@@ -556,24 +608,25 @@ export default function CourseViewerClient() {
 
       const pct = Math.round((earned / total) * 100);
       const passed = pct >= 80;
-      const mockAlreadyCompleted = lessonProgress.includes(activeLesson.id);
+      const effectiveAlreadyAwarded = alreadyAwardedLocal;
 
       const fallbackResult = {
         score: pct,
         passed,
         earnedPoints: earned,
         totalPoints: total,
-        pointsAlreadyAwarded: mockAlreadyCompleted
+        pointsAlreadyAwarded: effectiveAlreadyAwarded
       };
 
       setQuizScore(fallbackResult);
 
       if (passed) {
-        setLessonProgress([...lessonProgress, activeLesson.id]);
+        updateLessonProgress(activeLesson.id);
         
-        if (mockAlreadyCompleted) {
+        if (effectiveAlreadyAwarded) {
           alert('คุณสอบผ่านเกณฑ์แล้ว! (หมายเหตุ: คุณจะไม่ได้รับคะแนนเพิ่มเนื่องจากเคยทำแบบทดสอบนี้ผ่านเกณฑ์แล้ว)');
         } else {
+          markAwardedPointsLocal('lesson', activeLesson.id);
           alert('ยินดีด้วย! คุณสอบผ่านเกณฑ์ 80% และได้รับคะแนนสะสมเรียบร้อยแล้ว!');
         }
         

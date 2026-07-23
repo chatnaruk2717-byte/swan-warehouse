@@ -570,7 +570,11 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
         'SELECT id FROM awarded_points WHERE employee_id = $1 AND entity_type = $2 AND entity_id = $3',
         [employeeId, 'lesson', lessonId]
       );
-      pointsAlreadyAwarded = checkAwarded.rows.length > 0;
+      const checkProg = await query(
+        'SELECT id FROM lesson_progress WHERE employee_id = $1 AND lesson_id = $2 AND completed = TRUE',
+        [employeeId, lessonId]
+      );
+      pointsAlreadyAwarded = checkAwarded.rows.length > 0 || checkProg.rows.length > 0;
     } catch (e) {
       pointsAlreadyAwarded = false;
     }
@@ -831,7 +835,9 @@ router.post('/lesson/:id/quiz-submit', authenticateToken, async (req: Authentica
     const passed = pct >= 80;
 
     const key = `${employeeId}-lesson-${lessonId}`;
-    const pointsAlreadyAwarded = mockStore.mockAwardedPoints.includes(key);
+    const progressIndex = mockStore.mockLessonProgress.findIndex(lp => lp.employee_id === employeeId && lp.lesson_id === lessonId);
+    const mockAlreadyCompleted = progressIndex !== -1 && mockStore.mockLessonProgress[progressIndex].completed;
+    const pointsAlreadyAwarded = mockStore.mockAwardedPoints.includes(key) || mockAlreadyCompleted;
 
     mockStore.mockQuizAttempts.push({
       id: mockStore.mockQuizAttempts.length + 1,

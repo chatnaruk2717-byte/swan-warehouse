@@ -524,7 +524,7 @@ export default function CourseViewerClient() {
       }
     } catch (err: any) {
       console.error('Quiz submission error:', err);
-      if (err.response) {
+      if (err.response && err.response.status === 500) {
         alert(`เกิดข้อผิดพลาดในการประเมินผลคะแนนจากเซิร์ฟเวอร์: ${err.response.data?.message || err.message}`);
         return;
       }

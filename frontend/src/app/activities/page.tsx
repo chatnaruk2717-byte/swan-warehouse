@@ -23,7 +23,9 @@ import {
   Send,
   User,
   Tag,
-  Bookmark
+  Bookmark,
+  Edit3,
+  Trash2
 } from 'lucide-react';
 
 interface Comment {
@@ -58,14 +60,15 @@ export default function DepartmentActivitiesPage() {
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingPost, setEditingPost] = useState<ActivityPost | null>(null);
   const [commentInputs, setCommentInputs] = useState<{ [key: number]: string }>({});
 
-  // Form State for creating new post
-  const [newTitle, setNewTitle] = useState('');
-  const [newCategory, setNewCategory] = useState<ActivityPost['category']>('กิจกรรมคลังสินค้า');
-  const [newContent, setNewContent] = useState('');
-  const [newMediaUrl, setNewMediaUrl] = useState('');
-  const [newMediaType, setNewMediaType] = useState<'image' | 'video'>('image');
+  // Form State for creating / editing post
+  const [formTitle, setFormTitle] = useState('');
+  const [formCategory, setFormCategory] = useState<ActivityPost['category']>('กิจกรรมคลังสินค้า');
+  const [formContent, setFormContent] = useState('');
+  const [formMediaUrl, setFormMediaUrl] = useState('');
+  const [formMediaType, setFormMediaType] = useState<'image' | 'video'>('image');
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
 
   // Default Initial Activities Seed
@@ -214,6 +217,22 @@ export default function DepartmentActivitiesPage() {
     setCommentInputs({ ...commentInputs, [postId]: '' });
   };
 
+  // Delete Comment
+  const handleDeleteComment = (postId: number, commentId: number) => {
+    if (confirm('คุณแน่ใจว่าต้องการลบความคิดเห็นนี้?')) {
+      const updated = posts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            comments: post.comments.filter(c => c.id !== commentId)
+          };
+        }
+        return post;
+      });
+      savePosts(updated);
+    }
+  };
+
   // Image Upload Handling
   const handleImageFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -222,49 +241,88 @@ export default function DepartmentActivitiesPage() {
       reader.onloadend = () => {
         const base64 = reader.result as string;
         setMediaPreview(base64);
-        setNewMediaUrl(base64);
+        setFormMediaUrl(base64);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // Create New Activity Post
-  const handleCreatePost = (e: React.FormEvent) => {
+  // Open Edit Modal
+  const openEditModal = (post: ActivityPost) => {
+    setEditingPost(post);
+    setFormTitle(post.title);
+    setFormCategory(post.category);
+    setFormContent(post.content);
+    setFormMediaUrl(post.media_url || '');
+    setFormMediaType(post.media_type || 'image');
+    setMediaPreview(post.media_url || null);
+  };
+
+  // Delete Post
+  const handleDeletePost = (postId: number) => {
+    if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบโพสต์กิจกรรมนี้?')) {
+      const updated = posts.filter(p => p.id !== postId);
+      savePosts(updated);
+    }
+  };
+
+  // Create or Update Post Form Handler
+  const handleSavePost = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim() || !newContent.trim()) {
+    if (!formTitle.trim() || !formContent.trim()) {
       alert('กรุณากรอกหัวข้อและเนื้อหากิจกรรมให้ครบถ้วน');
       return;
     }
 
-    const now = new Date();
-    const dateStr = `${now.getDate()} ${['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'][now.getMonth()]} ${now.getFullYear() + 543} • ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} น.`;
+    if (editingPost) {
+      // Edit mode
+      const updated = posts.map(p => {
+        if (p.id === editingPost.id) {
+          return {
+            ...p,
+            title: formTitle,
+            category: formCategory,
+            content: formContent,
+            media_url: mediaPreview || formMediaUrl || undefined,
+            media_type: formMediaType
+          };
+        }
+        return p;
+      });
+      savePosts(updated);
+      setEditingPost(null);
+    } else {
+      // Create mode
+      const now = new Date();
+      const dateStr = `${now.getDate()} ${['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'][now.getMonth()]} ${now.getFullYear() + 543} • ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} น.`;
 
-    const newPost: ActivityPost = {
-      id: Date.now(),
-      title: newTitle,
-      category: newCategory,
-      content: newContent,
-      author_name: user?.name || 'ผู้ดูแลระบบ',
-      author_role: user?.role === 'admin' ? 'Admin' : 'Staff',
-      created_at: dateStr,
-      media_url: mediaPreview || newMediaUrl || undefined,
-      media_type: newMediaType,
-      likes_count: 1,
-      user_liked: true,
-      is_featured: true,
-      comments: []
-    };
+      const newPost: ActivityPost = {
+        id: Date.now(),
+        title: formTitle,
+        category: formCategory,
+        content: formContent,
+        author_name: user?.name || 'ผู้ดูแลระบบ',
+        author_role: user?.role === 'admin' ? 'Admin' : 'Staff',
+        created_at: dateStr,
+        media_url: mediaPreview || formMediaUrl || undefined,
+        media_type: formMediaType,
+        likes_count: 1,
+        user_liked: true,
+        is_featured: true,
+        comments: []
+      };
 
-    const updated = [newPost, ...posts];
-    savePosts(updated);
+      const updated = [newPost, ...posts];
+      savePosts(updated);
+      setShowCreateModal(false);
+    }
 
     // Reset Form
-    setNewTitle('');
-    setNewCategory('กิจกรรมคลังสินค้า');
-    setNewContent('');
-    setNewMediaUrl('');
+    setFormTitle('');
+    setFormCategory('กิจกรรมคลังสินค้า');
+    setFormContent('');
+    setFormMediaUrl('');
     setMediaPreview(null);
-    setShowCreateModal(false);
   };
 
   // Filter Posts
@@ -297,7 +355,15 @@ export default function DepartmentActivitiesPage() {
         {/* Create Post Button (Visible for Admin / Staff) */}
         {(user?.role === 'admin' || user?.role === 'staff') && (
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => {
+              setEditingPost(null);
+              setFormTitle('');
+              setFormCategory('กิจกรรมคลังสินค้า');
+              setFormContent('');
+              setFormMediaUrl('');
+              setMediaPreview(null);
+              setShowCreateModal(true);
+            }}
             className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-warehouse-orange to-amber-500 hover:from-warehouse-orange/95 hover:to-amber-500/95 text-white text-xs font-bold transition-all shadow-lg shadow-warehouse-orange/20 flex items-center justify-center gap-2"
           >
             <Plus size={16} />
@@ -436,9 +502,31 @@ export default function DepartmentActivitiesPage() {
                 </div>
               </div>
 
-              <span className={`px-3 py-1 rounded-full text-[10px] uppercase font-extrabold ${getCategoryBadgeClass(post.category)}`}>
-                {post.category}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`px-3 py-1 rounded-full text-[10px] uppercase font-extrabold ${getCategoryBadgeClass(post.category)}`}>
+                  {post.category}
+                </span>
+
+                {/* Edit & Delete Buttons for Admin / Staff */}
+                {(user?.role === 'admin' || user?.role === 'staff') && (
+                  <div className="flex items-center gap-1 border-l border-slate-200 dark:border-white/10 pl-2 ml-1">
+                    <button
+                      onClick={() => openEditModal(post)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-warehouse-orange hover:bg-warehouse-orange/10 transition-colors"
+                      title="แก้ไขโพสต์กิจกรรม"
+                    >
+                      <Edit3 size={15} />
+                    </button>
+                    <button
+                      onClick={() => handleDeletePost(post.id)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
+                      title="ลบโพสต์กิจกรรม"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Post Content */}
@@ -517,7 +605,18 @@ export default function DepartmentActivitiesPage() {
                               {c.user_role}
                             </span>
                           </span>
-                          <span className="text-[10px] text-slate-400 font-mono">{c.created_at}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-slate-400 font-mono">{c.created_at}</span>
+                            {(user?.role === 'admin' || user?.role === 'staff') && (
+                              <button
+                                onClick={() => handleDeleteComment(post.id, c.id)}
+                                className="text-slate-400 hover:text-rose-500 transition-colors p-0.5"
+                                title="ลบความคิดเห็น"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{c.text}</p>
                       </div>
@@ -550,28 +649,34 @@ export default function DepartmentActivitiesPage() {
         ))}
       </div>
 
-      {/* 4. MODAL: CREATE NEW ACTIVITY POST */}
-      {showCreateModal && (
+      {/* 4. MODAL: CREATE / EDIT ACTIVITY POST */}
+      {(showCreateModal || editingPost !== null) && (
         <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <GlassCard className="w-full max-w-xl p-6 border border-slate-200/50 dark:border-white/10 space-y-5 animate-fadeIn">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200/50 dark:border-white/5">
               <h3 className="font-bold text-base text-slate-800 dark:text-white flex items-center gap-2">
                 <Sparkles size={18} className="text-warehouse-orange" />
-                <span>โพสต์กิจกรรมแผนกคลังสินค้าใหม่</span>
+                <span>{editingPost ? 'แก้ไขโพสต์กิจกรรม' : 'โพสต์กิจกรรมแผนกคลังสินค้าใหม่'}</span>
               </h3>
-              <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+              <button 
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setEditingPost(null);
+                }} 
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white"
+              >
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleCreatePost} className="space-y-4 text-xs">
+            <form onSubmit={handleSavePost} className="space-y-4 text-xs">
               <div className="flex flex-col gap-1.5">
                 <label className="font-bold text-slate-400">หัวข้อกิจกรรม (Activity Title)</label>
                 <input
                   type="text"
                   required
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
+                  value={formTitle}
+                  onChange={(e) => setFormTitle(e.target.value)}
                   placeholder="เช่น 🏆 KAIZEN ดีเด่นประจำเดือน หรือ ⚽ กิจกรรมแข่งกีฬาสีโรงงาน"
                   className="glass-input text-xs"
                 />
@@ -580,8 +685,8 @@ export default function DepartmentActivitiesPage() {
               <div className="flex flex-col gap-1.5">
                 <label className="font-bold text-slate-400">หมวดหมู่กิจกรรม (Category)</label>
                 <select
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value as any)}
+                  value={formCategory}
+                  onChange={(e) => setFormCategory(e.target.value as any)}
                   className="glass-input text-xs font-semibold"
                 >
                   <option value="กิจกรรมคลังสินค้า">📦 กิจกรรมคลังสินค้า (Warehouse Activity)</option>
@@ -597,8 +702,8 @@ export default function DepartmentActivitiesPage() {
                 <textarea
                   rows={4}
                   required
-                  value={newContent}
-                  onChange={(e) => setNewContent(e.target.value)}
+                  value={formContent}
+                  onChange={(e) => setFormContent(e.target.value)}
                   placeholder="พิมพ์รายละเอียดกิจกรรม รางวัลที่ได้รับ หรือข้อมูลข่าวสารประชาสัมพันธ์ที่นี่..."
                   className="glass-input text-xs"
                 />
@@ -611,7 +716,7 @@ export default function DepartmentActivitiesPage() {
                 <div className="flex items-center gap-3">
                   <label className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer border border-slate-200/50 dark:border-white/5 flex items-center gap-1.5 transition-all">
                     <Upload size={14} className="text-warehouse-orange" />
-                    <span>อัปโหลดรูปภาพจากเครื่อง</span>
+                    <span>อัปโหลดรูปภาพใหม่จากเครื่อง</span>
                     <input type="file" accept="image/*" onChange={handleImageFileSelect} className="hidden" />
                   </label>
                 </div>
@@ -619,9 +724,9 @@ export default function DepartmentActivitiesPage() {
                 <div className="flex items-center gap-2 pt-1">
                   <input
                     type="url"
-                    value={newMediaUrl}
+                    value={formMediaUrl}
                     onChange={(e) => {
-                      setNewMediaUrl(e.target.value);
+                      setFormMediaUrl(e.target.value);
                       setMediaPreview(e.target.value);
                     }}
                     placeholder="หรือวาง URL รูปภาพ/วิดีโอ (e.g. https://...)"
@@ -636,7 +741,7 @@ export default function DepartmentActivitiesPage() {
                       type="button"
                       onClick={() => {
                         setMediaPreview(null);
-                        setNewMediaUrl('');
+                        setFormMediaUrl('');
                       }}
                       className="absolute top-2 right-2 p-1.5 rounded-full bg-slate-950/70 text-white"
                     >
@@ -649,7 +754,10 @@ export default function DepartmentActivitiesPage() {
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/50 dark:border-white/5">
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setEditingPost(null);
+                  }}
                   className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-xs font-semibold"
                 >
                   ยกเลิก
@@ -658,7 +766,7 @@ export default function DepartmentActivitiesPage() {
                   type="submit"
                   className="px-4 py-2 rounded-xl bg-gradient-to-r from-warehouse-orange to-amber-500 hover:from-warehouse-orange/95 hover:to-amber-500/95 text-white text-xs font-bold shadow-md shadow-warehouse-orange/20"
                 >
-                  เผยแพร่โพสต์กิจกรรม
+                  {editingPost ? 'บันทึกการแก้ไข' : 'เผยแพร่โพสต์กิจกรรม'}
                 </button>
               </div>
             </form>

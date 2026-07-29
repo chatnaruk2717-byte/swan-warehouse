@@ -95,6 +95,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(loggedUser);
       sessionStorage.setItem('token', jwtToken);
       sessionStorage.setItem('user', JSON.stringify(loggedUser));
+
+      // Record Audit Log
+      try {
+        const now = new Date();
+        const timestampStr = now.toISOString().replace('T', ' ').substring(0, 19);
+        const newLog = {
+          id: Date.now(),
+          action: 'LOGIN',
+          details: `ผู้ใช้ ${loggedUser.name} (${loggedUser.employee_id}) ล็อกอินเข้าสู่ระบบ`,
+          ip_address: '192.168.1.100',
+          timestamp: timestampStr
+        };
+        const stored = localStorage.getItem('swan_audit_logs');
+        const list = stored ? JSON.parse(stored) : [];
+        list.unshift(newLog);
+        localStorage.setItem('swan_audit_logs', JSON.stringify(list));
+      } catch (e) {}
       
       router.push('/dashboard');
       return true;
@@ -117,6 +134,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(profile);
           sessionStorage.setItem('token', mockToken);
           sessionStorage.setItem('user', JSON.stringify(profile));
+
+          // Record Audit Log
+          try {
+            const now = new Date();
+            const timestampStr = now.toISOString().replace('T', ' ').substring(0, 19);
+            const newLog = {
+              id: Date.now(),
+              action: 'LOGIN',
+              details: `ผู้ใช้ ${profile.name} (${profile.employee_id}) ล็อกอินเข้าสู่ระบบ (Demo)`,
+              ip_address: '192.168.1.100',
+              timestamp: timestampStr
+            };
+            const stored = localStorage.getItem('swan_audit_logs');
+            const list = stored ? JSON.parse(stored) : [];
+            list.unshift(newLog);
+            localStorage.setItem('swan_audit_logs', JSON.stringify(list));
+          } catch (e) {}
+
           router.push('/dashboard');
           return true;
         }
@@ -141,6 +176,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(profile);
     sessionStorage.setItem('token', mockToken);
     sessionStorage.setItem('user', JSON.stringify(profile));
+
+    // Record Audit Log
+    try {
+      const now = new Date();
+      const timestampStr = now.toISOString().replace('T', ' ').substring(0, 19);
+      const roleNames = { admin: 'Admin (ผู้ดูแลระบบ)', staff: 'Staff (พนักงาน/หัวหน้า)', employee: 'Employee (พนักงานคลัง)' };
+      const newLog = {
+        id: Date.now(),
+        action: 'ROLE_SWITCH',
+        details: `ผู้ใช้ ${profile.name} (${profile.employee_id}) สลับบทบาทการใช้งานเป็น ${roleNames[role] || role}`,
+        ip_address: '192.168.1.100',
+        timestamp: timestampStr
+      };
+
+      const stored = localStorage.getItem('swan_audit_logs');
+      const list = stored ? JSON.parse(stored) : [];
+      list.unshift(newLog);
+      localStorage.setItem('swan_audit_logs', JSON.stringify(list));
+
+      api.post('/api/reports/audit-logs', {
+        action: 'ROLE_SWITCH',
+        details: `ผู้ใช้ ${profile.name} (${profile.employee_id}) สลับบทบาทการใช้งานเป็น ${roleNames[role] || role}`
+      }).catch(() => {});
+    } catch (e) {}
     
     // Refresh page/routing after role switch
     router.refresh();

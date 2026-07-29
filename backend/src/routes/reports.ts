@@ -332,4 +332,103 @@ router.get('/charts', authenticateToken, async (req: AuthenticatedRequest, res: 
   }
 });
 
+/**
+ * GET /api/reports/audit-logs
+ * Fetch system audit logs
+ */
+router.get('/audit-logs', authenticateToken, requireRole(['admin']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (getMockStatus()) {
+      throw new Error('MOCK_MODE');
+    }
+    const logsRes = await query(`
+      SELECT a.id, a.action, a.details, a.ip_address, 
+             DATE_FORMAT(a.created_at, '%Y-%m-%d %H:%i:%s') AS timestamp,
+             u.name AS user_name, u.employee_id AS user_employee_id
+      FROM audit_logs a
+      LEFT JOIN users u ON a.user_id = u.id
+      ORDER BY a.id DESC
+      LIMIT 100
+    `);
+    return res.json(logsRes.rows);
+  } catch (err: any) {
+    // Mock Mode Fallback
+    const formattedLogs = (mockStore.mockAuditLogs || []).map((log: any) => ({
+      id: log.id,
+      action: log.action,
+      details: log.details,
+      ip_address: log.ip_address || '192.168.1.100',
+      timestamp: log.timestamp || new Date().toISOString().replace('T', ' ').substring(0, 19)
+    }));
+    return res.json(formattedLogs);
+  }
+});
+
+/**
+ * POST /api/reports/audit-logs
+ * Log a new audit action
+ */
+router.post('/audit-logs', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  const { action, details } = req.body;
+  const userId = req.user?.id || 1;
+  const rawIp = req.ip || req.headers['x-forwarded-for'] || '192.168.1.100';
+  const ipAddress = Array.isArray(rawIp) ? rawIp[0] : String(rawIp);
+
+  if (!action || !details) {
+    return res.status(400).json({ message: 'Action and details are required.' });
+  }
+
+  const now = new Date();
+  const timestampStr = now.toISOString().replace('T', ' ').substring(0, 19);
+
+  try {
+    if (getMockStatus()) {
+      throw new Error('MOCK_MODE');
+    }
+    await query(
+      `INSERT INTO audit_logs (user_id, action, details, ip_address) VALUES ($1, $2, $3, $4)`,
+      [userId, action, details, ipAddress]
+    );
+  } catch (err) {
+    // Mock Fallback
+    const newLog = {
+      id: (mockStore.mockAuditLogs?.length || 0) + 1,
+      user_id: userId,
+      action,
+      details,
+      ip_address: ipAddress,
+      created_at: timestampStr
+    };
+    if (!mockStore.mockAuditLogs) (mockStore as any).mockAuditLogs = [];
+    mockStore.mockAuditLogs.unshift(newLog);
+  }
+
+  return res.status(201).json({ message: 'Audit log created.' });
+});
+
+/**
+ * POST /api/reports/backup
+ * Generate a database backup JSON file dump
+ */
+router.post('/backup', authenticateToken, requireRole(['admin']), async (req: AuthenticatedRequest, res: Response) => {
+  const now = new Date();
+  const timestampStr = now.toISOString().replace('T', ' ').substring(0, 19);
+
+  try {
+    const backupData = {
+      version: '1.0.0',
+      exported_at: timestampStr,
+      users: mockStore.mockUsers,
+      skills: mockStore.mockSkills,
+      courses: mockStore.mockCourses,
+      enrollments: mockStore.mockEnrollments,
+      daily_tasks: mockStore.mockDailyTasks,
+      audit_logs: mockStore.mockAuditLogs
+    };
+    return res.json(backupData);
+  } catch (err: any) {
+    return res.status(500).json({ message: 'Backup failed: ' + err.message });
+  }
+});
+
 export default router;

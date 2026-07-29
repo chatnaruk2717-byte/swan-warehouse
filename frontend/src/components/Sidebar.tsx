@@ -21,7 +21,8 @@ import {
   ShieldAlert,
   FileText,
   Network,
-  Map
+  Map,
+  Sparkles
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -61,6 +62,12 @@ export const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
       name: 'คลังบทเรียน (Library)',
       path: '/courses',
       icon: BookOpen,
+      roles: ['admin', 'staff', 'employee']
+    },
+    {
+      name: 'กิจกรรมภายในแผนก (Activities)',
+      path: '/activities',
+      icon: Sparkles,
       roles: ['admin', 'staff', 'employee']
     },
     {

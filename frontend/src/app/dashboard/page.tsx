@@ -27,7 +27,8 @@ import {
   Bell, 
   ArrowUpRight, 
   Briefcase,
-  PlayCircle
+  PlayCircle,
+  Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 import SwanLogo from '../../components/SwanLogo';
@@ -272,6 +273,42 @@ export default function DashboardPage() {
           </GlassCard>
 
         </div>
+
+        {/* Department Activities Banner Card (ข่าวสาร & กิจกรรมคลังสินค้า) */}
+        <GlassCard className="p-6 border border-slate-200/50 dark:border-white/5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-extrabold text-sm text-slate-800 dark:text-white flex items-center gap-2">
+              <Sparkles size={18} className="text-warehouse-orange" />
+              <span>กิจกรรมและข่าวสารภายในแผนกคลังสินค้า (Department Social & Kaizen Feed)</span>
+            </h3>
+            <Link
+              href="/activities"
+              className="text-xs font-bold text-warehouse-orange hover:text-warehouse-orange/80 flex items-center gap-1 transition-colors"
+            >
+              <span>ดูข่าวสารกิจกรรมทั้งหมด →</span>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Link href="/activities" className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 hover:border-amber-500/50 transition-all space-y-2 group">
+              <span className="px-2 py-0.5 rounded text-[9px] font-extrabold bg-amber-500 text-white uppercase">🏆 KAIZEN ดีเด่น</span>
+              <h4 className="font-bold text-xs text-slate-800 dark:text-white group-hover:text-amber-500 transition-colors line-clamp-1">ประกาศรางวัล KAIZEN ดีเด่นประจำเดือน!</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">ยินดีต้อนรับผลงาน KAIZEN จากทีม Packing เรื่องการลดเวลาจัดพัสดุด้วยบาร์โค้ดโซน 4</p>
+            </Link>
+
+            <Link href="/activities" className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 hover:border-emerald-500/50 transition-all space-y-2 group">
+              <span className="px-2 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500 text-white uppercase">⚽ กีฬาสีโรงงาน</span>
+              <h4 className="font-bold text-xs text-slate-800 dark:text-white group-hover:text-emerald-500 transition-colors line-clamp-1">Swan Warehouse Games 2026</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">เปิดรับสมัครทีมแข่งฟุตซอล แบดมินตัน และชักกะเย่อคลังสินค้า ชิงเงินรางวัลกว่า 20,000 บาท!</p>
+            </Link>
+
+            <Link href="/activities" className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 hover:border-indigo-500/50 transition-all space-y-2 group">
+              <span className="px-2 py-0.5 rounded text-[9px] font-extrabold bg-indigo-500 text-white uppercase">📦 กิจกรรมคลัง</span>
+              <h4 className="font-bold text-xs text-slate-800 dark:text-white group-hover:text-indigo-500 transition-colors line-clamp-1">ภาพบรรยากาศ 5ส & Big Cleaning Day</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">จัดระเบียบพื้นที่ Racking A-D และทำความสะอาดคลังสินค้าเพื่อความปลอดภัยสูงสุด</p>
+            </Link>
+          </div>
+        </GlassCard>
 
         {/* Charts & Graphs Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

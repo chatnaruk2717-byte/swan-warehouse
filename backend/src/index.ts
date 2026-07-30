@@ -37,6 +37,7 @@ import documentsRouter from './routes/documents';
 import orgChartRouter from './routes/orgChart';
 import performanceRouter from './routes/performance';
 import warehouseLayoutsRouter from './routes/warehouseLayouts';
+import otpRouter from './routes/otp';
 
 dotenv.config();
 
@@ -75,6 +76,7 @@ app.use('/api/documents', documentsRouter);
 app.use('/api/org-chart', orgChartRouter);
 app.use('/api/performance', performanceRouter);
 app.use('/api/warehouse-layouts', warehouseLayoutsRouter);
+app.use('/api/otp', otpRouter);
 
 // Swagger Documentation Definition
 const swaggerDocument = {

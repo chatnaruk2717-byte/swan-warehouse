@@ -18,6 +18,7 @@ import {
   Video,
   ExternalLink
 } from 'lucide-react';
+import OTPModal from '../../../components/OTPModal';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 
@@ -44,6 +45,20 @@ export default function CourseViewerClient() {
   const [lessonProgress, setLessonProgress] = useState<number[]>([]); // Array of completed lesson IDs
   const [maxTimeWatched, setMaxTimeWatched] = useState<number>(0);
   const ytPlayerRef = React.useRef<any>(null);
+
+  // OTP Verification States
+  const [showOtpModal, setShowOtpModal] = useState<boolean>(false);
+  const [otpVerified, setOtpVerified] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isVerified = sessionStorage.getItem('swan_otp_verified') === 'true';
+      setOtpVerified(isVerified);
+      if (!isVerified) {
+        setShowOtpModal(true);
+      }
+    }
+  }, []);
 
   // Load YouTube script on mount
   useEffect(() => {
@@ -1036,6 +1051,24 @@ export default function CourseViewerClient() {
           </GlassCard>
         </div>
       )}
+
+      {/* 6-DIGIT OTP VERIFICATION MODAL FOR COURSE VIEWER */}
+      <OTPModal
+        isOpen={showOtpModal}
+        onClose={() => {
+          setShowOtpModal(false);
+          if (!otpVerified && sessionStorage.getItem('swan_otp_verified') !== 'true') {
+            router.push('/courses');
+          }
+        }}
+        onSuccess={() => {
+          setOtpVerified(true);
+          setShowOtpModal(false);
+        }}
+        title="ยืนยันตัวตน OTP ก่อนเข้าเรียนคอร์ส อบรม"
+        subtitle="กรุณายืนยันตัวตนด้วยรหัส OTP 6 หลัก เพื่อเริ่มเรียนและรับชมวิดีโอคอร์สฝึกอบรม"
+        actionItemName={course?.name}
+      />
 
     </div>
   );

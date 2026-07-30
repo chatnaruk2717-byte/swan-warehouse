@@ -3,20 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import GlassCard from '../../components/GlassCard';
-import { 
-  Search, 
-  Plus, 
-  FileText, 
-  Trash2, 
-  Download, 
-  Eye, 
-  Upload, 
-  X, 
-  FolderOpen, 
-  ChevronRight,
-  Filter,
-  ExternalLink
-} from 'lucide-react';
+import OTPModal from '../../components/OTPModal';
 
 interface WarehouseDocument {
   id: number;
@@ -44,6 +31,10 @@ export default function DocumentsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('ทั้งหมด');
   const [isLoading, setIsLoading] = useState(true);
 
+  // OTP Verification States
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [pendingActionDoc, setPendingActionDoc] = useState<{ doc: WarehouseDocument; action: 'view' | 'download' } | null>(null);
+
   // Upload modal states
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadForm, setUploadForm] = useState({
@@ -58,6 +49,31 @@ export default function DocumentsPage() {
   const [activeViewerDoc, setActiveViewerDoc] = useState<WarehouseDocument | null>(null);
   const [displayDocUrl, setDisplayDocUrl] = useState('');
   const [isMobile, setIsMobile] = useState(false);
+
+  const triggerDocumentActionWithOTP = (doc: WarehouseDocument, action: 'view' | 'download') => {
+    const isVerified = sessionStorage.getItem('swan_otp_verified') === 'true';
+    if (isVerified) {
+      if (action === 'view') {
+        setActiveViewerDoc(doc);
+      } else {
+        window.open(doc.file_url, '_blank');
+      }
+    } else {
+      setPendingActionDoc({ doc, action });
+      setShowOtpModal(true);
+    }
+  };
+
+  const handleOTPSuccess = () => {
+    if (pendingActionDoc) {
+      if (pendingActionDoc.action === 'view') {
+        setActiveViewerDoc(pendingActionDoc.doc);
+      } else {
+        window.open(pendingActionDoc.doc.file_url, '_blank');
+      }
+      setPendingActionDoc(null);
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -323,25 +339,22 @@ export default function DocumentsPage() {
                       </div>
                     </div>
 
-                    {/* Action buttons */}
+                    {/* Action buttons with OTP verification */}
                     <div className="flex gap-2.5 mt-5 border-t border-slate-100 dark:border-white/5 pt-4">
                       <button
-                        onClick={() => setActiveViewerDoc(doc)}
+                        onClick={() => triggerDocumentActionWithOTP(doc, 'view')}
                         className="flex-1 py-2 bg-warehouse-navy hover:bg-warehouse-navy/90 text-slate-700 dark:text-white rounded-xl text-[11px] font-bold transition-all border border-slate-200/50 dark:border-white/5 flex items-center justify-center gap-1.5"
                       >
                         <Eye size={12} />
                         เปิดอ่านออนไลน์
                       </button>
-                      <a
-                        href={doc.file_url}
-                        download={doc.title}
-                        target="_blank"
-                        rel="noreferrer"
+                      <button
+                        onClick={() => triggerDocumentActionWithOTP(doc, 'download')}
                         className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-white rounded-xl text-[11px] font-bold transition-all border border-slate-200/50 dark:border-white/5 flex items-center justify-center"
                         title="ดาวน์โหลด PDF"
                       >
                         <Download size={12} />
-                      </a>
+                      </button>
                     </div>
                   </GlassCard>
                 ))}
@@ -507,6 +520,16 @@ export default function DocumentsPage() {
           </GlassCard>
         </div>
       )}
+
+      {/* 6-DIGIT OTP VERIFICATION MODAL FOR DOCUMENTS */}
+      <OTPModal
+        isOpen={showOtpModal}
+        onClose={() => { setShowOtpModal(false); setPendingActionDoc(null); }}
+        onSuccess={handleOTPSuccess}
+        title="ยืนยันตัวตน OTP ก่อนดาวน์โหลดหรืออ่านเอกสาร"
+        subtitle="กรุณายืนยันตัวตนด้วยรหัส OTP 6 หลัก เพื่อความปลอดภัยในการเข้าถึงเอกสารคลังสินค้า"
+        actionItemName={pendingActionDoc?.doc.title}
+      />
 
     </div>
   );

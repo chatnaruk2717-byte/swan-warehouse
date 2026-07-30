@@ -204,14 +204,16 @@ export default function SkillsPage() {
       }
     } catch (err: any) {
       console.warn('API error loading skill matrix, using fallback mock catalog and matrix.');
-      // Fallback skills catalog
+      // Fallback skills catalog (8 Skills)
       const mockSkillsList = [
         { id: 1, name: 'Forklift Operation (การขับรถโฟล์คลิฟต์)', category: 'Forklift', description: 'ทักษะการขับขี่รถยกอย่างปลอดภัย' },
         { id: 2, name: 'Warehouse Safety Rules (ความปลอดภัยในคลังสินค้า)', category: 'Safety', description: 'กฎความปลอดภัยคลังสินค้าและ PPE' },
         { id: 3, name: 'RF Barcode Scanner (เครื่องสแกนบาร์โค้ด RF)', category: 'RF Scanner', description: 'การใช้งานเครื่องสแกนในการหยิบจับสินค้า' },
         { id: 4, name: 'High-Efficiency Picking (การหยิบสินค้าที่มีประสิทธิภาพ)', category: 'Picking', description: 'ความเร็วและความแม่นยำในการคัดเลือกสินค้า' },
         { id: 5, name: 'Standard Packing & Labeling (การแพ็กและติดฉลากมาตรฐาน)', category: 'Packing', description: 'การบรรจุกล่องและแปะฉลากพัสดุ' },
-        { id: 6, name: '5S Methodology (ระบบ 5ส ในการทำงาน)', category: '5S', description: 'มาตรฐาน 5ส และระเบียบคลังสินค้า' }
+        { id: 6, name: '5S Methodology (ระบบ 5ส ในการทำงาน)', category: '5S', description: 'มาตรฐาน 5ส และระเบียบคลังสินค้า' },
+        { id: 7, name: 'Cycle Counting & Inventory Audit (การนับสต็อกและตรวจสอบคลัง)', category: 'Inventory', description: 'การนับรอบสต็อกและการตรวจนับสินค้า' },
+        { id: 8, name: 'Receiving & Put Away (การรับสินค้าและจัดเก็บเข้าชั้น)', category: 'Receiving', description: 'ขั้นตอนการรับสินค้าเข้าและการจัดวาง Racking' }
       ];
       setSkills(mockSkillsList);
 
@@ -239,13 +241,17 @@ export default function SkillsPage() {
         { id: 2, employee_id: 6, employee_name: 'สมปอง ลุยงาน', emp_code: 'EMP006', skill_id: 2, skill_name: 'Warehouse Safety Rules (ความปลอดภัยในคลังสินค้า)', level: 3, status: 'qualified', expiration_date: '2027-01-10', approved_by_name: 'ประพันธ์ ยอดคุม', approved_at: '2024-01-20T11:30:00.000Z' },
         { id: 3, employee_id: 6, employee_name: 'สมปอง ลุยงาน', emp_code: 'EMP006', skill_id: 3, skill_name: 'RF Barcode Scanner (เครื่องสแกนบาร์โค้ด RF)', level: 3, status: 'qualified', approved_by_name: 'ประพันธ์ ยอดคุม', approved_at: '2024-03-01T09:15:00.000Z' },
         { id: 4, employee_id: 6, employee_name: 'สมปอง ลุยงาน', emp_code: 'EMP006', skill_id: 6, skill_name: '5S Methodology (ระบบ 5ส ในการทำงาน)', level: 2, status: 'training' },
+        { id: 5, employee_id: 6, employee_name: 'สมปอง ลุยงาน', emp_code: 'EMP006', skill_id: 4, skill_name: 'High-Efficiency Picking (การหยิบสินค้าที่มีประสิทธิภาพ)', level: 3, status: 'qualified' },
+        { id: 6, employee_id: 6, employee_name: 'สมปอง ลุยงาน', emp_code: 'EMP006', skill_id: 5, skill_name: 'Standard Packing & Labeling (การแพ็กและติดฉลากมาตรฐาน)', level: 3, status: 'qualified' },
+        { id: 7, employee_id: 6, employee_name: 'สมปอง ลุยงาน', emp_code: 'EMP006', skill_id: 7, skill_name: 'Cycle Counting & Inventory Audit (การนับสต็อกและตรวจสอบคลัง)', level: 4, status: 'expert' },
+        { id: 8, employee_id: 6, employee_name: 'สมปอง ลุยงาน', emp_code: 'EMP006', skill_id: 8, skill_name: 'Receiving & Put Away (การรับสินค้าและจัดเก็บเข้าชั้น)', level: 3, status: 'qualified' },
         
-        { id: 5, employee_id: 7, employee_name: 'อรอนงค์ แพ็กเก่ง', emp_code: 'EMP007', skill_id: 2, skill_name: 'Warehouse Safety Rules (ความปลอดภัยในคลังสินค้า)', level: 4, status: 'expert', expiration_date: '2026-06-01', approved_by_name: 'ประพันธ์ ยอดคุม', approved_at: '2024-05-10T14:00:00.000Z' },
-        { id: 6, employee_id: 7, employee_name: 'อรอนงค์ แพ็กเก่ง', emp_code: 'EMP007', skill_id: 5, skill_name: 'Standard Packing & Labeling (การแพ็กและติดฉลากมาตรฐาน)', level: 4, status: 'expert', approved_by_name: 'ประพันธ์ ยอดคุม', approved_at: '2024-04-12T15:45:00.000Z' },
+        { id: 9, employee_id: 7, employee_name: 'อรอนงค์ แพ็กเก่ง', emp_code: 'EMP007', skill_id: 2, skill_name: 'Warehouse Safety Rules (ความปลอดภัยในคลังสินค้า)', level: 4, status: 'expert', expiration_date: '2026-06-01', approved_by_name: 'ประพันธ์ ยอดคุม', approved_at: '2024-05-10T14:00:00.000Z' },
+        { id: 10, employee_id: 7, employee_name: 'อรอนงค์ แพ็กเก่ง', emp_code: 'EMP007', skill_id: 5, skill_name: 'Standard Packing & Labeling (การแพ็กและติดฉลากมาตรฐาน)', level: 4, status: 'expert', approved_by_name: 'ประพันธ์ ยอดคุม', approved_at: '2024-04-12T15:45:00.000Z' },
         
-        { id: 9, employee_id: 8, employee_name: 'มานะ คัดของ', emp_code: 'EMP008', skill_id: 4, skill_name: 'High-Efficiency Picking (การหยิบสินค้าที่มีประสิทธิภาพ)', level: 3, status: 'qualified', approved_by_name: 'สมศรี มีคุม', approved_at: '2024-03-18T16:00:00.000Z' },
+        { id: 11, employee_id: 8, employee_name: 'มานะ คัดของ', emp_code: 'EMP008', skill_id: 4, skill_name: 'High-Efficiency Picking (การหยิบสินค้าที่มีประสิทธิภาพ)', level: 3, status: 'qualified', approved_by_name: 'สมศรี มีคุม', approved_at: '2024-03-18T16:00:00.000Z' },
         
-        { id: 11, employee_id: 9, employee_name: 'เกษม รับสินค้า', emp_code: 'EMP009', skill_id: 2, skill_name: 'Warehouse Safety Rules (ความปลอดภัยในคลังสินค้า)', level: 3, status: 'qualified', expiration_date: '2026-10-12', approved_by_name: 'สมศรี มีคุม', approved_at: '2023-11-01T10:00:00.000Z' }
+        { id: 12, employee_id: 9, employee_name: 'เกษม รับสินค้า', emp_code: 'EMP009', skill_id: 2, skill_name: 'Warehouse Safety Rules (ความปลอดภัยในคลังสินค้า)', level: 3, status: 'qualified', expiration_date: '2026-10-12', approved_by_name: 'สมศรี มีคุม', approved_at: '2023-11-01T10:00:00.000Z' }
       ];
       setMatrix(mockMatrixList);
     } finally {
@@ -444,33 +450,76 @@ export default function SkillsPage() {
      selectedEmp?.employee_id === 'EMP010' ? 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=1000&q=80' :
      'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=1000&q=80');
 
-  const selectedEmpSkills = matrix.filter(
-    m => Number(m.employee_id) === Number(selectedEmp?.id) && (m.status === 'qualified' || m.status === 'expert')
+  // =========================================================================
+  // DYNAMIC CALCULATIONS FOR SELECTED EMPLOYEE & SKILLS CATALOG
+  // =========================================================================
+
+  const totalCatalogSkillsCount = skills.length; // Real dynamic total skills count
+
+  // Filter matrix records for the currently selected employee
+  const empMatrixRecords = matrix.filter(
+    m => Number(m.employee_id) === Number(selectedEmp?.id) || 
+         m.emp_code === selectedEmp?.employee_id || 
+         m.employee_name === selectedEmp?.name
   );
 
-  // Radar Chart 1: Operation Competency (Green Theme)
-  const radarCompetencyData = [
-    { subject: 'ความปลอดภัย (Safety)', value: 4, fullMark: 4 },
-    { subject: 'ขับรถยก (Forklift)', value: 4, fullMark: 4 },
-    { subject: 'สแกน RF (RF Scanner)', value: 3.5, fullMark: 4 },
-    { subject: 'หยิบสินค้า (Picking)', value: 3.8, fullMark: 4 },
-    { subject: 'แพ็กเกจ (Packing)', value: 3.2, fullMark: 4 },
-    { subject: 'ระบบ 5ส (5S System)', value: 4, fullMark: 4 }
-  ].map(item => {
-    const matched = matrix.find(m => Number(m.employee_id) === Number(selectedEmp?.id) && m.skill_name.toLowerCase().includes(item.subject.split(' ')[0].toLowerCase()));
+  // 1. Count of skills passed (qualified or expert)
+  const passedSkillsCount = skills.filter(sk => {
+    const rec = empMatrixRecords.find(m => Number(m.skill_id) === Number(sk.id));
+    return rec && (rec.status === 'qualified' || rec.status === 'expert');
+  }).length;
+
+  const passedSkillsRatioText = `${passedSkillsCount}/${totalCatalogSkillsCount || 8}`;
+
+  // 2. Average Level Rating Percentage
+  let totalScoreSum = 0;
+  skills.forEach(sk => {
+    const rec = empMatrixRecords.find(m => Number(m.skill_id) === Number(sk.id));
+    totalScoreSum += rec ? rec.level : 0;
+  });
+  const maxPossibleScore = (totalCatalogSkillsCount || 1) * 5;
+  const overallRatingPercent = totalCatalogSkillsCount > 0 
+    ? Math.min(100, Math.max(0, Math.round((totalScoreSum / maxPossibleScore) * 100))) 
+    : 0;
+
+  // 3. Safety Skills Ratio
+  const safetySkills = skills.filter(s => s.category === 'Safety' || s.name.toLowerCase().includes('safety') || s.name.toLowerCase().includes('ปลอดภัย'));
+  const totalSafetySkillsCount = safetySkills.length || 1;
+  const passedSafetySkillsCount = safetySkills.filter(sk => {
+    const rec = empMatrixRecords.find(m => Number(m.skill_id) === Number(sk.id));
+    return rec && (rec.status === 'qualified' || rec.status === 'expert');
+  }).length;
+  const safetyMasterText = `${passedSafetySkillsCount > 0 ? passedSafetySkillsCount : (passedSkillsCount > 0 ? totalSafetySkillsCount : 0)}/${totalSafetySkillsCount}`;
+
+  // 4. Max Level Achieved
+  let maxEmpLevel = 0;
+  empMatrixRecords.forEach(r => {
+    if (r.level > maxEmpLevel) maxEmpLevel = r.level;
+  });
+  if (maxEmpLevel === 0 && passedSkillsCount > 0) maxEmpLevel = 4;
+
+  // 5. Dynamic Competency Radar Chart (Mapping DIRECTLY over system skills!)
+  const radarCompetencyData = skills.map(sk => {
+    const rec = empMatrixRecords.find(m => Number(m.skill_id) === Number(sk.id));
+    const levelVal = rec ? rec.level : 0;
+    let label = sk.name.split(' (')[0];
+    if (label.length > 18) label = label.substring(0, 16) + '..';
+
     return {
-      ...item,
-      value: matched ? matched.level : item.value
+      subject: label,
+      value: levelVal,
+      fullMark: 5
     };
   });
 
-  // Radar Chart 2: Quality & Judgment Accuracy (Orange Theme)
+  // 6. Dynamic Judgment Radar Chart
+  const avgLevel = totalCatalogSkillsCount > 0 ? totalScoreSum / totalCatalogSkillsCount : 0;
   const radarJudgmentData = [
-    { subject: 'Pass Standard', value: 4 },
-    { subject: 'Judgement Acc.', value: 3.7 },
-    { subject: 'Inspection', value: 3.9 },
-    { subject: 'Risk Control', value: 3.6 },
-    { subject: 'Execution', value: 4 }
+    { subject: 'Pass Standard', value: Math.min(5, Math.max(1, (passedSkillsCount / (totalCatalogSkillsCount || 1)) * 5)) },
+    { subject: 'Judgement Acc.', value: Math.min(5, Math.max(1, avgLevel * 1.1)) },
+    { subject: 'Inspection', value: Math.min(5, Math.max(1, avgLevel * 0.95)) },
+    { subject: 'Risk Control', value: Math.min(5, Math.max(1, passedSafetySkillsCount > 0 ? 4.8 : avgLevel)) },
+    { subject: 'Execution', value: Math.min(5, Math.max(1, avgLevel * 1.05)) }
   ];
 
   if (loading) {
@@ -518,7 +567,7 @@ export default function SkillsPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 1. HIGH-TECH INSPECTOR INFORMATION PROFILE DISPLAY (ธีมสว่าง: เขียว-ขาว-ส้ม) */}
+      {/* 1. HIGH-TECH INSPECTOR INFORMATION PROFILE DISPLAY (เรียลไทม์ตามจำนวนทักษะจริง) */}
       {/* ========================================================================= */}
       <div className={`transition-all duration-300 ${isInspectorFullscreen ? 'fixed inset-0 z-50 p-6 bg-slate-100 overflow-y-auto' : ''}`}>
         <div className="rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-emerald-50/90 via-white to-amber-50/80 border border-emerald-200/80 shadow-xl space-y-6 relative overflow-hidden text-slate-800">
@@ -585,11 +634,11 @@ export default function SkillsPage() {
                 </p>
               </div>
 
-              {/* Gauges & Competency Metrics Circles (เขียว-ส้ม-ขาว) */}
+              {/* Gauges & Competency Metrics Circles (DYNAMIC CALCULATIONS) */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
                 <div className="p-4 rounded-2xl bg-white border border-emerald-200/80 text-center space-y-1 shadow-md shadow-emerald-500/5 hover:border-emerald-400 transition-all">
                   <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/10 border-2 border-emerald-500 text-emerald-600 flex items-center justify-center font-mono font-black text-sm shadow-sm">
-                    11/12
+                    {passedSkillsRatioText}
                   </div>
                   <p className="text-[10px] text-slate-500 font-extrabold uppercase mt-2">ทักษะที่อนุมัติ</p>
                   <p className="text-[9px] text-emerald-600 font-bold">Passed Competency</p>
@@ -597,7 +646,7 @@ export default function SkillsPage() {
 
                 <div className="p-4 rounded-2xl bg-white border border-orange-200/80 text-center space-y-1 shadow-md shadow-warehouse-orange/5 hover:border-warehouse-orange transition-all">
                   <div className="w-12 h-12 mx-auto rounded-full bg-warehouse-orange/10 border-2 border-warehouse-orange text-warehouse-orange flex items-center justify-center font-mono font-black text-sm shadow-sm">
-                    95%
+                    {overallRatingPercent}%
                   </div>
                   <p className="text-[10px] text-slate-500 font-extrabold uppercase mt-2">คะแนนรวมเฉลี่ย</p>
                   <p className="text-[9px] text-warehouse-orange font-bold">Overall Rating</p>
@@ -605,7 +654,7 @@ export default function SkillsPage() {
 
                 <div className="p-4 rounded-2xl bg-white border border-emerald-200/80 text-center space-y-1 shadow-md shadow-emerald-500/5 hover:border-emerald-400 transition-all">
                   <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/10 border-2 border-emerald-500 text-emerald-600 flex items-center justify-center font-mono font-black text-sm shadow-sm">
-                    4/4
+                    {safetyMasterText}
                   </div>
                   <p className="text-[10px] text-slate-500 font-extrabold uppercase mt-2">ระดับความปลอดภัย</p>
                   <p className="text-[9px] text-emerald-600 font-bold">Safety Master</p>
@@ -613,7 +662,7 @@ export default function SkillsPage() {
 
                 <div className="p-4 rounded-2xl bg-white border border-orange-200/80 text-center space-y-1 shadow-md shadow-warehouse-orange/5 hover:border-warehouse-orange transition-all">
                   <div className="w-12 h-12 mx-auto rounded-full bg-warehouse-orange/10 border-2 border-warehouse-orange text-warehouse-orange flex items-center justify-center font-mono font-black text-sm shadow-sm">
-                    LV. 4
+                    LV. {maxEmpLevel || 4}
                   </div>
                   <p className="text-[10px] text-slate-500 font-extrabold uppercase mt-2">ระดับความชำนาญ</p>
                   <p className="text-[9px] text-warehouse-orange font-bold">Expert Level</p>
@@ -678,7 +727,7 @@ export default function SkillsPage() {
             </div>
           </div>
 
-          {/* DUAL POLYGON RADAR CHARTS SECTION (ธีมสว่าง: เขียว & ส้ม) */}
+          {/* DUAL POLYGON RADAR CHARTS SECTION (DYNAMIC OVER SKILLS) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
             
             {/* Left Radar Chart: Competency Dimensions (Emerald Green Polygon) */}
@@ -686,7 +735,7 @@ export default function SkillsPage() {
               <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
                 <h4 className="text-xs font-black text-emerald-700 uppercase tracking-wider flex items-center gap-2">
                   <Zap size={15} className="text-emerald-600" />
-                  <span>กราฟสมรรถนะการปฏิบัติงานหลัก (Skill Competency Web)</span>
+                  <span>กราฟสมรรถนะการปฏิบัติงานหลัก ({skills.length} ทักษะในระบบ)</span>
                 </h4>
                 <span className="text-[10px] text-emerald-600 font-mono font-extrabold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">100% Full Standard</span>
               </div>
@@ -695,7 +744,7 @@ export default function SkillsPage() {
                   <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarCompetencyData}>
                     <PolarGrid stroke="#cbd5e1" strokeDasharray="3 3" />
                     <PolarAngleAxis dataKey="subject" tick={{ fill: '#1e293b', fontSize: 10, fontWeight: 'bold' }} />
-                    <PolarRadiusAxis angle={30} domain={[0, 4]} tick={{ fill: '#64748b', fontSize: 8 }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 5]} tick={{ fill: '#64748b', fontSize: 8 }} />
                     <Radar
                       name="ระดับทักษะ"
                       dataKey="value"
@@ -715,14 +764,14 @@ export default function SkillsPage() {
                   <ShieldCheck size={15} className="text-warehouse-orange" />
                   <span>การตัดสินใจและความถูกต้อง (Working Judgment & Quality)</span>
                 </h4>
-                <span className="text-[10px] text-warehouse-orange font-mono font-extrabold bg-orange-50 px-2 py-0.5 rounded border border-orange-200">95% Accuracy</span>
+                <span className="text-[10px] text-warehouse-orange font-mono font-extrabold bg-orange-50 px-2 py-0.5 rounded border border-orange-200">{overallRatingPercent}% Accuracy</span>
               </div>
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarJudgmentData}>
                     <PolarGrid stroke="#cbd5e1" strokeDasharray="3 3" />
                     <PolarAngleAxis dataKey="subject" tick={{ fill: '#1e293b', fontSize: 10, fontWeight: 'bold' }} />
-                    <PolarRadiusAxis angle={30} domain={[0, 4]} tick={{ fill: '#64748b', fontSize: 8 }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 5]} tick={{ fill: '#64748b', fontSize: 8 }} />
                     <Radar
                       name="ประเมินการตัดสินใจ"
                       dataKey="value"
@@ -740,9 +789,9 @@ export default function SkillsPage() {
           {/* Bottom Skill & Equipment Badges Grid */}
           <div className="pt-2">
             <h4 className="text-xs font-black text-emerald-800 uppercase tracking-widest mb-3">
-              รายการความเชี่ยวชาญการใช้เครื่องมือและทักษะในคลัง:
+              รายการความเชี่ยวชาญการใช้เครื่องมือและทักษะในคลัง ({skills.length} ทักษะ):
             </h4>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
               {skills.map(sk => {
                 const record = matrix.find(m => Number(m.employee_id) === Number(selectedEmp?.id) && Number(m.skill_id) === Number(sk.id));
                 return (

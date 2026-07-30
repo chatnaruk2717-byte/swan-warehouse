@@ -46,9 +46,9 @@ export default function CourseViewerClient() {
   const [maxTimeWatched, setMaxTimeWatched] = useState<number>(0);
   const ytPlayerRef = React.useRef<any>(null);
 
-  // OTP Verification States (Mandatory prompt every time a member enters to learn a lesson)
-  const [showOtpModal, setShowOtpModal] = useState<boolean>(true);
-  const [otpVerified, setOtpVerified] = useState<boolean>(false);
+  // OTP Verification States (Disabled for seamless instant learning access)
+  const [showOtpModal, setShowOtpModal] = useState<boolean>(false);
+  const [otpVerified, setOtpVerified] = useState<boolean>(true);
 
   // Load YouTube script on mount
   useEffect(() => {

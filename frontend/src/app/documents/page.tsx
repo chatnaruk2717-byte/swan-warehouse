@@ -51,16 +51,10 @@ export default function DocumentsPage() {
   const [isMobile, setIsMobile] = useState(false);
 
   const triggerDocumentActionWithOTP = (doc: WarehouseDocument, action: 'view' | 'download') => {
-    const isVerified = sessionStorage.getItem('swan_otp_verified') === 'true';
-    if (isVerified) {
-      if (action === 'view') {
-        setActiveViewerDoc(doc);
-      } else {
-        window.open(doc.file_url, '_blank');
-      }
+    if (action === 'view') {
+      setActiveViewerDoc(doc);
     } else {
-      setPendingActionDoc({ doc, action });
-      setShowOtpModal(true);
+      window.open(doc.file_url, '_blank');
     }
   };
 

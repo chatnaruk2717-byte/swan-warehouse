@@ -29,22 +29,21 @@ router.post('/send', authenticateToken, async (req: AuthenticatedRequest, res: R
     console.log(`[OTP SENT] User: ${userId}, Channel: ${channel || 'line'}, Code: ${code}, Target LINE ID: ${targetDestination}`);
 
     // Real LINE Messaging API Push (If LINE_CHANNEL_ACCESS_TOKEN is configured)
-    const lineToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+    const lineToken = process.env.LINE_CHANNEL_ACCESS_TOKEN || 'Oy7bodOcAnQanlCmMOMNzrV5vcFzHLNBU2+ZaVW9B4HVdwWtD9TmdpdSzkyrAsi17WaQq6so/wr6LZVvfjYa3+F9svBu9qSQ35T5udbjIVVIPJ0HBkMXl9XdSK1MEWLBFppBgEoHjpMwYk7FciG6GwdB04t89/1O/w1cDnyilFU=';
     if (lineToken) {
       try {
         const fetch = (await import('node-fetch')).default;
-        await fetch('https://api.line.me/v2/bot/message/push', {
+        await fetch('https://api.line.me/v2/bot/message/broadcast', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${lineToken}`
           },
           body: JSON.stringify({
-            to: targetDestination,
             messages: [
               {
                 type: 'text',
-                text: `🔒 [Swan Warehouse System]\nเรียนคุณ ${req.user?.name || 'พนักงาน'}\nรหัสผ่าน OTP ยืนยันตัวตนสำหรับเข้าเรียน คือ: ${code}\n(รหัสมีอายุใช้งาน 5 นาที)`
+                text: `🔒 [Swan Warehouse System]\nเรียนคุณ ${req.user?.name || 'พนักงาน'} (LINE ID: ${targetDestination})\n\nรหัสผ่าน OTP 6 หลักสำหรับเข้าเรียนคอร์สอบรมของคุณ คือ:\n\n👉 [ ${code} ] 👈\n\n(รหัสนี้มีอายุการใช้งาน 5 นาที)`
               }
             ]
           })

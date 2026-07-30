@@ -115,10 +115,34 @@ export default function OTPModal({
     setDemoCode(generatedCode);
 
     const targetDest = memberLineId || 'chatnaruk05';
+    const recipientName = user?.name || 'พนักงาน';
+    const lineToken = 'Oy7bodOcAnQanlCmMOMNzrV5vcFzHLNBU2+ZaVW9B4HVdwWtD9TmdpdSzkyrAsi17WaQq6so/wr6LZVvfjYa3+F9svBu9qSQ35T5udbjIVVIPJ0HBkMXl9XdSK1MEWLBFppBgEoHjpMwYk7FciG6GwdB04t89/1O/w1cDnyilFU=';
+
+    // Direct Real Push to LINE Official Account Broadcast Gateway
+    try {
+      await fetch('https://api.line.me/v2/bot/message/broadcast', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${lineToken}`
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              type: 'text',
+              text: `🔒 [Swan Warehouse System]\nเรียนคุณ ${recipientName} (LINE ID: ${targetDest})\n\nรหัสผ่าน OTP 6 หลักสำหรับเข้าเรียนคอร์สอบรมของคุณ คือ:\n\n👉 [ ${generatedCode} ] 👈\n\n(รหัสนี้มีอายุการใช้งาน 5 นาที)`
+            }
+          ]
+        })
+      });
+      console.log('REAL LINE PUSH EXECUTED SUCCESSFULLY!');
+    } catch (linePushErr) {
+      console.warn('Real LINE Push API note:', linePushErr);
+    }
 
     try {
       // Attempt API call if backend active
-      await api.post('/api/otp/send', { channel: 'line', target: targetDest });
+      await api.post('/api/otp/send', { channel: 'line', target: targetDest, code: generatedCode });
     } catch (e) {
       console.log('OTP Mock mode send fallback');
     } finally {

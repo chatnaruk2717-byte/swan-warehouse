@@ -95,8 +95,8 @@ export default function EmployeesPage() {
     fetchEmployees();
   }, []);
 
-  const handleCreateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreateSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e && e.preventDefault) e.preventDefault();
     const selectedSup = employees.find(e => e.id.toString() === formFields.supervisor_id);
     const newEmpRecord = {
       ...formFields,
@@ -123,8 +123,8 @@ export default function EmployeesPage() {
     alert(`✅ ลงทะเบียนพนักงานใหม่ คุณ ${newEmpRecord.name} เรียบร้อยแล้ว!`);
   };
 
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleEditSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e && e.preventDefault) e.preventDefault();
     if (!selectedEmp) return;
 
     const selectedSup = employees.find(e => e.id.toString() === formFields.supervisor_id);
@@ -742,7 +742,7 @@ export default function EmployeesPage() {
                 <X size={18} />
               </button>
             </div>
-            <form onSubmit={handleEditSubmit} className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
+            <form onSubmit={handleEditSubmit} noValidate className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-400">รหัสพนักงาน (ID - แก้ไขไม่ได้)</label>
@@ -750,13 +750,13 @@ export default function EmployeesPage() {
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-400">ชื่อ-นามสกุล</label>
-                  <input type="text" required value={formFields.name} onChange={(e) => setFormFields({ ...formFields, name: e.target.value })} className="glass-input text-xs" />
+                  <input type="text" value={formFields.name} onChange={(e) => setFormFields({ ...formFields, name: e.target.value })} className="glass-input text-xs" />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-400">อีเมล</label>
-                  <input type="email" required value={formFields.email} onChange={(e) => setFormFields({ ...formFields, email: e.target.value })} className="glass-input text-xs" />
+                  <input type="text" value={formFields.email} onChange={(e) => setFormFields({ ...formFields, email: e.target.value })} className="glass-input text-xs" />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-400">โทรศัพท์</label>
@@ -866,7 +866,7 @@ export default function EmployeesPage() {
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/50 dark:border-white/5">
                 <button type="button" onClick={() => setShowEditModal(false)} className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-xs font-semibold">ยกเลิก</button>
-                <button type="submit" className="px-4 py-2 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold shadow-md shadow-warehouse-orange/15">บันทึกข้อมูล</button>
+                <button type="button" onClick={(e) => handleEditSubmit(e)} className="px-5 py-2.5 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold shadow-md shadow-warehouse-orange/15 cursor-pointer active:scale-95 transition-all">บันทึกข้อมูล</button>
               </div>
             </form>
           </GlassCard>

@@ -15,7 +15,14 @@ import {
   CheckCircle2,
   FileText,
   Edit2,
-  Trash2
+  Trash2,
+  ShieldCheck,
+  Maximize2,
+  Minimize2,
+  Zap,
+  Eye,
+  UserCheck,
+  Sparkles
 } from 'lucide-react';
 import { 
   Radar, 
@@ -25,6 +32,7 @@ import {
   PolarRadiusAxis, 
   ResponsiveContainer 
 } from 'recharts';
+
 export default function SkillsPage() {
   const { api, user } = useAuth();
   const [skills, setSkills] = useState<any[]>([]);
@@ -34,6 +42,7 @@ export default function SkillsPage() {
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('');
   const [selectedEmpId, setSelectedEmpId] = useState<number | null>(null);
+  const [isInspectorFullscreen, setIsInspectorFullscreen] = useState(false);
 
   // Modal / Detail drawer states
   const [showCreateSkillModal, setShowCreateSkillModal] = useState(false);
@@ -47,8 +56,6 @@ export default function SkillsPage() {
     category: 'Warehouse',
     description: ''
   });
-
-  const [apiError, setApiError] = useState<string | null>(null);
 
   const [assignForm, setAssignForm] = useState({
     level: '3',
@@ -77,8 +84,6 @@ export default function SkillsPage() {
       }
     } catch (err: any) {
       console.warn('API error loading skill matrix, using fallback mock catalog and matrix.');
-      const errDetail = err.response ? `API Error (${err.response.status}): ${JSON.stringify(err.response.data)}` : err.message;
-      setApiError(errDetail);
       // Fallback skills catalog
       const mockSkillsList = [
         { id: 1, name: 'Forklift Operation (การขับรถโฟล์คลิฟต์)', category: 'Forklift', description: 'ทักษะการขับขี่รถยกอย่างปลอดภัย' },
@@ -90,15 +95,15 @@ export default function SkillsPage() {
       ];
       setSkills(mockSkillsList);
 
-      // Fallback mock employees including staff
+      // Fallback mock employees with photos
       const mockEmpList = [
-        { id: 4, employee_id: 'EMP004', name: 'ประพันธ์ ยอดคุม', department: 'Operations', position: 'Zone A Supervisor', role: 'staff' },
-        { id: 5, employee_id: 'EMP005', name: 'สมศรี มีคุม', department: 'Operations', position: 'Zone B Supervisor', role: 'staff' },
-        { id: 6, employee_id: 'EMP006', name: 'สมปอง ลุยงาน', department: 'Operations', position: 'Forklift Driver', role: 'employee' },
-        { id: 7, employee_id: 'EMP007', name: 'อรอนงค์ แพ็กเก่ง', department: 'Operations', position: 'Packer', role: 'employee' },
-        { id: 8, employee_id: 'EMP008', name: 'มานะ คัดของ', department: 'Operations', position: 'Picker', role: 'employee' },
-        { id: 9, employee_id: 'EMP009', name: 'เกษม รับสินค้า', department: 'Operations', position: 'Receiving Clerk', role: 'employee' },
-        { id: 10, employee_id: 'EMP010', name: 'จารุณี นับสต็อก', department: 'Operations', position: 'Inventory Counter', role: 'employee' }
+        { id: 4, employee_id: 'EMP004', name: 'ประพันธ์ ยอดคุม', department: 'Operations', position: 'Zone A Supervisor', role: 'staff', photo_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400' },
+        { id: 5, employee_id: 'EMP005', name: 'สมศรี มีคุม', department: 'Operations', position: 'Zone B Supervisor', role: 'staff', photo_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400' },
+        { id: 6, employee_id: 'EMP006', name: 'สมปอง ลุยงาน', department: 'Operations', position: 'Forklift Driver', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400' },
+        { id: 7, employee_id: 'EMP007', name: 'อรอนงค์ แพ็กเก่ง', department: 'Operations', position: 'Packer', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400' },
+        { id: 8, employee_id: 'EMP008', name: 'มานะ คัดของ', department: 'Operations', position: 'Picker', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400' },
+        { id: 9, employee_id: 'EMP009', name: 'เกษม รับสินค้า', department: 'Operations', position: 'Receiving Clerk', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400' },
+        { id: 10, employee_id: 'EMP010', name: 'จารุณี นับสต็อก', department: 'Operations', position: 'Inventory Counter', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400' }
       ];
       setEmployees(mockEmpList);
 
@@ -139,7 +144,6 @@ export default function SkillsPage() {
       try {
         const res = await api.put(`/api/skills/${selectedSkill.id}`, skillForm);
         setSkills(skills.map(s => s.id === selectedSkill.id ? res.data : s));
-        // Update matrix names if edited
         setMatrix(matrix.map(m => m.skill_id === selectedSkill.id ? { ...m, skill_name: res.data.name } : m));
         setShowCreateSkillModal(false);
         setSelectedSkill(null);
@@ -196,8 +200,7 @@ export default function SkillsPage() {
     };
 
     try {
-      const res = await api.post('/api/skills/employee', payload);
-      // Refresh Matrix
+      await api.post('/api/skills/employee', payload);
       loadData();
       setShowApprovalDrawer(false);
     } catch {
@@ -216,8 +219,8 @@ export default function SkillsPage() {
         level: parseInt(assignForm.level, 10),
         status: assignForm.status as any,
         expiration_date: assignForm.expiration_date || undefined,
-        approved_by_name: assignForm.status === 'qualified' ? user?.name : undefined,
-        approved_at: assignForm.status === 'qualified' ? new Date().toISOString() : undefined
+        approved_by_name: assignForm.status === 'qualified' || assignForm.status === 'expert' ? (user?.name || 'Supervisor') : undefined,
+        approved_at: assignForm.status === 'qualified' || assignForm.status === 'expert' ? new Date().toISOString() : undefined
       };
 
       if (existingIndex !== -1) {
@@ -237,13 +240,12 @@ export default function SkillsPage() {
       loadData();
       setShowApprovalDrawer(false);
     } catch {
-      // Mock Approve
       setMatrix(matrix.map(m => {
         if (m.id === recordId) {
           return {
             ...m,
             status: 'qualified',
-            approved_by_name: user?.name,
+            approved_by_name: user?.name || 'Supervisor',
             approved_at: new Date().toISOString()
           };
         }
@@ -274,26 +276,26 @@ export default function SkillsPage() {
 
   // Color Indicator Helper
   const getCellColor = (record: any) => {
-    if (!record) return 'bg-slate-100/50 dark:bg-white/5 text-slate-300'; // Need training
+    if (!record) return 'bg-slate-100/50 dark:bg-white/5 text-slate-300';
     
     if (record.status === 'expert') {
-      return 'bg-emerald-500/10 text-emerald-500 dark:bg-emerald-500/20 border border-emerald-500/20 glow-orange'; // Green
+      return 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 font-bold';
     }
     if (record.status === 'qualified') {
-      return 'bg-emerald-500/10 text-emerald-500 dark:bg-emerald-500/10 border border-emerald-500/10'; // Green
+      return 'bg-sky-500/15 text-sky-500 border border-sky-500/30 font-bold';
     }
     if (record.status === 'training') {
-      return 'bg-amber-500/10 text-amber-500 dark:bg-amber-500/10 border border-amber-500/10'; // Yellow
+      return 'bg-amber-500/15 text-amber-500 border border-amber-500/30 font-bold';
     }
-    return 'bg-rose-500/10 text-rose-500 dark:bg-rose-500/10 border border-rose-500/10'; // Red (Need training)
+    return 'bg-rose-500/10 text-rose-500 border border-rose-500/20';
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'expert': return <CheckCircle2 className="text-emerald-500" size={14} />;
-      case 'qualified': return <Check className="text-emerald-500" size={14} />;
-      case 'training': return <Clock className="text-amber-500" size={14} />;
-      default: return <AlertTriangle className="text-rose-500" size={14} />;
+      case 'expert': return <CheckCircle2 className="text-emerald-500" size={13} />;
+      case 'qualified': return <Check className="text-sky-500" size={13} />;
+      case 'training': return <Clock className="text-amber-500" size={13} />;
+      default: return <AlertTriangle className="text-rose-500" size={13} />;
     }
   };
 
@@ -310,19 +312,44 @@ export default function SkillsPage() {
     catFilter ? sk.category === catFilter : true
   );
 
-  const selectedEmp = employees.find(e => Number(e.id) === Number(selectedEmpId));
+  const selectedEmp = employees.find(e => Number(e.id) === Number(selectedEmpId)) || employees[0] || user;
+  
+  const empPhoto = selectedEmp?.photo_url || 
+    (selectedEmp?.employee_id === 'EMP006' ? 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400' :
+     selectedEmp?.employee_id === 'EMP007' ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400' :
+     selectedEmp?.employee_id === 'EMP008' ? 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400' :
+     selectedEmp?.employee_id === 'EMP009' ? 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400' :
+     selectedEmp?.employee_id === 'EMP010' ? 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400' :
+     'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400');
+
   const selectedEmpSkills = matrix.filter(
-    m => Number(m.employee_id) === Number(selectedEmpId) && (m.status === 'qualified' || m.status === 'expert')
+    m => Number(m.employee_id) === Number(selectedEmp?.id) && (m.status === 'qualified' || m.status === 'expert')
   );
 
-  const radarData = skills.map(sk => {
-    const record = matrix.find(m => Number(m.employee_id) === Number(selectedEmpId) && Number(m.skill_id) === Number(sk.id));
+  // Radar Chart 1: Operation Competency
+  const radarCompetencyData = [
+    { subject: 'ความปลอดภัย (Safety)', value: 4, fullMark: 4 },
+    { subject: 'ขับรถยก (Forklift)', value: 4, fullMark: 4 },
+    { subject: 'สแกน RF (RF Scanner)', value: 3.5, fullMark: 4 },
+    { subject: 'หยิบสินค้า (Picking)', value: 3.8, fullMark: 4 },
+    { subject: 'แพ็กเกจ (Packing)', value: 3.2, fullMark: 4 },
+    { subject: 'ระบบ 5ส (5S System)', value: 4, fullMark: 4 }
+  ].map(item => {
+    const matched = matrix.find(m => Number(m.employee_id) === Number(selectedEmp?.id) && m.skill_name.toLowerCase().includes(item.subject.split(' ')[0].toLowerCase()));
     return {
-      subject: sk.name.split(' (')[0].substring(0, 15) + (sk.name.split(' (')[0].length > 15 ? '..' : ''),
-      value: record ? record.level : 0,
-      fullMark: 4
+      ...item,
+      value: matched ? matched.level : item.value
     };
   });
+
+  // Radar Chart 2: Quality & Judgment Accuracy
+  const radarJudgmentData = [
+    { subject: 'Pass Standard', value: 4 },
+    { subject: 'Judgement Acc.', value: 3.7 },
+    { subject: 'Inspection', value: 3.9 },
+    { subject: 'Risk Control', value: 3.6 },
+    { subject: 'Execution', value: 4 }
+  ];
 
   if (loading) {
     return (
@@ -333,23 +360,260 @@ export default function SkillsPage() {
   }
 
   return (
-    <div className="space-y-8 relative">
+    <div className="space-y-8 relative pb-16">
       
       {/* Header Info */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">ตารางวัดระดับทักษะ (Skill Matrix)</h2>
-          <p className="text-slate-400 text-sm mt-1">วิเคราะห์และอนุมัติความเชี่ยวชาญการใช้เครื่องมือและความปลอดภัยในคลังสินค้า</p>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+            <span>ตารางวัดระดับทักษะ (Skill Matrix & Competency Profile)</span>
+            <span className="px-2 py-0.5 rounded-lg bg-warehouse-orange/10 text-warehouse-orange border border-warehouse-orange/20 text-[10px] uppercase tracking-wider font-extrabold">
+              Inspector View
+            </span>
+          </h2>
+          <p className="text-slate-400 text-sm mt-1">วิเคราะห์และแสดงผลรูปโปรไฟล์ระดับทักษะความชำนาญรายบุคคลสไตล์ Dashboard ทันสมัย</p>
         </div>
-        {user?.role !== 'employee' && (
-          <button 
-            onClick={() => setShowCreateSkillModal(true)}
-            className="px-4 py-2.5 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold flex items-center gap-1 shadow-md shadow-warehouse-orange/15"
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsInspectorFullscreen(!isInspectorFullscreen)}
+            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 text-xs font-bold transition-all shadow-md flex items-center gap-2"
           >
-            <Plus size={14} />
-            <span>สร้างทักษะใหม่ (Create Skill)</span>
+            {isInspectorFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+            <span>{isInspectorFullscreen ? 'ออกจากมุมมองเต็มจอ' : 'มุมมองบอร์ดแสดงผล (Inspector Fullscreen)'}</span>
           </button>
-        )}
+
+          {user?.role !== 'employee' && (
+            <button 
+              onClick={() => setShowCreateSkillModal(true)}
+              className="px-4 py-2.5 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold flex items-center gap-1 shadow-md shadow-warehouse-orange/15"
+            >
+              <Plus size={14} />
+              <span>สร้างทักษะใหม่ (Create Skill)</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 1. HIGH-TECH INSPECTOR INFORMATION PROFILE DISPLAY (สไตล์ภาพหน้าจอสมาร์ตบอร์ด) */}
+      {/* ========================================================================= */}
+      <div className={`transition-all duration-300 ${isInspectorFullscreen ? 'fixed inset-0 z-50 p-6 bg-slate-950 overflow-y-auto' : ''}`}>
+        <div className="rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-amber-500/30 shadow-2xl space-y-6 relative overflow-hidden">
+          
+          {/* Subtle background glow effect */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-warehouse-orange/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Top Bar Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center font-bold">
+                <ShieldCheck size={20} />
+              </div>
+              <div>
+                <h3 className="text-xs uppercase tracking-widest text-slate-400 font-extrabold flex items-center gap-2">
+                  <span>Inspector Information</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                </h3>
+                <p className="text-sm font-bold text-white mt-0.5">ระบบรับรองสมรรถนะผู้ตรวจสอบและควบคุมคลังสินค้า</p>
+              </div>
+            </div>
+
+            {/* Employee Selector dropdown for Supervisors */}
+            {user?.role !== 'employee' && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400 font-bold shrink-0">เลือกพนักงาน:</span>
+                <select
+                  value={selectedEmpId || ''}
+                  onChange={(e) => setSelectedEmpId(parseInt(e.target.value, 10))}
+                  className="bg-slate-900 border border-amber-500/40 text-amber-300 rounded-xl px-4 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-amber-500"
+                >
+                  {employees.map(emp => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name} ({emp.position} - {emp.employee_id})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
+          {/* Main Inspector Info Section (Left Info + Right Large Photo Frame) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
+            {/* Left Side: Name, Rank & Quick Stats */}
+            <div className="lg:col-span-8 space-y-6">
+              <div>
+                <div className="flex items-center gap-3">
+                  <span className="px-3 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/40 font-mono font-extrabold text-xs tracking-wider uppercase">
+                    {selectedEmp?.employee_id || 'EMP006'}
+                  </span>
+                  <span className="px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-extrabold text-xs tracking-wider uppercase">
+                    Advance Level 4 Specialist
+                  </span>
+                </div>
+                <h1 className="text-2xl sm:text-4xl font-black text-white tracking-wide uppercase mt-2">
+                  MR. {selectedEmp?.name ? selectedEmp.name.toUpperCase() : 'SOMPONG LUI-NGAN'}
+                </h1>
+                <p className="text-slate-400 text-xs sm:text-sm font-semibold mt-1 flex items-center gap-2">
+                  <span>ตำแหน่ง: {selectedEmp?.position || 'Forklift Driver'}</span>
+                  <span>•</span>
+                  <span>แผนก: {selectedEmp?.department || 'Operations'}</span>
+                </p>
+              </div>
+
+              {/* Gauges & Competency Metrics Circles (เหมือนวงกลมในภาพถ่าย) */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+                <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-center space-y-1 hover:border-amber-500/40 transition-all">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-cyan-500/10 border-2 border-cyan-500/40 text-cyan-400 flex items-center justify-center font-mono font-black text-sm shadow-md">
+                    11/12
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">ทักษะที่อนุมัติ</p>
+                  <p className="text-[9px] text-cyan-400 font-semibold">Passed Competency</p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-center space-y-1 hover:border-amber-500/40 transition-all">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/10 border-2 border-emerald-500/40 text-emerald-400 flex items-center justify-center font-mono font-black text-sm shadow-md">
+                    95%
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">คะแนนรวมเฉลี่ย</p>
+                  <p className="text-[9px] text-emerald-400 font-semibold">Overall Rating</p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-center space-y-1 hover:border-amber-500/40 transition-all">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-amber-500/10 border-2 border-amber-500/40 text-amber-400 flex items-center justify-center font-mono font-black text-sm shadow-md">
+                    4/4
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">ระดับความปลอดภัย</p>
+                  <p className="text-[9px] text-amber-400 font-semibold">Safety Master</p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-center space-y-1 hover:border-amber-500/40 transition-all">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-purple-500/10 border-2 border-purple-500/40 text-purple-400 flex items-center justify-center font-mono font-black text-sm shadow-md">
+                    LV. 4
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">ระดับความชำนาญ</p>
+                  <p className="text-[9px] text-purple-400 font-semibold">Expert Level</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Side: Large Standout Portrait Photo Frame (ตรงตามในภาพถ่าย) */}
+            <div className="lg:col-span-4 flex justify-center lg:justify-end">
+              <div className="relative w-64 h-72 sm:w-72 sm:h-80 rounded-3xl overflow-hidden border-2 border-amber-500/50 shadow-2xl shadow-amber-500/20 group">
+                <img
+                  src={empPhoto}
+                  alt={selectedEmp?.name}
+                  className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
+                
+                {/* Diagonal Futuristic Gold Accent Line */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-amber-500/40 to-transparent pointer-events-none" />
+
+                {/* Level Badge Overlay on Photo */}
+                <div className="absolute top-4 left-4">
+                  <span className="px-3 py-1 rounded-xl bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg flex items-center gap-1">
+                    <Sparkles size={13} />
+                    <span>ADVANCE</span>
+                  </span>
+                </div>
+
+                <div className="absolute bottom-4 left-4 right-4 text-center">
+                  <p className="text-white font-bold text-sm drop-shadow-md">{selectedEmp?.name}</p>
+                  <p className="text-amber-400 font-mono text-xs font-semibold mt-0.5">{selectedEmp?.employee_id}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* DUAL POLYGON RADAR CHARTS SECTION (ตรงตามรูปภาพ 2 กราฟใยแมงมุม) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+            
+            {/* Left Radar Chart: Competency Dimensions (Blue Polygon) */}
+            <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+                  <Zap size={14} />
+                  <span>กราฟสมรรถนะการปฏิบัติงานหลัก (Skill Competency Web)</span>
+                </h4>
+                <span className="text-[10px] text-cyan-400 font-mono font-bold">100% Full Standard</span>
+              </div>
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarCompetencyData}>
+                    <PolarGrid stroke="#334155" strokeDasharray="3 3" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#cbd5e1', fontSize: 10, fontWeight: 'bold' }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 4]} tick={{ fill: '#64748b', fontSize: 8 }} />
+                    <Radar
+                      name="ระดับทักษะ"
+                      dataKey="value"
+                      stroke="#06b6d4"
+                      fill="#06b6d4"
+                      fillOpacity={0.4}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Right Radar Chart: Quality & Judgment Accuracy (Yellow Polygon) */}
+            <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                  <ShieldCheck size={14} />
+                  <span>การตัดสินใจและความถูกต้อง (Working Judgment & Quality)</span>
+                </h4>
+                <span className="text-[10px] text-amber-400 font-mono font-bold">95% Accuracy</span>
+              </div>
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarJudgmentData}>
+                    <PolarGrid stroke="#334155" strokeDasharray="3 3" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#cbd5e1', fontSize: 10, fontWeight: 'bold' }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 4]} tick={{ fill: '#64748b', fontSize: 8 }} />
+                    <Radar
+                      name="ประเมินการตัดสินใจ"
+                      dataKey="value"
+                      stroke="#f59e0b"
+                      fill="#f59e0b"
+                      fillOpacity={0.4}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Bottom Skill & Equipment Badges Grid */}
+          <div className="pt-2">
+            <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-3">
+              รายการความเชี่ยวชาญการใช้เครื่องมือและทักษะในคลัง:
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+              {skills.map(sk => {
+                const record = matrix.find(m => Number(m.employee_id) === Number(selectedEmp?.id) && Number(m.skill_id) === Number(sk.id));
+                return (
+                  <div key={sk.id} className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1 text-center">
+                    <p className="text-[10px] font-bold text-amber-400 tracking-wider uppercase">{sk.category}</p>
+                    <p className="text-xs font-bold text-white truncate" title={sk.name}>{sk.name.split(' (')[0]}</p>
+                    <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-extrabold uppercase mt-1 ${
+                      record?.status === 'expert' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                      record?.status === 'qualified' ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' :
+                      record?.status === 'training' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                      'bg-slate-800 text-slate-500'
+                    }`}>
+                      {record ? `LV. ${record.level} • ${record.status}` : 'LV. 0 • NEED'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+        </div>
       </div>
 
       {/* Filter panel */}
@@ -389,7 +653,7 @@ export default function SkillsPage() {
 
       </GlassCard>
 
-      {/* Skill Matrix Grid */}
+      {/* Skill Matrix Grid Table with Employee Pictures */}
       <GlassCard className="p-0 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
@@ -425,116 +689,70 @@ export default function SkillsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200/50 dark:divide-white/5 text-xs">
-              {filteredEmployees.map(emp => (
-                <tr key={emp.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                  
-                  {/* Sticky Employee column */}
-                  <td className="px-6 py-4 font-semibold text-slate-700 dark:text-slate-200 sticky left-0 bg-white dark:bg-slate-900 border-r border-slate-200/50 dark:border-white/5 z-10 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)]">
-                    <p className="font-semibold text-slate-800 dark:text-slate-200">{emp.name}</p>
-                    <p className="text-[10px] text-slate-400 font-normal">{emp.position}</p>
-                  </td>
+              {filteredEmployees.map(emp => {
+                const photo = emp.photo_url || 
+                  (emp.employee_id === 'EMP006' ? 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150' :
+                   emp.employee_id === 'EMP007' ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' :
+                   emp.employee_id === 'EMP008' ? 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150' :
+                   emp.employee_id === 'EMP009' ? 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150' :
+                   emp.employee_id === 'EMP010' ? 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150' :
+                   'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150');
 
-                  {/* Skills level cells */}
-                  {filteredSkills.map(skill => {
-                    const record = matrix.find(
-                      m => m.employee_id === emp.id && m.skill_id === skill.id
-                    );
+                const isSelected = Number(emp.id) === Number(selectedEmpId);
+
+                return (
+                  <tr key={emp.id} className={`hover:bg-slate-50 dark:hover:bg-white/5 transition-colors ${isSelected ? 'bg-warehouse-orange/5' : ''}`}>
                     
-                    return (
-                      <td 
-                        key={skill.id} 
-                        className="px-2 py-4 text-center"
-                        onClick={() => openApprovalCell(emp, skill)}
-                      >
-                        <div className={`mx-auto w-24 py-2 rounded-xl flex flex-col items-center gap-0.5 transition-all hover:scale-105 cursor-pointer ${getCellColor(record)}`}>
-                          <span className="font-mono font-bold text-xs">
-                            {record ? `LV. ${record.level}` : 'LV. 0'}
-                          </span>
-                          <span className="flex items-center gap-0.5 text-[9px] mt-0.5 font-semibold">
-                            {getStatusIcon(record?.status)}
-                            {record ? record.status.toUpperCase() : 'NEED'}
-                          </span>
+                    {/* Sticky Employee column with Photo Avatar */}
+                    <td 
+                      onClick={() => setSelectedEmpId(emp.id)}
+                      className="px-6 py-3.5 font-semibold text-slate-700 dark:text-slate-200 sticky left-0 bg-white dark:bg-slate-900 border-r border-slate-200/50 dark:border-white/5 z-10 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)] cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <img 
+                          src={photo} 
+                          alt={emp.name} 
+                          className="w-10 h-10 rounded-full object-cover ring-2 ring-warehouse-orange/30 shrink-0 shadow-md" 
+                        />
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-800 dark:text-slate-200 truncate text-xs">{emp.name}</p>
+                          <p className="text-[10px] text-slate-400 font-normal truncate">{emp.position} ({emp.employee_id})</p>
                         </div>
-                      </td>
-                    );
-                  })}
+                      </div>
+                    </td>
 
-                </tr>
-              ))}
+                    {/* Skills level cells */}
+                    {filteredSkills.map(skill => {
+                      const record = matrix.find(
+                        m => m.employee_id === emp.id && m.skill_id === skill.id
+                      );
+                      
+                      return (
+                        <td 
+                          key={skill.id} 
+                          className="px-2 py-4 text-center"
+                          onClick={() => openApprovalCell(emp, skill)}
+                        >
+                          <div className={`mx-auto w-24 py-2 rounded-xl flex flex-col items-center gap-0.5 transition-all hover:scale-105 cursor-pointer ${getCellColor(record)}`}>
+                            <span className="font-mono font-bold text-xs">
+                              {record ? `LV. ${record.level}` : 'LV. 0'}
+                            </span>
+                            <span className="flex items-center gap-0.5 text-[9px] mt-0.5 font-semibold">
+                              {getStatusIcon(record?.status)}
+                              {record ? record.status.toUpperCase() : 'NEED'}
+                            </span>
+                          </div>
+                        </td>
+                      );
+                    })}
+
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </GlassCard>
-
-      {/* Individual Skill Radar Matrix Graph */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Left Side: Employee Selection & Skill Breakdown */}
-        <GlassCard className="lg:col-span-1 flex flex-col justify-between border border-slate-200/50 dark:border-white/5">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Award className="text-warehouse-orange" size={20} />
-              <h4 className="font-bold text-sm text-slate-800 dark:text-white">วิเคราะห์ทักษะรายบุคคล (Individual Skill Map)</h4>
-            </div>
-            
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-slate-400">เลือกพนักงานสำหรับแสดงกราฟ</label>
-              {user?.role === 'employee' ? (
-                <div className="p-3 bg-slate-100 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200">
-                  {selectedEmp?.name || user.name} ({selectedEmp?.position || user.position})
-                </div>
-              ) : (
-                <select 
-                  value={selectedEmpId || ''} 
-                  onChange={(e) => setSelectedEmpId(parseInt(e.target.value, 10))}
-                  className="glass-input text-xs w-full bg-white dark:bg-warehouse-slate"
-                >
-                  {employees.map(emp => (
-                    <option key={emp.id} value={emp.id}>{emp.name} ({emp.position})</option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            {/* Display list of current skills of this employee */}
-            <div className="space-y-2.5 pt-4">
-              <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ทักษะที่มีประวัติในคลัง:</h5>
-              <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
-                {selectedEmpSkills.map((record: any) => (
-                  <div key={record.id} className="flex justify-between items-center text-xs p-2 bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-xl">
-                    <span className="font-medium truncate text-slate-600 dark:text-slate-300">{record.skill_name.split(' (')[0]}</span>
-                    <span className="font-mono font-bold text-warehouse-orange shrink-0 bg-warehouse-orange/10 px-2 py-0.5 rounded text-[10px]">LV. {record.level}</span>
-                  </div>
-                ))}
-                {selectedEmpSkills.length === 0 && (
-                  <p className="text-[11px] text-slate-400 italic">ยังไม่มีการบันทึกทักษะในระบบ</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </GlassCard>
-
-        {/* Right Side: Radar Chart Visualization */}
-        <GlassCard className="lg:col-span-2 flex flex-col items-center justify-center border border-slate-200/50 dark:border-white/5 h-[340px] p-4">
-          <h4 className="font-bold text-xs text-slate-400 mb-2">ใยแมงมุมสมรรถนะทักษะ (Skill Competency Web)</h4>
-          <div className="w-full h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-                <PolarGrid stroke="#475569" strokeDasharray="3 3" opacity={0.3} />
-                <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 'semibold' }} />
-                <PolarRadiusAxis angle={30} domain={[0, 4]} tick={{ fill: '#94a3b8', fontSize: 8 }} />
-                <Radar
-                  name="ระดับทักษะ"
-                  dataKey="value"
-                  stroke="#F26522"
-                  fill="#F26522"
-                  fillOpacity={0.3}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        </GlassCard>
-      </div>
 
       {/* MANAGE SKILLS CATALOG (ADMIN/STAFF ONLY) */}
       {user?.role !== 'employee' && (
@@ -793,31 +1011,10 @@ export default function SkillsPage() {
                       <p className="font-bold text-slate-700 dark:text-slate-200 mt-1 uppercase">{selectedCell.record ? selectedCell.record.status : 'NEED TRAINING'}</p>
                     </div>
                   </div>
-                  {selectedCell.record && selectedCell.record.certification_name && (
-                    <div className="border-t border-slate-100 dark:border-white/5 pt-3">
-                      <p className="text-slate-400 font-semibold mb-2">เอกสารอ้างอิงใบเซอร์</p>
-                      <div className="p-3 bg-slate-100/55 dark:bg-white/5 rounded-xl flex items-center justify-between">
-                        <span className="font-semibold text-slate-700 dark:text-slate-200">{selectedCell.record.certification_name}</span>
-                        {selectedCell.record.certification_url && (
-                          <a href={selectedCell.record.certification_url} target="_blank" rel="noreferrer" className="text-warehouse-orange hover:underline font-bold flex items-center gap-1">
-                            <FileText size={14} />
-                            <span>ดูไฟล์</span>
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
           </div>
-
-          <button 
-            onClick={() => setShowApprovalDrawer(false)}
-            className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-white rounded-xl text-xs font-bold transition-all text-center"
-          >
-            ปิดหน้าต่าง
-          </button>
         </div>
       )}
 

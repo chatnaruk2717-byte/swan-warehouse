@@ -36,7 +36,7 @@ export default function OTPModal({
 }: OTPModalProps) {
   const { api, user } = useAuth();
 
-  const [channel, setChannel] = useState<'email' | 'phone'>('email');
+  const [channel, setChannel] = useState<'line' | 'email' | 'phone'>('line');
   const [step, setStep] = useState<'request' | 'verify'>('request');
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [demoCode, setDemoCode] = useState<string>('');
@@ -46,14 +46,16 @@ export default function OTPModal({
   const [countdown, setCountdown] = useState<number>(60);
   const [timerActive, setTimerActive] = useState<boolean>(false);
 
-  // Dynamic Phone & Email Sync from Member record / Cache
+  // Dynamic Phone, Email & LINE ID Sync from Member record / Cache
   const [memberPhone, setMemberPhone] = useState<string>('');
   const [memberEmail, setMemberEmail] = useState<string>('');
+  const [memberLineId, setMemberLineId] = useState<string>('');
 
   useEffect(() => {
     if (!isOpen || !user) return;
     let phoneVal = user.phone || '';
     let emailVal = user.email || '';
+    let lineVal = user.line_id || '';
 
     // Check cached employee list in sessionStorage for real-time updates
     try {
@@ -64,6 +66,7 @@ export default function OTPModal({
         if (matchedEmp) {
           if (matchedEmp.phone) phoneVal = matchedEmp.phone;
           if (matchedEmp.email) emailVal = matchedEmp.email;
+          if (matchedEmp.line_id) lineVal = matchedEmp.line_id;
         }
       }
     } catch (e) {}
@@ -71,9 +74,11 @@ export default function OTPModal({
     // Fallback defaults
     if (!phoneVal) phoneVal = '0886474453';
     if (!emailVal) emailVal = 'chatnaruk02@gmail.com';
+    if (!lineVal) lineVal = '@chatnaruk02.line';
 
     setMemberPhone(phoneVal);
     setMemberEmail(emailVal);
+    setMemberLineId(lineVal);
   }, [user, isOpen]);
 
   const inputRefs = [
@@ -108,7 +113,8 @@ export default function OTPModal({
     const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
     setDemoCode(generatedCode);
 
-    const targetDest = channel === 'phone' ? (memberPhone || user?.phone || '0886474453') : (memberEmail || user?.email || 'chatnaruk02@gmail.com');
+    const channelName = channel === 'line' ? 'แอป LINE มือถือ' : channel === 'phone' ? 'เบอร์มือถือ (SMS)' : 'อีเมล (Gmail)';
+    const targetDest = channel === 'line' ? memberLineId : channel === 'phone' ? memberPhone : memberEmail;
 
     try {
       // Attempt API call if backend active
@@ -121,7 +127,7 @@ export default function OTPModal({
       setCountdown(60);
       setTimerActive(true);
       console.log(`[SECURE OTP CODE CREATED]: ${generatedCode}`);
-      setSuccessToast(`📩 ระบบได้ส่งรหัส OTP 6 หลักไปยัง ${channel === 'phone' ? 'เบอร์มือถือ' : 'อีเมล'} (${targetDest}) เรียบร้อยแล้ว`);
+      setSuccessToast(`📩 ส่งรหัส OTP 6 หลักตรงเข้า ${channelName} (${targetDest}) เรียบร้อยแล้ว`);
       
       // Auto-focus first input box
       setTimeout(() => {
@@ -265,38 +271,64 @@ export default function OTPModal({
           <div className="space-y-5 pt-2">
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300">เลือกช่องทางรับรหัส OTP 6 หลัก:</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                
+                {/* LINE OTP (PRIMARY FREE CHANNEL) */}
                 <button
                   type="button"
-                  onClick={() => setChannel('email')}
-                  className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-center gap-3 ${
-                    channel === 'email'
-                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold shadow-md'
-                      : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:border-slate-300'
+                  onClick={() => setChannel('line')}
+                  className={`p-3 rounded-2xl border-2 text-left transition-all flex items-center gap-2.5 ${
+                    channel === 'line'
+                      ? 'border-emerald-500 bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 font-bold shadow-md shadow-emerald-500/10'
+                      : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:border-emerald-400'
                   }`}
                 >
-                  <Mail size={20} className={channel === 'email' ? 'text-emerald-500' : 'text-slate-400'} />
-                  <div>
-                    <p className="text-xs font-bold">รับทาง อีเมล</p>
-                    <p className="text-[10px] opacity-80 font-mono truncate max-w-[110px]">{memberEmail || user?.email || 'chatnaruk02@gmail.com'}</p>
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-black text-[10px] shrink-0 shadow-sm">
+                    LINE
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                      <span>LINE OTP</span>
+                      <span className="px-1 py-0.2 bg-emerald-500 text-white text-[8px] rounded font-bold">ฟรี 100%</span>
+                    </p>
+                    <p className="text-[10px] opacity-80 font-mono truncate">{memberLineId || '@chatnaruk02.line'}</p>
                   </div>
                 </button>
 
+                {/* EMAIL OTP */}
                 <button
                   type="button"
-                  onClick={() => setChannel('phone')}
-                  className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-center gap-3 ${
-                    channel === 'phone'
-                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold shadow-md'
+                  onClick={() => setChannel('email')}
+                  className={`p-3 rounded-2xl border-2 text-left transition-all flex items-center gap-2.5 ${
+                    channel === 'email'
+                      ? 'border-emerald-500 bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 font-bold shadow-md shadow-emerald-500/10'
                       : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:border-slate-300'
                   }`}
                 >
-                  <Phone size={20} className={channel === 'phone' ? 'text-emerald-500' : 'text-slate-400'} />
-                  <div>
-                    <p className="text-xs font-bold">รับทาง SMS มือถือ</p>
-                    <p className="text-[10px] opacity-80 font-mono truncate max-w-[110px]">{memberPhone || user?.phone || '0886474453'}</p>
+                  <Mail size={18} className={channel === 'email' ? 'text-emerald-500' : 'text-slate-400'} />
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold">อีเมล (Gmail)</p>
+                    <p className="text-[10px] opacity-80 font-mono truncate">{memberEmail || user?.email || 'chatnaruk02@gmail.com'}</p>
                   </div>
                 </button>
+
+                {/* SMS PHONE */}
+                <button
+                  type="button"
+                  onClick={() => setChannel('phone')}
+                  className={`p-3 rounded-2xl border-2 text-left transition-all flex items-center gap-2.5 ${
+                    channel === 'phone'
+                      ? 'border-emerald-500 bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 font-bold shadow-md shadow-emerald-500/10'
+                      : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:border-slate-300'
+                  }`}
+                >
+                  <Phone size={18} className={channel === 'phone' ? 'text-emerald-500' : 'text-slate-400'} />
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold">SMS มือถือ</p>
+                    <p className="text-[10px] opacity-80 font-mono truncate">{memberPhone || user?.phone || '0886474453'}</p>
+                  </div>
+                </button>
+
               </div>
             </div>
 

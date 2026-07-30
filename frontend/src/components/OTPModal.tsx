@@ -46,6 +46,36 @@ export default function OTPModal({
   const [countdown, setCountdown] = useState<number>(60);
   const [timerActive, setTimerActive] = useState<boolean>(false);
 
+  // Dynamic Phone & Email Sync from Member record / Cache
+  const [memberPhone, setMemberPhone] = useState<string>('');
+  const [memberEmail, setMemberEmail] = useState<string>('');
+
+  useEffect(() => {
+    if (!isOpen || !user) return;
+    let phoneVal = user.phone || '';
+    let emailVal = user.email || '';
+
+    // Check cached employee list in sessionStorage for real-time updates
+    try {
+      const cached = sessionStorage.getItem('swan_employees_cache');
+      if (cached) {
+        const list = JSON.parse(cached);
+        const matchedEmp = list.find((e: any) => e.id === user.id || e.employee_id === user.employee_id || e.name === user.name);
+        if (matchedEmp) {
+          if (matchedEmp.phone) phoneVal = matchedEmp.phone;
+          if (matchedEmp.email) emailVal = matchedEmp.email;
+        }
+      }
+    } catch (e) {}
+
+    // Fallback defaults
+    if (!phoneVal) phoneVal = '0886474453';
+    if (!emailVal) emailVal = 'chatnaruk02@gmail.com';
+
+    setMemberPhone(phoneVal);
+    setMemberEmail(emailVal);
+  }, [user, isOpen]);
+
   const inputRefs = [
     useRef<HTMLInputElement>(null),
     useRef<HTMLInputElement>(null),
@@ -78,9 +108,7 @@ export default function OTPModal({
     const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
     setDemoCode(generatedCode);
 
-    const targetDest = channel === 'phone' 
-      ? (user?.phone || '081-234-5678') 
-      : (user?.email || 'admin@warehouse.com');
+    const targetDest = channel === 'phone' ? (memberPhone || user?.phone || '0886474453') : (memberEmail || user?.email || 'chatnaruk02@gmail.com');
 
     try {
       // Attempt API call if backend active
@@ -242,7 +270,7 @@ export default function OTPModal({
                   <Mail size={20} className={channel === 'email' ? 'text-emerald-500' : 'text-slate-400'} />
                   <div>
                     <p className="text-xs font-bold">รับทาง อีเมล</p>
-                    <p className="text-[10px] opacity-80 font-mono truncate max-w-[110px]">{user?.email || 'admin@warehouse.com'}</p>
+                    <p className="text-[10px] opacity-80 font-mono truncate max-w-[110px]">{memberEmail || user?.email || 'chatnaruk02@gmail.com'}</p>
                   </div>
                 </button>
 
@@ -258,7 +286,7 @@ export default function OTPModal({
                   <Phone size={20} className={channel === 'phone' ? 'text-emerald-500' : 'text-slate-400'} />
                   <div>
                     <p className="text-xs font-bold">รับทาง SMS มือถือ</p>
-                    <p className="text-[10px] opacity-80 font-mono truncate max-w-[110px]">{user?.phone || '081-234-5678'}</p>
+                    <p className="text-[10px] opacity-80 font-mono truncate max-w-[110px]">{memberPhone || user?.phone || '0886474453'}</p>
                   </div>
                 </button>
               </div>

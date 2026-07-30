@@ -135,6 +135,14 @@ export default function EmployeesPage() {
       const updatedList = employees.map(emp => emp.id === selectedEmp.id ? res.data : emp);
       setEmployees(updatedList);
       sessionStorage.setItem('swan_employees_cache', JSON.stringify(updatedList));
+
+      // Sync user profile if currently logged in user is modified
+      if (user && (user.id === selectedEmp.id || user.employee_id === selectedEmp.employee_id)) {
+        const updatedUser = { ...user, ...res.data };
+        updateProfile(updatedUser);
+        sessionStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+
       setShowEditModal(false);
       resetForm();
     } catch (err: any) {
@@ -154,6 +162,14 @@ export default function EmployeesPage() {
       const updatedList = employees.map(emp => emp.id === selectedEmp.id ? updated : emp);
       setEmployees(updatedList);
       sessionStorage.setItem('swan_employees_cache', JSON.stringify(updatedList));
+
+      // Sync user profile if currently logged in user is modified
+      if (user && (user.id === selectedEmp.id || user.employee_id === selectedEmp.employee_id)) {
+        const updatedUser = { ...user, ...updated };
+        updateProfile(updatedUser);
+        sessionStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+
       setShowEditModal(false);
       resetForm();
     }

@@ -186,10 +186,30 @@ export default function OTPModal({
           <h3 className="font-bold text-lg text-slate-900 dark:text-white">{title}</h3>
           {actionItemName && (
             <p className="text-xs font-bold text-warehouse-orange bg-warehouse-orange/10 px-3 py-1 rounded-full inline-block">
-              รายการ: {actionItemName}
+              บทเรียน/รายการ: {actionItemName}
             </p>
           )}
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">{subtitle}</p>
+        </div>
+
+        {/* Logged in Member Profile Identity Badge */}
+        <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-amber-500/10 border border-emerald-500/30 rounded-2xl p-3 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-white font-black flex items-center justify-center text-sm shadow-md shrink-0">
+            {user?.name ? user.name.charAt(0) : 'U'}
+          </div>
+          <div className="text-left text-xs min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="font-black text-slate-900 dark:text-white truncate">
+                คุณ {user?.name || 'สมาชิกผู้ใช้งาน'}
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-mono font-bold text-[10px]">
+                {user?.employee_id || 'EMP'}
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-600 dark:text-slate-400 font-bold mt-0.5">
+              ตำแหน่ง: {user?.position || 'Staff'} • แผนก: {user?.department || 'Operations'}
+            </p>
+          </div>
         </div>
 
         {/* Demo Toast Notification Box */}

@@ -46,19 +46,9 @@ export default function CourseViewerClient() {
   const [maxTimeWatched, setMaxTimeWatched] = useState<number>(0);
   const ytPlayerRef = React.useRef<any>(null);
 
-  // OTP Verification States
-  const [showOtpModal, setShowOtpModal] = useState<boolean>(false);
+  // OTP Verification States (Mandatory prompt every time a member enters to learn a lesson)
+  const [showOtpModal, setShowOtpModal] = useState<boolean>(true);
   const [otpVerified, setOtpVerified] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const isVerified = sessionStorage.getItem('swan_otp_verified') === 'true';
-      setOtpVerified(isVerified);
-      if (!isVerified) {
-        setShowOtpModal(true);
-      }
-    }
-  }, []);
 
   // Load YouTube script on mount
   useEffect(() => {

@@ -22,7 +22,10 @@ import {
   Zap,
   Eye,
   UserCheck,
-  Sparkles
+  Sparkles,
+  Upload,
+  Camera,
+  Link as LinkIcon
 } from 'lucide-react';
 import { 
   Radar, 
@@ -43,6 +46,9 @@ export default function SkillsPage() {
   const [catFilter, setCatFilter] = useState('');
   const [selectedEmpId, setSelectedEmpId] = useState<number | null>(null);
   const [isInspectorFullscreen, setIsInspectorFullscreen] = useState(false);
+  const [customPhotos, setCustomPhotos] = useState<Record<string, string>>({});
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [photoUrlInput, setPhotoUrlInput] = useState('');
 
   // Modal / Detail drawer states
   const [showCreateSkillModal, setShowCreateSkillModal] = useState(false);
@@ -64,6 +70,49 @@ export default function SkillsPage() {
     certification_url: '',
     expiration_date: ''
   });
+
+  useEffect(() => {
+    // Load persisted custom employee photos
+    const stored = localStorage.getItem('swan_employee_photos');
+    if (stored) {
+      try {
+        setCustomPhotos(JSON.parse(stored));
+      } catch (e) {}
+    }
+  }, []);
+
+  const saveCustomPhoto = (empKey: string | number, photoStr: string) => {
+    const updated = {
+      ...customPhotos,
+      [empKey]: photoStr,
+      [selectedEmp?.id]: photoStr,
+      [selectedEmp?.employee_id]: photoStr
+    };
+    setCustomPhotos(updated);
+    localStorage.setItem('swan_employee_photos', JSON.stringify(updated));
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && selectedEmp) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        saveCustomPhoto(selectedEmp.employee_id || selectedEmp.id, base64);
+        setShowPhotoModal(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUrlSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (photoUrlInput.trim() && selectedEmp) {
+      saveCustomPhoto(selectedEmp.employee_id || selectedEmp.id, photoUrlInput.trim());
+      setPhotoUrlInput('');
+      setShowPhotoModal(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -95,15 +144,15 @@ export default function SkillsPage() {
       ];
       setSkills(mockSkillsList);
 
-      // Fallback mock employees with photos
+      // Fallback mock employees with high-definition default photos
       const mockEmpList = [
-        { id: 4, employee_id: 'EMP004', name: 'ประพันธ์ ยอดคุม', department: 'Operations', position: 'Zone A Supervisor', role: 'staff', photo_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400' },
-        { id: 5, employee_id: 'EMP005', name: 'สมศรี มีคุม', department: 'Operations', position: 'Zone B Supervisor', role: 'staff', photo_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400' },
-        { id: 6, employee_id: 'EMP006', name: 'สมปอง ลุยงาน', department: 'Operations', position: 'Forklift Driver', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400' },
-        { id: 7, employee_id: 'EMP007', name: 'อรอนงค์ แพ็กเก่ง', department: 'Operations', position: 'Packer', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400' },
-        { id: 8, employee_id: 'EMP008', name: 'มานะ คัดของ', department: 'Operations', position: 'Picker', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400' },
-        { id: 9, employee_id: 'EMP009', name: 'เกษม รับสินค้า', department: 'Operations', position: 'Receiving Clerk', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400' },
-        { id: 10, employee_id: 'EMP010', name: 'จารุณี นับสต็อก', department: 'Operations', position: 'Inventory Counter', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400' }
+        { id: 4, employee_id: 'EMP004', name: 'ประพันธ์ ยอดคุม', department: 'Operations', position: 'Zone A Supervisor', role: 'staff', photo_url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=1000&q=80' },
+        { id: 5, employee_id: 'EMP005', name: 'สมศรี มีคุม', department: 'Operations', position: 'Zone B Supervisor', role: 'staff', photo_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=1000&q=80' },
+        { id: 6, employee_id: 'EMP006', name: 'สมปอง ลุยงาน', department: 'Operations', position: 'Forklift Driver', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=1000&q=80' },
+        { id: 7, employee_id: 'EMP007', name: 'อรอนงค์ แพ็กเก่ง', department: 'Operations', position: 'Packer', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=1000&q=80' },
+        { id: 8, employee_id: 'EMP008', name: 'มานะ คัดของ', department: 'Operations', position: 'Picker', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1000&q=80' },
+        { id: 9, employee_id: 'EMP009', name: 'เกษม รับสินค้า', department: 'Operations', position: 'Receiving Clerk', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000&q=80' },
+        { id: 10, employee_id: 'EMP010', name: 'จารุณี นับสต็อก', department: 'Operations', position: 'Inventory Counter', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=1000&q=80' }
       ];
       setEmployees(mockEmpList);
 
@@ -314,13 +363,15 @@ export default function SkillsPage() {
 
   const selectedEmp = employees.find(e => Number(e.id) === Number(selectedEmpId)) || employees[0] || user;
   
-  const empPhoto = selectedEmp?.photo_url || 
-    (selectedEmp?.employee_id === 'EMP006' ? 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400' :
-     selectedEmp?.employee_id === 'EMP007' ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400' :
-     selectedEmp?.employee_id === 'EMP008' ? 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400' :
-     selectedEmp?.employee_id === 'EMP009' ? 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400' :
-     selectedEmp?.employee_id === 'EMP010' ? 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400' :
-     'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400');
+  // Custom photo overrides or HD default Unsplash photos
+  const customPhoto = customPhotos[selectedEmp?.employee_id] || customPhotos[selectedEmp?.id];
+  const empPhoto = customPhoto || selectedEmp?.photo_url || 
+    (selectedEmp?.employee_id === 'EMP006' || selectedEmp?.employee_id === '22512' ? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=1000&q=80' :
+     selectedEmp?.employee_id === 'EMP007' ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=1000&q=80' :
+     selectedEmp?.employee_id === 'EMP008' ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1000&q=80' :
+     selectedEmp?.employee_id === 'EMP009' ? 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000&q=80' :
+     selectedEmp?.employee_id === 'EMP010' ? 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=1000&q=80' :
+     'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=1000&q=80');
 
   const selectedEmpSkills = matrix.filter(
     m => Number(m.employee_id) === Number(selectedEmp?.id) && (m.status === 'qualified' || m.status === 'expert')
@@ -499,8 +550,8 @@ export default function SkillsPage() {
               </div>
             </div>
 
-            {/* Right Side: Large Standout Portrait Photo Frame (ตรงตามในภาพถ่าย) */}
-            <div className="lg:col-span-4 flex justify-center lg:justify-end">
+            {/* Right Side: Large Standout Portrait Photo Frame (พร้อมปุ่มอัปโหลดรูปภาพ HD) */}
+            <div className="lg:col-span-4 flex flex-col items-center lg:items-end gap-3">
               <div className="relative w-64 h-72 sm:w-72 sm:h-80 rounded-3xl overflow-hidden border-2 border-amber-500/50 shadow-2xl shadow-amber-500/20 group">
                 <img
                   src={empPhoto}
@@ -520,11 +571,34 @@ export default function SkillsPage() {
                   </span>
                 </div>
 
+                {/* Upload HD Photo Button on Frame */}
+                {(user?.role === 'admin' || user?.role === 'staff' || Number(user?.id) === Number(selectedEmp?.id)) && (
+                  <button
+                    onClick={() => setShowPhotoModal(true)}
+                    className="absolute top-4 right-4 p-2 rounded-xl bg-slate-950/80 hover:bg-amber-500 hover:text-slate-950 text-white backdrop-blur-md border border-white/20 text-[10px] font-bold transition-all flex items-center gap-1.5 shadow-lg"
+                    title="เปลี่ยนรูปภาพคมชัด HD ของพนักงาน"
+                  >
+                    <Camera size={14} />
+                    <span>เปลี่ยนรูป HD</span>
+                  </button>
+                )}
+
                 <div className="absolute bottom-4 left-4 right-4 text-center">
                   <p className="text-white font-bold text-sm drop-shadow-md">{selectedEmp?.name}</p>
                   <p className="text-amber-400 font-mono text-xs font-semibold mt-0.5">{selectedEmp?.employee_id}</p>
                 </div>
               </div>
+
+              {/* Quick HD Photo upload trigger */}
+              {(user?.role === 'admin' || user?.role === 'staff' || Number(user?.id) === Number(selectedEmp?.id)) && (
+                <button
+                  onClick={() => setShowPhotoModal(true)}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 border border-amber-500/30 text-xs font-bold transition-all flex items-center gap-1.5 shadow-md"
+                >
+                  <Upload size={13} />
+                  <span>อัปโหลดรูปภาพพนักงาน HD ล่าสุด</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -690,13 +764,14 @@ export default function SkillsPage() {
             </thead>
             <tbody className="divide-y divide-slate-200/50 dark:divide-white/5 text-xs">
               {filteredEmployees.map(emp => {
-                const photo = emp.photo_url || 
-                  (emp.employee_id === 'EMP006' ? 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150' :
-                   emp.employee_id === 'EMP007' ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' :
-                   emp.employee_id === 'EMP008' ? 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150' :
-                   emp.employee_id === 'EMP009' ? 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150' :
-                   emp.employee_id === 'EMP010' ? 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150' :
-                   'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150');
+                const custom = customPhotos[emp.employee_id] || customPhotos[emp.id];
+                const photo = custom || emp.photo_url || 
+                  (emp.employee_id === 'EMP006' || emp.employee_id === '22512' ? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80' :
+                   emp.employee_id === 'EMP007' ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&q=80' :
+                   emp.employee_id === 'EMP008' ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80' :
+                   emp.employee_id === 'EMP009' ? 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80' :
+                   emp.employee_id === 'EMP010' ? 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&q=80' :
+                   'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80');
 
                 const isSelected = Number(emp.id) === Number(selectedEmpId);
 
@@ -753,6 +828,85 @@ export default function SkillsPage() {
           </table>
         </div>
       </GlassCard>
+
+      {/* MODAL: UPLOAD HIGH-RESOLUTION EMPLOYEE PHOTO */}
+      {showPhotoModal && selectedEmp && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <GlassCard className="w-full max-w-lg p-6 border border-slate-200/50 dark:border-white/10 space-y-5 animate-fadeIn">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200/50 dark:border-white/5">
+              <h3 className="font-bold text-base text-slate-800 dark:text-white flex items-center gap-2">
+                <Camera size={18} className="text-amber-400" />
+                <span>อัปโหลดรูปภาพพนักงานความคมชัดสูง (HD Photo)</span>
+              </h3>
+              <button onClick={() => setShowPhotoModal(false)} className="text-slate-400 hover:text-slate-200">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div className="p-3.5 bg-slate-900 border border-slate-800 rounded-xl flex items-center gap-3">
+                <img src={empPhoto} alt="Current Preview" className="w-12 h-12 rounded-full object-cover border border-amber-500/40" />
+                <div>
+                  <p className="font-bold text-white text-sm">{selectedEmp.name}</p>
+                  <p className="text-[11px] text-amber-400 font-mono">{selectedEmp.position} ({selectedEmp.employee_id})</p>
+                </div>
+              </div>
+
+              {/* Option 1: File Upload from Computer */}
+              <div className="space-y-2">
+                <label className="font-bold text-slate-300 flex items-center gap-1.5">
+                  <Upload size={14} className="text-amber-400" />
+                  <span>วิธีที่ 1: เลือกไฟล์ภาพคมชัด HD จากเครื่องคอมพิวเตอร์</span>
+                </label>
+                <label className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-warehouse-orange text-slate-950 text-xs font-bold cursor-pointer border border-amber-400/50 flex items-center justify-center gap-2 shadow-md hover:brightness-110 transition-all">
+                  <Upload size={16} />
+                  <span>คลิกเพื่อเลือกไฟล์รูปภาพ HD (PNG, JPG, WEBP)</span>
+                  <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                </label>
+              </div>
+
+              <div className="relative flex py-1 items-center">
+                <div className="flex-grow border-t border-slate-800" />
+                <span className="flex-shrink mx-4 text-[10px] text-slate-500 font-bold uppercase">หรือ</span>
+                <div className="flex-grow border-t border-slate-800" />
+              </div>
+
+              {/* Option 2: Paste Direct Image URL */}
+              <form onSubmit={handleUrlSubmit} className="space-y-2">
+                <label className="font-bold text-slate-300 flex items-center gap-1.5">
+                  <LinkIcon size={14} className="text-cyan-400" />
+                  <span>วิธีที่ 2: วางลิงก์รูปภาพ HD Direct URL</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={photoUrlInput}
+                    onChange={(e) => setPhotoUrlInput(e.target.value)}
+                    placeholder="วางลิงก์รูปภาพ e.g. https://.../photo.jpg"
+                    className="glass-input text-xs flex-1 bg-slate-900 border-slate-800 text-white"
+                  />
+                  <button
+                    type="submit"
+                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 text-xs font-bold transition-all"
+                  >
+                    บันทึก URL
+                  </button>
+                </div>
+              </form>
+
+              <div className="flex justify-end pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowPhotoModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                >
+                  ปิดหน้าต่าง
+                </button>
+              </div>
+            </div>
+          </GlassCard>
+        </div>
+      )}
 
       {/* MANAGE SKILLS CATALOG (ADMIN/STAFF ONLY) */}
       {user?.role !== 'employee' && (

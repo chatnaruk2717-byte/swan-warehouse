@@ -769,7 +769,7 @@ export default function EmployeesPage() {
                   <input type="text" required value={formFields.name} onChange={(e) => setFormFields({ ...formFields, name: e.target.value })} className="glass-input text-xs" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-400">อีเมล</label>
                   <input type="email" required value={formFields.email} onChange={(e) => setFormFields({ ...formFields, email: e.target.value })} className="glass-input text-xs" />
@@ -777,6 +777,18 @@ export default function EmployeesPage() {
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-400">โทรศัพท์</label>
                   <input type="text" value={formFields.phone} onChange={(e) => setFormFields({ ...formFields, phone: e.target.value })} className="glass-input text-xs" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <span>LINE ID (รับ OTP 💚)</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="เช่น @chatnaruk02" 
+                    value={formFields.line_id || ''} 
+                    onChange={(e) => setFormFields({ ...formFields, line_id: e.target.value })} 
+                    className="glass-input text-xs border-emerald-500/40 focus:border-emerald-500 font-mono" 
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">

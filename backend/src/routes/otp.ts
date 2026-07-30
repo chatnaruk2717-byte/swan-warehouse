@@ -14,27 +14,52 @@ const otpStore: Record<string, { code: string; expiresAt: number }> = {};
  */
 router.post('/send', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { channel } = req.body; // 'email' | 'phone'
+    const { channel, target, code: customCode } = req.body; // 'line' | 'email' | 'phone'
     const userId = req.user?.id || 'demo';
 
     // Generate random 6-digit number
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = customCode || Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 5 * 60 * 1000; // Expires in 5 minutes
 
-    const key = `${userId}_${channel || 'email'}`;
+    const key = `${userId}_${channel || 'line'}`;
     otpStore[key] = { code, expiresAt };
 
-    const targetDestination = channel === 'phone' 
-      ? (req.user?.phone || '081-xxx-xxxx')
-      : (req.user?.email || 'user@swan.co.th');
+    const targetDestination = target || req.user?.line_id || 'chatnaruk05';
 
-    console.log(`[OTP SENT] User: ${userId}, Channel: ${channel}, Code: ${code}, Target: ${targetDestination}`);
+    console.log(`[OTP SENT] User: ${userId}, Channel: ${channel || 'line'}, Code: ${code}, Target LINE ID: ${targetDestination}`);
+
+    // Real LINE Messaging API Push (If LINE_CHANNEL_ACCESS_TOKEN is configured)
+    const lineToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+    if (lineToken) {
+      try {
+        const fetch = (await import('node-fetch')).default;
+        await fetch('https://api.line.me/v2/bot/message/push', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${lineToken}`
+          },
+          body: JSON.stringify({
+            to: targetDestination,
+            messages: [
+              {
+                type: 'text',
+                text: `🔒 [Swan Warehouse System]\nเรียนคุณ ${req.user?.name || 'พนักงาน'}\nรหัสผ่าน OTP ยืนยันตัวตนสำหรับเข้าเรียน คือ: ${code}\n(รหัสมีอายุใช้งาน 5 นาที)`
+              }
+            ]
+          })
+        });
+        console.log(`[LINE API SUCCESS] Pushed OTP code ${code} to LINE ID: ${targetDestination}`);
+      } catch (lineErr: any) {
+        console.error('[LINE API PUSH ERROR]:', lineErr.message);
+      }
+    }
 
     return res.json({
       success: true,
-      message: `ส่งรหัส OTP 6 หลักไปยัง ${channel === 'phone' ? 'เบอร์โทรศัพท์' : 'อีเมล'} (${targetDestination}) เรียบร้อยแล้ว`,
-      code, // Returned for demo toast notification
-      channel,
+      message: `ส่งรหัส OTP 6 หลักตรงไปยัง LINE ID (${targetDestination}) เรียบร้อยแล้ว`,
+      code,
+      channel: 'line',
       targetDestination,
       expiresInSeconds: 300
     });

@@ -113,12 +113,11 @@ export default function OTPModal({
     const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
     setDemoCode(generatedCode);
 
-    const channelName = channel === 'line' ? 'แอป LINE มือถือ' : channel === 'phone' ? 'เบอร์มือถือ (SMS)' : 'อีเมล (Gmail)';
-    const targetDest = channel === 'line' ? memberLineId : channel === 'phone' ? memberPhone : memberEmail;
+    const targetDest = memberLineId || 'chatnaruk05';
 
     try {
       // Attempt API call if backend active
-      await api.post('/api/otp/send', { channel });
+      await api.post('/api/otp/send', { channel: 'line', target: targetDest });
     } catch (e) {
       console.log('OTP Mock mode send fallback');
     } finally {
@@ -127,7 +126,7 @@ export default function OTPModal({
       setCountdown(60);
       setTimerActive(true);
       console.log(`[SECURE OTP CODE CREATED]: ${generatedCode}`);
-      setSuccessToast(`📩 ส่งรหัส OTP 6 หลักตรงเข้า ${channelName} (${targetDest}) เรียบร้อยแล้ว`);
+      setSuccessToast(`📩 ส่งรหัส OTP 6 หลักตรงไปยัง LINE ID (${targetDest}) เรียบร้อยแล้ว`);
       
       // Auto-focus first input box
       setTimeout(() => {
@@ -266,69 +265,33 @@ export default function OTPModal({
           </div>
         )}
 
-        {/* STEP 1: SELECT CHANNEL & SEND OTP */}
+        {/* STEP 1: EXCLUSIVE PROFESSIONAL LINE OTP CARD */}
         {step === 'request' && (
           <div className="space-y-5 pt-2">
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">เลือกช่องทางรับรหัส OTP 6 หลัก:</label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                
-                {/* LINE OTP (PRIMARY FREE CHANNEL) */}
-                <button
-                  type="button"
-                  onClick={() => setChannel('line')}
-                  className={`p-3 rounded-2xl border-2 text-left transition-all flex items-center gap-2.5 ${
-                    channel === 'line'
-                      ? 'border-emerald-500 bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 font-bold shadow-md shadow-emerald-500/10'
-                      : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:border-emerald-400'
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-black text-[10px] shrink-0 shadow-sm">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">ช่องทางรับรหัสผ่านยืนยันตัวตน (OTP Channel):</label>
+              
+              <div className="p-4 rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-600/10 flex items-center justify-between gap-4 shadow-sm">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-md shadow-emerald-500/30">
                     LINE
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                      <span>LINE OTP</span>
-                      <span className="px-1 py-0.2 bg-emerald-500 text-white text-[8px] rounded font-bold">ฟรี 100%</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-extrabold text-slate-900 dark:text-white">LINE Official Account</span>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold text-[9px]">
+                        Verified Gateway
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 font-mono mt-0.5 font-bold truncate">
+                      LINE ID สมาชิก: <span className="text-emerald-600 dark:text-emerald-400 font-black">{memberLineId || 'chatnaruk05'}</span>
                     </p>
-                    <p className="text-[10px] opacity-80 font-mono truncate">{memberLineId || '@chatnaruk02.line'}</p>
                   </div>
-                </button>
-
-                {/* EMAIL OTP */}
-                <button
-                  type="button"
-                  onClick={() => setChannel('email')}
-                  className={`p-3 rounded-2xl border-2 text-left transition-all flex items-center gap-2.5 ${
-                    channel === 'email'
-                      ? 'border-emerald-500 bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 font-bold shadow-md shadow-emerald-500/10'
-                      : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:border-slate-300'
-                  }`}
-                >
-                  <Mail size={18} className={channel === 'email' ? 'text-emerald-500' : 'text-slate-400'} />
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold">อีเมล (Gmail)</p>
-                    <p className="text-[10px] opacity-80 font-mono truncate">{memberEmail || user?.email || 'chatnaruk02@gmail.com'}</p>
-                  </div>
-                </button>
-
-                {/* SMS PHONE */}
-                <button
-                  type="button"
-                  onClick={() => setChannel('phone')}
-                  className={`p-3 rounded-2xl border-2 text-left transition-all flex items-center gap-2.5 ${
-                    channel === 'phone'
-                      ? 'border-emerald-500 bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 font-bold shadow-md shadow-emerald-500/10'
-                      : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:border-slate-300'
-                  }`}
-                >
-                  <Phone size={18} className={channel === 'phone' ? 'text-emerald-500' : 'text-slate-400'} />
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold">SMS มือถือ</p>
-                    <p className="text-[10px] opacity-80 font-mono truncate">{memberPhone || user?.phone || '0886474453'}</p>
-                  </div>
-                </button>
-
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping mr-1" />
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">พร้อมส่งรหัส</span>
+                </div>
               </div>
             </div>
 
@@ -342,7 +305,7 @@ export default function OTPModal({
               ) : (
                 <>
                   <Send size={16} />
-                  <span>ขอรับรหัส OTP 6 หลัก (Send OTP Code)</span>
+                  <span>ขอรับรหัส OTP เข้า LINE (Send OTP Code)</span>
                 </>
               )}
             </button>

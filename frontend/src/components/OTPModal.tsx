@@ -13,7 +13,8 @@ import {
   Lock, 
   KeyRound,
   Send,
-  Sparkles
+  Sparkles,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -248,14 +249,26 @@ export default function OTPModal({
 
         {/* OTP Status Toast Notification Box */}
         {successToast && (
-          <div className="p-3.5 bg-emerald-500/15 border border-emerald-500/40 rounded-2xl text-xs text-emerald-700 dark:text-emerald-300 font-bold flex items-start gap-2.5 shadow-sm">
-            <Sparkles size={18} className="shrink-0 text-emerald-500 mt-0.5" />
-            <div>
-              <p className="font-extrabold text-xs">{successToast}</p>
-              <p className="text-[11px] opacity-85 mt-1 font-normal text-slate-700 dark:text-slate-200">
-                กรุณาเปิดแอป LINE บนมือถือของคุณเพื่อนำรหัส OTP 6 หลักมาป้อนยืนยันการเข้าเรียน
-              </p>
+          <div className="p-3.5 bg-emerald-500/15 border border-emerald-500/40 rounded-2xl text-xs text-emerald-700 dark:text-emerald-300 font-bold space-y-2.5 shadow-sm">
+            <div className="flex items-start gap-2.5">
+              <Sparkles size={18} className="shrink-0 text-emerald-500 mt-0.5" />
+              <div>
+                <p className="font-extrabold text-xs">{successToast}</p>
+                <p className="text-[11px] opacity-85 mt-0.5 font-normal text-slate-700 dark:text-slate-200">
+                  กรุณาตรวจสอบแจ้งเตือนในแอป LINE หรือแตะปุ่มด้านล่างเพื่อเปิดเด้งรหัสเข้าแอป LINE บนมือถือทันที
+                </p>
+              </div>
             </div>
+
+            <a
+              href={`https://line.me/R/msg/text/?${encodeURIComponent(`[Swan Warehouse System]\n🔒 รหัสผ่าน OTP ยืนยันตัวตนของคุณ ${user?.name || ''} (LINE ID: ${memberLineId || 'chatnaruk05'}) สำหรับเข้าเรียนคอร์สอบรม คือ:`)}}${demoCode}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md hover:shadow-emerald-500/20 transition-all cursor-pointer no-underline active:scale-98"
+            >
+              <MessageSquare size={15} />
+              <span>📱 แตะเปิดเด้งรหัสเข้าแอป LINE มือถือทันที (Open LINE App)</span>
+            </a>
           </div>
         )}
 

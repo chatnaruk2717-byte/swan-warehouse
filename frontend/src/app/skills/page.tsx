@@ -25,7 +25,8 @@ import {
   Sparkles,
   Upload,
   Camera,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Lock
 } from 'lucide-react';
 import { 
   Radar, 
@@ -82,6 +83,10 @@ export default function SkillsPage() {
   }, []);
 
   const saveCustomPhoto = (empKey: string | number, photoStr: string) => {
+    if (user?.role !== 'admin') {
+      alert('ขออภัย! สิทธิ์ในการอัปโหลด/เปลี่ยนรูปภาพพนักงานสงวนไว้สำหรับ Admin เท่านั้น');
+      return;
+    }
     const updated = {
       ...customPhotos,
       [empKey]: photoStr,
@@ -93,6 +98,10 @@ export default function SkillsPage() {
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (user?.role !== 'admin') {
+      alert('เฉพาะ Admin เท่านั้นที่มีสิทธิ์อัปโหลดรูปภาพพนักงาน');
+      return;
+    }
     const file = e.target.files?.[0];
     if (file && selectedEmp) {
       const reader = new FileReader();
@@ -107,6 +116,10 @@ export default function SkillsPage() {
 
   const handleUrlSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (user?.role !== 'admin') {
+      alert('เฉพาะ Admin เท่านั้นที่มีสิทธิ์แก้ไขรูปภาพพนักงาน');
+      return;
+    }
     if (photoUrlInput.trim() && selectedEmp) {
       saveCustomPhoto(selectedEmp.employee_id || selectedEmp.id, photoUrlInput.trim());
       setPhotoUrlInput('');
@@ -325,24 +338,24 @@ export default function SkillsPage() {
 
   // Color Indicator Helper
   const getCellColor = (record: any) => {
-    if (!record) return 'bg-slate-100/50 dark:bg-white/5 text-slate-300';
+    if (!record) return 'bg-slate-100/70 text-slate-400';
     
     if (record.status === 'expert') {
-      return 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 font-bold';
+      return 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/40 font-extrabold';
     }
     if (record.status === 'qualified') {
-      return 'bg-sky-500/15 text-sky-500 border border-sky-500/30 font-bold';
+      return 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 font-bold';
     }
     if (record.status === 'training') {
-      return 'bg-amber-500/15 text-amber-500 border border-amber-500/30 font-bold';
+      return 'bg-amber-500/15 text-amber-600 border border-amber-500/30 font-bold';
     }
-    return 'bg-rose-500/10 text-rose-500 border border-rose-500/20';
+    return 'bg-rose-500/10 text-rose-600 border border-rose-500/20';
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'expert': return <CheckCircle2 className="text-emerald-500" size={13} />;
-      case 'qualified': return <Check className="text-sky-500" size={13} />;
+      case 'expert': return <CheckCircle2 className="text-emerald-600" size={13} />;
+      case 'qualified': return <Check className="text-emerald-500" size={13} />;
       case 'training': return <Clock className="text-amber-500" size={13} />;
       default: return <AlertTriangle className="text-rose-500" size={13} />;
     }
@@ -377,7 +390,7 @@ export default function SkillsPage() {
     m => Number(m.employee_id) === Number(selectedEmp?.id) && (m.status === 'qualified' || m.status === 'expert')
   );
 
-  // Radar Chart 1: Operation Competency
+  // Radar Chart 1: Operation Competency (Green Theme)
   const radarCompetencyData = [
     { subject: 'ความปลอดภัย (Safety)', value: 4, fullMark: 4 },
     { subject: 'ขับรถยก (Forklift)', value: 4, fullMark: 4 },
@@ -393,7 +406,7 @@ export default function SkillsPage() {
     };
   });
 
-  // Radar Chart 2: Quality & Judgment Accuracy
+  // Radar Chart 2: Quality & Judgment Accuracy (Orange Theme)
   const radarJudgmentData = [
     { subject: 'Pass Standard', value: 4 },
     { subject: 'Judgement Acc.', value: 3.7 },
@@ -418,17 +431,17 @@ export default function SkillsPage() {
         <div>
           <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
             <span>ตารางวัดระดับทักษะ (Skill Matrix & Competency Profile)</span>
-            <span className="px-2 py-0.5 rounded-lg bg-warehouse-orange/10 text-warehouse-orange border border-warehouse-orange/20 text-[10px] uppercase tracking-wider font-extrabold">
+            <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[10px] uppercase tracking-wider font-extrabold">
               Inspector View
             </span>
           </h2>
-          <p className="text-slate-400 text-sm mt-1">วิเคราะห์และแสดงผลรูปโปรไฟล์ระดับทักษะความชำนาญรายบุคคลสไตล์ Dashboard ทันสมัย</p>
+          <p className="text-slate-500 text-sm mt-1">วิเคราะห์และแสดงผลรูปโปรไฟล์ระดับทักษะความชำนาญรายบุคคลในธีมสว่าง (เขียว-ขาว-ส้ม)</p>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsInspectorFullscreen(!isInspectorFullscreen)}
-            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 text-xs font-bold transition-all shadow-md flex items-center gap-2"
+            className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-emerald-700 border border-emerald-300 text-xs font-bold transition-all shadow-sm flex items-center gap-2"
           >
             {isInspectorFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
             <span>{isInspectorFullscreen ? 'ออกจากมุมมองเต็มจอ' : 'มุมมองบอร์ดแสดงผล (Inspector Fullscreen)'}</span>
@@ -437,7 +450,7 @@ export default function SkillsPage() {
           {user?.role !== 'employee' && (
             <button 
               onClick={() => setShowCreateSkillModal(true)}
-              className="px-4 py-2.5 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold flex items-center gap-1 shadow-md shadow-warehouse-orange/15"
+              className="px-4 py-2.5 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold flex items-center gap-1 shadow-md shadow-warehouse-orange/20"
             >
               <Plus size={14} />
               <span>สร้างทักษะใหม่ (Create Skill)</span>
@@ -447,38 +460,38 @@ export default function SkillsPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 1. HIGH-TECH INSPECTOR INFORMATION PROFILE DISPLAY (สไตล์ภาพหน้าจอสมาร์ตบอร์ด) */}
+      {/* 1. HIGH-TECH INSPECTOR INFORMATION PROFILE DISPLAY (ธีมสว่าง: เขียว-ขาว-ส้ม) */}
       {/* ========================================================================= */}
-      <div className={`transition-all duration-300 ${isInspectorFullscreen ? 'fixed inset-0 z-50 p-6 bg-slate-950 overflow-y-auto' : ''}`}>
-        <div className="rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-amber-500/30 shadow-2xl space-y-6 relative overflow-hidden">
+      <div className={`transition-all duration-300 ${isInspectorFullscreen ? 'fixed inset-0 z-50 p-6 bg-slate-100 overflow-y-auto' : ''}`}>
+        <div className="rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-emerald-50/90 via-white to-amber-50/80 border border-emerald-200/80 shadow-xl space-y-6 relative overflow-hidden text-slate-800">
           
           {/* Subtle background glow effect */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-warehouse-orange/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-warehouse-orange/10 rounded-full blur-3xl pointer-events-none" />
 
           {/* Top Bar Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-emerald-100 pb-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center font-bold">
-                <ShieldCheck size={20} />
+              <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-bold shadow-md shadow-emerald-500/20">
+                <ShieldCheck size={22} />
               </div>
               <div>
-                <h3 className="text-xs uppercase tracking-widest text-slate-400 font-extrabold flex items-center gap-2">
-                  <span>Inspector Information</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                <h3 className="text-xs uppercase tracking-widest text-emerald-700 font-black flex items-center gap-2">
+                  <span>Inspector Information Profile</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
                 </h3>
-                <p className="text-sm font-bold text-white mt-0.5">ระบบรับรองสมรรถนะผู้ตรวจสอบและควบคุมคลังสินค้า</p>
+                <p className="text-sm font-extrabold text-slate-800 mt-0.5">ระบบรับรองสมรรถนะผู้ตรวจสอบและควบคุมคลังสินค้า</p>
               </div>
             </div>
 
             {/* Employee Selector dropdown for Supervisors */}
             {user?.role !== 'employee' && (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400 font-bold shrink-0">เลือกพนักงาน:</span>
+                <span className="text-xs text-slate-600 font-bold shrink-0">เลือกพนักงาน:</span>
                 <select
                   value={selectedEmpId || ''}
                   onChange={(e) => setSelectedEmpId(parseInt(e.target.value, 10))}
-                  className="bg-slate-900 border border-amber-500/40 text-amber-300 rounded-xl px-4 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-amber-500"
+                  className="bg-white border-2 border-emerald-300 text-slate-800 font-bold rounded-xl px-4 py-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm"
                 >
                   {employees.map(emp => (
                     <option key={emp.id} value={emp.id}>
@@ -497,162 +510,167 @@ export default function SkillsPage() {
             <div className="lg:col-span-8 space-y-6">
               <div>
                 <div className="flex items-center gap-3">
-                  <span className="px-3 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/40 font-mono font-extrabold text-xs tracking-wider uppercase">
+                  <span className="px-3.5 py-1 rounded-xl bg-emerald-600 text-white font-mono font-black text-xs tracking-wider uppercase shadow-md shadow-emerald-600/20">
                     {selectedEmp?.employee_id || 'EMP006'}
                   </span>
-                  <span className="px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-extrabold text-xs tracking-wider uppercase">
+                  <span className="px-3.5 py-1 rounded-xl bg-gradient-to-r from-warehouse-orange to-amber-500 text-white font-black text-xs tracking-wider uppercase shadow-md shadow-warehouse-orange/20">
                     Advance Level 4 Specialist
                   </span>
                 </div>
-                <h1 className="text-2xl sm:text-4xl font-black text-white tracking-wide uppercase mt-2">
+                <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-wide uppercase mt-2.5">
                   MR. {selectedEmp?.name ? selectedEmp.name.toUpperCase() : 'SOMPONG LUI-NGAN'}
                 </h1>
-                <p className="text-slate-400 text-xs sm:text-sm font-semibold mt-1 flex items-center gap-2">
+                <p className="text-slate-600 text-xs sm:text-sm font-bold mt-1 flex items-center gap-2">
                   <span>ตำแหน่ง: {selectedEmp?.position || 'Forklift Driver'}</span>
                   <span>•</span>
                   <span>แผนก: {selectedEmp?.department || 'Operations'}</span>
                 </p>
               </div>
 
-              {/* Gauges & Competency Metrics Circles (เหมือนวงกลมในภาพถ่าย) */}
+              {/* Gauges & Competency Metrics Circles (เขียว-ส้ม-ขาว) */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-                <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-center space-y-1 hover:border-amber-500/40 transition-all">
-                  <div className="w-12 h-12 mx-auto rounded-full bg-cyan-500/10 border-2 border-cyan-500/40 text-cyan-400 flex items-center justify-center font-mono font-black text-sm shadow-md">
+                <div className="p-4 rounded-2xl bg-white border border-emerald-200/80 text-center space-y-1 shadow-md shadow-emerald-500/5 hover:border-emerald-400 transition-all">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/10 border-2 border-emerald-500 text-emerald-600 flex items-center justify-center font-mono font-black text-sm shadow-sm">
                     11/12
                   </div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">ทักษะที่อนุมัติ</p>
-                  <p className="text-[9px] text-cyan-400 font-semibold">Passed Competency</p>
+                  <p className="text-[10px] text-slate-500 font-extrabold uppercase mt-2">ทักษะที่อนุมัติ</p>
+                  <p className="text-[9px] text-emerald-600 font-bold">Passed Competency</p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-center space-y-1 hover:border-amber-500/40 transition-all">
-                  <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/10 border-2 border-emerald-500/40 text-emerald-400 flex items-center justify-center font-mono font-black text-sm shadow-md">
+                <div className="p-4 rounded-2xl bg-white border border-orange-200/80 text-center space-y-1 shadow-md shadow-warehouse-orange/5 hover:border-warehouse-orange transition-all">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-warehouse-orange/10 border-2 border-warehouse-orange text-warehouse-orange flex items-center justify-center font-mono font-black text-sm shadow-sm">
                     95%
                   </div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">คะแนนรวมเฉลี่ย</p>
-                  <p className="text-[9px] text-emerald-400 font-semibold">Overall Rating</p>
+                  <p className="text-[10px] text-slate-500 font-extrabold uppercase mt-2">คะแนนรวมเฉลี่ย</p>
+                  <p className="text-[9px] text-warehouse-orange font-bold">Overall Rating</p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-center space-y-1 hover:border-amber-500/40 transition-all">
-                  <div className="w-12 h-12 mx-auto rounded-full bg-amber-500/10 border-2 border-amber-500/40 text-amber-400 flex items-center justify-center font-mono font-black text-sm shadow-md">
+                <div className="p-4 rounded-2xl bg-white border border-emerald-200/80 text-center space-y-1 shadow-md shadow-emerald-500/5 hover:border-emerald-400 transition-all">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/10 border-2 border-emerald-500 text-emerald-600 flex items-center justify-center font-mono font-black text-sm shadow-sm">
                     4/4
                   </div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">ระดับความปลอดภัย</p>
-                  <p className="text-[9px] text-amber-400 font-semibold">Safety Master</p>
+                  <p className="text-[10px] text-slate-500 font-extrabold uppercase mt-2">ระดับความปลอดภัย</p>
+                  <p className="text-[9px] text-emerald-600 font-bold">Safety Master</p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-center space-y-1 hover:border-amber-500/40 transition-all">
-                  <div className="w-12 h-12 mx-auto rounded-full bg-purple-500/10 border-2 border-purple-500/40 text-purple-400 flex items-center justify-center font-mono font-black text-sm shadow-md">
+                <div className="p-4 rounded-2xl bg-white border border-orange-200/80 text-center space-y-1 shadow-md shadow-warehouse-orange/5 hover:border-warehouse-orange transition-all">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-warehouse-orange/10 border-2 border-warehouse-orange text-warehouse-orange flex items-center justify-center font-mono font-black text-sm shadow-sm">
                     LV. 4
                   </div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">ระดับความชำนาญ</p>
-                  <p className="text-[9px] text-purple-400 font-semibold">Expert Level</p>
+                  <p className="text-[10px] text-slate-500 font-extrabold uppercase mt-2">ระดับความชำนาญ</p>
+                  <p className="text-[9px] text-warehouse-orange font-bold">Expert Level</p>
                 </div>
               </div>
             </div>
 
-            {/* Right Side: Large Standout Portrait Photo Frame (พร้อมปุ่มอัปโหลดรูปภาพ HD) */}
+            {/* Right Side: Large Standout Portrait Photo Frame */}
             <div className="lg:col-span-4 flex flex-col items-center lg:items-end gap-3">
-              <div className="relative w-64 h-72 sm:w-72 sm:h-80 rounded-3xl overflow-hidden border-2 border-amber-500/50 shadow-2xl shadow-amber-500/20 group">
+              <div className="relative w-64 h-72 sm:w-72 sm:h-80 rounded-3xl overflow-hidden border-4 border-emerald-500 shadow-2xl shadow-emerald-500/20 group bg-white">
                 <img
                   src={empPhoto}
                   alt={selectedEmp?.name}
                   className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
-                
-                {/* Diagonal Futuristic Gold Accent Line */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-amber-500/40 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/10 to-transparent" />
 
                 {/* Level Badge Overlay on Photo */}
                 <div className="absolute top-4 left-4">
-                  <span className="px-3 py-1 rounded-xl bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg flex items-center gap-1">
+                  <span className="px-3.5 py-1.5 rounded-xl bg-warehouse-orange text-white font-black text-xs uppercase tracking-wider shadow-lg flex items-center gap-1">
                     <Sparkles size={13} />
                     <span>ADVANCE</span>
                   </span>
                 </div>
 
-                {/* Upload HD Photo Button on Frame */}
-                {(user?.role === 'admin' || user?.role === 'staff' || Number(user?.id) === Number(selectedEmp?.id)) && (
+                {/* Upload HD Photo Button on Frame (ONLY FOR ADMIN) */}
+                {user?.role === 'admin' ? (
                   <button
                     onClick={() => setShowPhotoModal(true)}
-                    className="absolute top-4 right-4 p-2 rounded-xl bg-slate-950/80 hover:bg-amber-500 hover:text-slate-950 text-white backdrop-blur-md border border-white/20 text-[10px] font-bold transition-all flex items-center gap-1.5 shadow-lg"
-                    title="เปลี่ยนรูปภาพคมชัด HD ของพนักงาน"
+                    className="absolute top-4 right-4 p-2 rounded-xl bg-white/95 hover:bg-warehouse-orange hover:text-white text-slate-800 backdrop-blur-md border border-slate-200 text-[10px] font-bold transition-all flex items-center gap-1.5 shadow-lg"
+                    title="เฉพาะ Admin เท่านั้นที่มีสิทธิ์เปลี่ยนรูปภาพพนักงาน"
                   >
-                    <Camera size={14} />
-                    <span>เปลี่ยนรูป HD</span>
+                    <Camera size={14} className="text-warehouse-orange" />
+                    <span>เปลี่ยนรูป (Admin)</span>
                   </button>
+                ) : (
+                  <div 
+                    className="absolute top-4 right-4 p-2 rounded-xl bg-slate-900/60 text-slate-300 text-[9px] font-bold flex items-center gap-1 backdrop-blur-md"
+                    title="เฉพาะ Admin เท่านั้นที่เปลี่ยนรูปได้"
+                  >
+                    <Lock size={12} className="text-amber-400" />
+                    <span>สิทธิ์ Admin</span>
+                  </div>
                 )}
 
                 <div className="absolute bottom-4 left-4 right-4 text-center">
-                  <p className="text-white font-bold text-sm drop-shadow-md">{selectedEmp?.name}</p>
-                  <p className="text-amber-400 font-mono text-xs font-semibold mt-0.5">{selectedEmp?.employee_id}</p>
+                  <p className="text-white font-black text-base drop-shadow-md">{selectedEmp?.name}</p>
+                  <p className="text-emerald-400 font-mono text-xs font-extrabold mt-0.5">{selectedEmp?.employee_id}</p>
                 </div>
               </div>
 
-              {/* Quick HD Photo upload trigger */}
-              {(user?.role === 'admin' || user?.role === 'staff' || Number(user?.id) === Number(selectedEmp?.id)) && (
+              {/* Admin HD Photo upload trigger */}
+              {user?.role === 'admin' && (
                 <button
                   onClick={() => setShowPhotoModal(true)}
-                  className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 border border-amber-500/30 text-xs font-bold transition-all flex items-center gap-1.5 shadow-md"
+                  className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
                 >
-                  <Upload size={13} />
-                  <span>อัปโหลดรูปภาพพนักงาน HD ล่าสุด</span>
+                  <Upload size={14} />
+                  <span>อัปโหลดรูปภาพพนักงาน HD (เฉพาะ Admin)</span>
                 </button>
               )}
             </div>
           </div>
 
-          {/* DUAL POLYGON RADAR CHARTS SECTION (ตรงตามรูปภาพ 2 กราฟใยแมงมุม) */}
+          {/* DUAL POLYGON RADAR CHARTS SECTION (ธีมสว่าง: เขียว & ส้ม) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
             
-            {/* Left Radar Chart: Competency Dimensions (Blue Polygon) */}
-            <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
-                  <Zap size={14} />
+            {/* Left Radar Chart: Competency Dimensions (Emerald Green Polygon) */}
+            <div className="p-5 rounded-2xl bg-white border border-emerald-200/80 shadow-sm space-y-3">
+              <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
+                <h4 className="text-xs font-black text-emerald-700 uppercase tracking-wider flex items-center gap-2">
+                  <Zap size={15} className="text-emerald-600" />
                   <span>กราฟสมรรถนะการปฏิบัติงานหลัก (Skill Competency Web)</span>
                 </h4>
-                <span className="text-[10px] text-cyan-400 font-mono font-bold">100% Full Standard</span>
+                <span className="text-[10px] text-emerald-600 font-mono font-extrabold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">100% Full Standard</span>
               </div>
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarCompetencyData}>
-                    <PolarGrid stroke="#334155" strokeDasharray="3 3" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#cbd5e1', fontSize: 10, fontWeight: 'bold' }} />
+                    <PolarGrid stroke="#cbd5e1" strokeDasharray="3 3" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#1e293b', fontSize: 10, fontWeight: 'bold' }} />
                     <PolarRadiusAxis angle={30} domain={[0, 4]} tick={{ fill: '#64748b', fontSize: 8 }} />
                     <Radar
                       name="ระดับทักษะ"
                       dataKey="value"
-                      stroke="#06b6d4"
-                      fill="#06b6d4"
-                      fillOpacity={0.4}
+                      stroke="#10b981"
+                      fill="#10b981"
+                      fillOpacity={0.35}
                     />
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            {/* Right Radar Chart: Quality & Judgment Accuracy (Yellow Polygon) */}
-            <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
-                  <ShieldCheck size={14} />
+            {/* Right Radar Chart: Quality & Judgment Accuracy (Warehouse Orange Polygon) */}
+            <div className="p-5 rounded-2xl bg-white border border-orange-200/80 shadow-sm space-y-3">
+              <div className="flex items-center justify-between border-b border-orange-100 pb-2">
+                <h4 className="text-xs font-black text-warehouse-orange uppercase tracking-wider flex items-center gap-2">
+                  <ShieldCheck size={15} className="text-warehouse-orange" />
                   <span>การตัดสินใจและความถูกต้อง (Working Judgment & Quality)</span>
                 </h4>
-                <span className="text-[10px] text-amber-400 font-mono font-bold">95% Accuracy</span>
+                <span className="text-[10px] text-warehouse-orange font-mono font-extrabold bg-orange-50 px-2 py-0.5 rounded border border-orange-200">95% Accuracy</span>
               </div>
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarJudgmentData}>
-                    <PolarGrid stroke="#334155" strokeDasharray="3 3" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#cbd5e1', fontSize: 10, fontWeight: 'bold' }} />
+                    <PolarGrid stroke="#cbd5e1" strokeDasharray="3 3" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#1e293b', fontSize: 10, fontWeight: 'bold' }} />
                     <PolarRadiusAxis angle={30} domain={[0, 4]} tick={{ fill: '#64748b', fontSize: 8 }} />
                     <Radar
                       name="ประเมินการตัดสินใจ"
                       dataKey="value"
-                      stroke="#f59e0b"
-                      fill="#f59e0b"
-                      fillOpacity={0.4}
+                      stroke="#f26522"
+                      fill="#f26522"
+                      fillOpacity={0.35}
                     />
                   </RadarChart>
                 </ResponsiveContainer>
@@ -663,21 +681,21 @@ export default function SkillsPage() {
 
           {/* Bottom Skill & Equipment Badges Grid */}
           <div className="pt-2">
-            <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-3">
+            <h4 className="text-xs font-black text-emerald-800 uppercase tracking-widest mb-3">
               รายการความเชี่ยวชาญการใช้เครื่องมือและทักษะในคลัง:
             </h4>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
               {skills.map(sk => {
                 const record = matrix.find(m => Number(m.employee_id) === Number(selectedEmp?.id) && Number(m.skill_id) === Number(sk.id));
                 return (
-                  <div key={sk.id} className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1 text-center">
-                    <p className="text-[10px] font-bold text-amber-400 tracking-wider uppercase">{sk.category}</p>
-                    <p className="text-xs font-bold text-white truncate" title={sk.name}>{sk.name.split(' (')[0]}</p>
+                  <div key={sk.id} className="p-3 rounded-2xl bg-white border border-emerald-100 shadow-sm space-y-1 text-center hover:border-emerald-300 transition-all">
+                    <p className="text-[10px] font-black text-emerald-600 tracking-wider uppercase">{sk.category}</p>
+                    <p className="text-xs font-bold text-slate-800 truncate" title={sk.name}>{sk.name.split(' (')[0]}</p>
                     <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-extrabold uppercase mt-1 ${
-                      record?.status === 'expert' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
-                      record?.status === 'qualified' ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' :
-                      record?.status === 'training' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
-                      'bg-slate-800 text-slate-500'
+                      record?.status === 'expert' ? 'bg-emerald-500/15 text-emerald-700 border border-emerald-500/30' :
+                      record?.status === 'qualified' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' :
+                      record?.status === 'training' ? 'bg-amber-500/15 text-amber-700 border border-amber-500/30' :
+                      'bg-slate-100 text-slate-400'
                     }`}>
                       {record ? `LV. ${record.level} • ${record.status}` : 'LV. 0 • NEED'}
                     </span>
@@ -776,7 +794,7 @@ export default function SkillsPage() {
                 const isSelected = Number(emp.id) === Number(selectedEmpId);
 
                 return (
-                  <tr key={emp.id} className={`hover:bg-slate-50 dark:hover:bg-white/5 transition-colors ${isSelected ? 'bg-warehouse-orange/5' : ''}`}>
+                  <tr key={emp.id} className={`hover:bg-slate-50 dark:hover:bg-white/5 transition-colors ${isSelected ? 'bg-emerald-500/10' : ''}`}>
                     
                     {/* Sticky Employee column with Photo Avatar */}
                     <td 
@@ -787,7 +805,7 @@ export default function SkillsPage() {
                         <img 
                           src={photo} 
                           alt={emp.name} 
-                          className="w-10 h-10 rounded-full object-cover ring-2 ring-warehouse-orange/30 shrink-0 shadow-md" 
+                          className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-500/40 shrink-0 shadow-md" 
                         />
                         <div className="min-w-0">
                           <p className="font-bold text-slate-800 dark:text-slate-200 truncate text-xs">{emp.name}</p>
@@ -829,80 +847,90 @@ export default function SkillsPage() {
         </div>
       </GlassCard>
 
-      {/* MODAL: UPLOAD HIGH-RESOLUTION EMPLOYEE PHOTO */}
+      {/* MODAL: UPLOAD HIGH-RESOLUTION EMPLOYEE PHOTO (RESTRICTED TO ADMIN ONLY) */}
       {showPhotoModal && selectedEmp && (
         <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <GlassCard className="w-full max-w-lg p-6 border border-slate-200/50 dark:border-white/10 space-y-5 animate-fadeIn">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200/50 dark:border-white/5">
               <h3 className="font-bold text-base text-slate-800 dark:text-white flex items-center gap-2">
-                <Camera size={18} className="text-amber-400" />
-                <span>อัปโหลดรูปภาพพนักงานความคมชัดสูง (HD Photo)</span>
+                <Camera size={18} className="text-emerald-500" />
+                <span>อัปโหลดรูปภาพพนักงาน HD (เฉพาะ Admin เท่านั้น)</span>
               </h3>
               <button onClick={() => setShowPhotoModal(false)} className="text-slate-400 hover:text-slate-200">
                 <X size={20} />
               </button>
             </div>
 
-            <div className="space-y-4 text-xs">
-              <div className="p-3.5 bg-slate-900 border border-slate-800 rounded-xl flex items-center gap-3">
-                <img src={empPhoto} alt="Current Preview" className="w-12 h-12 rounded-full object-cover border border-amber-500/40" />
+            {user?.role !== 'admin' ? (
+              <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-xs text-rose-500 flex items-center gap-3">
+                <Lock size={20} className="shrink-0" />
                 <div>
-                  <p className="font-bold text-white text-sm">{selectedEmp.name}</p>
-                  <p className="text-[11px] text-amber-400 font-mono">{selectedEmp.position} ({selectedEmp.employee_id})</p>
+                  <p className="font-bold">ขออภัย! สิทธิ์การเข้าถึงถูกจำกัด</p>
+                  <p className="text-[11px] opacity-90 mt-0.5">เฉพาะผู้ใช้งานสิทธิ์ Admin เท่านั้นที่มีสิทธิ์อัปโหลดหรือแก้ไขรูปภาพพนักงาน</p>
                 </div>
               </div>
-
-              {/* Option 1: File Upload from Computer */}
-              <div className="space-y-2">
-                <label className="font-bold text-slate-300 flex items-center gap-1.5">
-                  <Upload size={14} className="text-amber-400" />
-                  <span>วิธีที่ 1: เลือกไฟล์ภาพคมชัด HD จากเครื่องคอมพิวเตอร์</span>
-                </label>
-                <label className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-warehouse-orange text-slate-950 text-xs font-bold cursor-pointer border border-amber-400/50 flex items-center justify-center gap-2 shadow-md hover:brightness-110 transition-all">
-                  <Upload size={16} />
-                  <span>คลิกเพื่อเลือกไฟล์รูปภาพ HD (PNG, JPG, WEBP)</span>
-                  <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-                </label>
-              </div>
-
-              <div className="relative flex py-1 items-center">
-                <div className="flex-grow border-t border-slate-800" />
-                <span className="flex-shrink mx-4 text-[10px] text-slate-500 font-bold uppercase">หรือ</span>
-                <div className="flex-grow border-t border-slate-800" />
-              </div>
-
-              {/* Option 2: Paste Direct Image URL */}
-              <form onSubmit={handleUrlSubmit} className="space-y-2">
-                <label className="font-bold text-slate-300 flex items-center gap-1.5">
-                  <LinkIcon size={14} className="text-cyan-400" />
-                  <span>วิธีที่ 2: วางลิงก์รูปภาพ HD Direct URL</span>
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={photoUrlInput}
-                    onChange={(e) => setPhotoUrlInput(e.target.value)}
-                    placeholder="วางลิงก์รูปภาพ e.g. https://.../photo.jpg"
-                    className="glass-input text-xs flex-1 bg-slate-900 border-slate-800 text-white"
-                  />
-                  <button
-                    type="submit"
-                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 text-xs font-bold transition-all"
-                  >
-                    บันทึก URL
-                  </button>
+            ) : (
+              <div className="space-y-4 text-xs">
+                <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-3">
+                  <img src={empPhoto} alt="Current Preview" className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500" />
+                  <div>
+                    <p className="font-bold text-slate-800 dark:text-white text-sm">{selectedEmp.name}</p>
+                    <p className="text-[11px] text-emerald-600 font-mono font-bold">{selectedEmp.position} ({selectedEmp.employee_id})</p>
+                  </div>
                 </div>
-              </form>
 
-              <div className="flex justify-end pt-3 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowPhotoModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
-                >
-                  ปิดหน้าต่าง
-                </button>
+                {/* Option 1: File Upload from Computer */}
+                <div className="space-y-2">
+                  <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Upload size={14} className="text-emerald-600" />
+                    <span>วิธีที่ 1: เลือกไฟล์ภาพคมชัด HD จากเครื่องคอมพิวเตอร์</span>
+                  </label>
+                  <label className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer flex items-center justify-center gap-2 shadow-md transition-all">
+                    <Upload size={16} />
+                    <span>คลิกเพื่อเลือกไฟล์รูปภาพ HD (PNG, JPG, WEBP)</span>
+                    <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                  </label>
+                </div>
+
+                <div className="relative flex py-1 items-center">
+                  <div className="flex-grow border-t border-slate-200 dark:border-slate-800" />
+                  <span className="flex-shrink mx-4 text-[10px] text-slate-400 font-bold uppercase">หรือ</span>
+                  <div className="flex-grow border-t border-slate-200 dark:border-slate-800" />
+                </div>
+
+                {/* Option 2: Paste Direct Image URL */}
+                <form onSubmit={handleUrlSubmit} className="space-y-2">
+                  <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <LinkIcon size={14} className="text-warehouse-orange" />
+                    <span>วิธีที่ 2: วางลิงก์รูปภาพ HD Direct URL</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={photoUrlInput}
+                      onChange={(e) => setPhotoUrlInput(e.target.value)}
+                      placeholder="วางลิงก์รูปภาพ e.g. https://.../photo.jpg"
+                      className="glass-input text-xs flex-1"
+                    />
+                    <button
+                      type="submit"
+                      className="px-4 py-2.5 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold transition-all shadow-md shadow-warehouse-orange/20"
+                    >
+                      บันทึก URL
+                    </button>
+                  </div>
+                </form>
               </div>
+            )}
+
+            <div className="flex justify-end pt-3 border-t border-slate-200/50 dark:border-white/5">
+              <button
+                type="button"
+                onClick={() => setShowPhotoModal(false)}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 text-xs font-semibold"
+              >
+                ปิดหน้าต่าง
+              </button>
             </div>
           </GlassCard>
         </div>

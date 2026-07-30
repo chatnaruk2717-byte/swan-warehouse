@@ -613,6 +613,25 @@ export default function SkillsPage() {
   });
   if (maxEmpLevel === 0 && passedSkillsCount > 0) maxEmpLevel = 4;
 
+  // Dynamic Rank Tier Calculation based on Employee's max level & score
+  const getEmpRankTier = (maxLevel: number, avgPercent: number) => {
+    if (maxLevel >= 5 || avgPercent >= 90) {
+      return { tier: 'EXPERT', label: 'Expert Level 5 Specialist', bg: 'bg-emerald-600' };
+    }
+    if (maxLevel >= 4 || avgPercent >= 70) {
+      return { tier: 'ADVANCE', label: 'Advance Level 4 Specialist', bg: 'bg-warehouse-orange' };
+    }
+    if (maxLevel >= 3 || avgPercent >= 50) {
+      return { tier: 'QUALIFIED', label: 'Qualified Level 3 Specialist', bg: 'bg-blue-600' };
+    }
+    if (maxLevel >= 2 || avgPercent >= 25) {
+      return { tier: 'TRAINEE', label: 'Trainee Level 2 Practitioner', bg: 'bg-amber-600' };
+    }
+    return { tier: 'BASIC', label: 'Basic Level 1 Beginner', bg: 'bg-slate-600' };
+  };
+
+  const rankTierInfo = getEmpRankTier(maxEmpLevel, overallRatingPercent);
+
   // 5. Dynamic Competency Radar Chart (Mapping DIRECTLY over system skills!)
   const radarCompetencyData = skills.map(sk => {
     const rec = empMatrixRecords.find(m => Number(m.skill_id) === Number(sk.id));
@@ -742,7 +761,7 @@ export default function SkillsPage() {
                     {selectedEmp?.employee_id || 'EMP006'}
                   </span>
                   <span className="px-3.5 py-1 rounded-xl bg-gradient-to-r from-warehouse-orange to-amber-500 text-white font-black text-xs tracking-wider uppercase shadow-md shadow-warehouse-orange/20">
-                    Advance Level 4 Specialist
+                    {rankTierInfo.label}
                   </span>
                 </div>
                 <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-wide uppercase mt-2.5">
@@ -786,7 +805,7 @@ export default function SkillsPage() {
                     LV. {maxEmpLevel || 4}
                   </div>
                   <p className="text-[10px] text-slate-500 font-extrabold uppercase mt-2">ระดับความชำนาญ</p>
-                  <p className="text-[9px] text-warehouse-orange font-bold">Expert Level</p>
+                  <p className="text-[9px] text-warehouse-orange font-bold">{rankTierInfo.tier} Level</p>
                 </div>
               </div>
             </div>
@@ -801,11 +820,11 @@ export default function SkillsPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/10 to-transparent" />
 
-                {/* Level Badge Overlay on Photo */}
+                {/* Dynamic Level Badge Overlay on Photo */}
                 <div className="absolute top-4 left-4">
-                  <span className="px-3.5 py-1.5 rounded-xl bg-warehouse-orange text-white font-black text-xs uppercase tracking-wider shadow-lg flex items-center gap-1">
+                  <span className={`px-3.5 py-1.5 rounded-xl ${rankTierInfo.bg} text-white font-black text-xs uppercase tracking-wider shadow-lg flex items-center gap-1`}>
                     <Sparkles size={13} />
-                    <span>ADVANCE</span>
+                    <span>{rankTierInfo.tier}</span>
                   </span>
                 </div>
 

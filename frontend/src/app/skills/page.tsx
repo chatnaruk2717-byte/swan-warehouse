@@ -217,7 +217,6 @@ export default function SkillsPage() {
           const ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.drawImage(img, 0, 0, width, height);
-            // Ultra-compressed 400px crisp JPEG avatar (~20KB)
             const compressedBase64 = canvas.toDataURL('image/jpeg', 0.70);
             saveCustomPhoto(selectedEmp.employee_id || selectedEmp.id, compressedBase64);
             setShowPhotoModal(false);
@@ -254,8 +253,25 @@ export default function SkillsPage() {
       const filteredEmps = empRes.data.filter((e: any) => (e.role === 'employee' || e.role === 'staff') && e.department !== 'Management');
       setEmployees(filteredEmps);
 
-      if (user && user.role === 'employee') {
-        setSelectedEmpId(Number(user.id));
+      // ONLY ADMIN sees all employees. Staff and Employee see ONLY THEIR OWN profile!
+      if (user && user.role !== 'admin') {
+        const foundSelf = filteredEmps.find((e: any) => Number(e.id) === Number(user.id) || e.employee_id === user.employee_id || e.name === user.name);
+        if (foundSelf) {
+          setSelectedEmpId(Number(foundSelf.id));
+        } else {
+          // If self is not in API list, construct self object
+          const selfObj = {
+            id: Number(user.id) || 99,
+            employee_id: user.employee_id || 'SELF',
+            name: user.name || 'User Profile',
+            department: user.department || 'Operations',
+            position: user.position || 'Warehouse Staff',
+            role: user.role,
+            photo_url: user.photo_url || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=1000&q=80'
+          };
+          setEmployees([...filteredEmps, selfObj]);
+          setSelectedEmpId(Number(selfObj.id));
+        }
       } else if (filteredEmps.length > 0) {
         setSelectedEmpId(Number(filteredEmps[0].id));
       }
@@ -284,10 +300,30 @@ export default function SkillsPage() {
         { id: 9, employee_id: 'EMP009', name: 'เกษม รับสินค้า', department: 'Operations', position: 'Receiving Clerk', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000&q=80' },
         { id: 10, employee_id: 'EMP010', name: 'จารุณี นับสต็อก', department: 'Operations', position: 'Inventory Counter', role: 'employee', photo_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=1000&q=80' }
       ];
+
+      // Insert logged in user if not present
+      if (user && !mockEmpList.some(e => Number(e.id) === Number(user.id) || e.employee_id === user.employee_id)) {
+        mockEmpList.unshift({
+          id: Number(user.id) || 99,
+          employee_id: user.employee_id || '03822',
+          name: user.name || 'มานิต จินดาภู',
+          department: user.department || 'Operations',
+          position: user.position || 'พนักงานหน้าลิฟท์',
+          role: user.role,
+          photo_url: user.photo_url || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=1000&q=80'
+        });
+      }
+
       setEmployees(mockEmpList);
 
-      if (user && user.role === 'employee') {
-        setSelectedEmpId(Number(user.id));
+      // ONLY ADMIN can select any employee. Staff and Employee see ONLY THEIR OWN profile!
+      if (user && user.role !== 'admin') {
+        const foundSelf = mockEmpList.find(e => Number(e.id) === Number(user.id) || e.employee_id === user.employee_id || e.name === user.name);
+        if (foundSelf) {
+          setSelectedEmpId(Number(foundSelf.id));
+        } else {
+          setSelectedEmpId(Number(mockEmpList[0].id));
+        }
       } else if (mockEmpList.length > 0) {
         setSelectedEmpId(Number(mockEmpList[0].id));
       }
@@ -322,6 +358,10 @@ export default function SkillsPage() {
 
   const handleCreateSkill = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (user?.role !== 'admin') {
+      alert('เฉพาะ Admin เท่านั้นที่มีสิทธิ์สร้างทักษะใหม่');
+      return;
+    }
     if (selectedSkill) {
       // EDIT MODE
       try {
@@ -348,6 +388,10 @@ export default function SkillsPage() {
   };
 
   const openEditSkillModal = (skill: any) => {
+    if (user?.role !== 'admin') {
+      alert('เฉพาะ Admin เท่านั้นที่มีสิทธิ์แก้ไขหัวข้อทักษะ');
+      return;
+    }
     setSelectedSkill(skill);
     setSkillForm({
       name: skill.name,
@@ -358,6 +402,10 @@ export default function SkillsPage() {
   };
 
   const handleDeleteSkill = async (id: number) => {
+    if (user?.role !== 'admin') {
+      alert('เฉพาะ Admin เท่านั้นที่มีสิทธิ์ลบทักษะ');
+      return;
+    }
     if (!confirm('คุณแน่ใจว่าต้องการลบหัวข้อทักษะนี้ออกจากระบบ? ข้อมูลประวัติการประเมินพนักงานทุกคนในหัวข้อนี้จะถูกลบไปด้วย!')) return;
     try {
       await api.delete(`/api/skills/${id}`);
@@ -370,6 +418,10 @@ export default function SkillsPage() {
 
   const handleUpdateEmployeeSkill = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (user?.role !== 'admin') {
+      alert('เฉพาะ Admin เท่านั้นที่มีสิทธิ์แก้ไขระดับทักษะพนักงาน');
+      return;
+    }
     if (!selectedCell) return;
 
     const payload = {
@@ -402,7 +454,7 @@ export default function SkillsPage() {
         level: parseInt(assignForm.level, 10),
         status: assignForm.status as any,
         expiration_date: assignForm.expiration_date || undefined,
-        approved_by_name: assignForm.status === 'qualified' || assignForm.status === 'expert' ? (user?.name || 'Supervisor') : undefined,
+        approved_by_name: assignForm.status === 'qualified' || assignForm.status === 'expert' ? (user?.name || 'Admin') : undefined,
         approved_at: assignForm.status === 'qualified' || assignForm.status === 'expert' ? new Date().toISOString() : undefined
       };
 
@@ -418,6 +470,10 @@ export default function SkillsPage() {
   };
 
   const handleApproveSkill = async (recordId: number) => {
+    if (user?.role !== 'admin') {
+      alert('เฉพาะ Admin เท่านั้นที่มีสิทธิ์อนุมัติทักษะ');
+      return;
+    }
     try {
       await api.post(`/api/skills/approve/${recordId}`);
       loadData();
@@ -428,7 +484,7 @@ export default function SkillsPage() {
           return {
             ...m,
             status: 'qualified',
-            approved_by_name: user?.name || 'Supervisor',
+            approved_by_name: user?.name || 'Admin',
             approved_at: new Date().toISOString()
           };
         }
@@ -439,7 +495,9 @@ export default function SkillsPage() {
   };
 
   const openApprovalCell = (employee: any, skill: any) => {
-    if (user?.role === 'employee') return;
+    // STRICT PERMISSION: ONLY ADMIN CAN EDIT SKILLS
+    if (user?.role !== 'admin') return;
+
     const record = matrix.find(
       m => m.employee_id === employee.id && m.skill_id === skill.id
     );
@@ -482,10 +540,10 @@ export default function SkillsPage() {
     }
   };
 
-  // Filters
+  // Filters - ONLY ADMIN CAN SEE ALL EMPLOYEES. Staff & Employees see ONLY THEIR OWN ROW!
   const filteredEmployees = employees.filter(emp => {
-    if (user?.role === 'employee') {
-      return Number(emp.id) === Number(user.id);
+    if (user?.role !== 'admin') {
+      return Number(emp.id) === Number(user?.id) || emp.employee_id === user?.employee_id || emp.name === user?.name;
     }
     return emp.name.toLowerCase().includes(search.toLowerCase()) || 
            emp.employee_id.toLowerCase().includes(search.toLowerCase());
@@ -611,7 +669,8 @@ export default function SkillsPage() {
             <span>{isInspectorFullscreen ? 'ออกจากมุมมองเต็มจอ' : 'มุมมองบอร์ดแสดงผล (Inspector Fullscreen)'}</span>
           </button>
 
-          {user?.role !== 'employee' && (
+          {/* CREATE SKILL BUTTON: ADMIN ONLY */}
+          {user?.role === 'admin' && (
             <button 
               onClick={() => setShowCreateSkillModal(true)}
               className="px-4 py-2.5 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold flex items-center gap-1 shadow-md shadow-warehouse-orange/20"
@@ -624,7 +683,7 @@ export default function SkillsPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 1. HIGH-TECH INSPECTOR INFORMATION PROFILE DISPLAY (เรียลไทม์ตามจำนวนทักษะจริง) */}
+      {/* 1. HIGH-TECH INSPECTOR INFORMATION PROFILE DISPLAY (เขียว-ขาว-ส้ม) */}
       {/* ========================================================================= */}
       <div className={`transition-all duration-300 ${isInspectorFullscreen ? 'fixed inset-0 z-50 p-6 bg-slate-100 overflow-y-auto' : ''}`}>
         <div className="rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-emerald-50/90 via-white to-amber-50/80 border border-emerald-200/80 shadow-xl space-y-6 relative overflow-hidden text-slate-800">
@@ -648,10 +707,10 @@ export default function SkillsPage() {
               </div>
             </div>
 
-            {/* Employee Selector dropdown for Supervisors */}
-            {user?.role !== 'employee' && (
+            {/* Employee Selector dropdown (ONLY FOR ADMIN). Staff/Employee locked to self */}
+            {user?.role === 'admin' ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-600 font-bold shrink-0">เลือกพนักงาน:</span>
+                <span className="text-xs text-slate-600 font-bold shrink-0">เลือกพนักงาน (Admin):</span>
                 <select
                   value={selectedEmpId || ''}
                   onChange={(e) => setSelectedEmpId(parseInt(e.target.value, 10))}
@@ -663,6 +722,11 @@ export default function SkillsPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 font-bold text-xs shadow-sm">
+                <UserCheck size={15} />
+                <span>ข้อมูลของฉัน ({selectedEmp?.name || user?.name})</span>
               </div>
             )}
           </div>
@@ -784,7 +848,7 @@ export default function SkillsPage() {
             </div>
           </div>
 
-          {/* DUAL POLYGON RADAR CHARTS SECTION (DYNAMIC OVER SKILLS) */}
+          {/* DUAL POLYGON RADAR CHARTS SECTION */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
             
             {/* Left Radar Chart: Competency Dimensions (Emerald Green Polygon) */}
@@ -872,20 +936,27 @@ export default function SkillsPage() {
         </div>
       </div>
 
-      {/* Filter panel */}
+      {/* Filter panel (Visible to Admin, or Category filter for Employee) */}
       <GlassCard className="flex flex-col md:flex-row gap-4 items-center justify-between">
         
-        {/* Search */}
-        <div className="w-full md:w-80 relative flex items-center">
-          <Search className="absolute left-4 text-slate-400" size={16} />
-          <input
-            type="text"
-            placeholder="ค้นหาชื่อพนักงาน..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white/70 dark:bg-warehouse-slate/50 border border-slate-200 dark:border-white/10 rounded-xl text-slate-700 dark:text-white outline-none focus:border-warehouse-orange text-xs"
-          />
-        </div>
+        {/* Search Bar (Only for Admin) */}
+        {user?.role === 'admin' ? (
+          <div className="w-full md:w-80 relative flex items-center">
+            <Search className="absolute left-4 text-slate-400" size={16} />
+            <input
+              type="text"
+              placeholder="ค้นหาชื่อพนักงาน (Admin)..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-white/70 dark:bg-warehouse-slate/50 border border-slate-200 dark:border-white/10 rounded-xl text-slate-700 dark:text-white outline-none focus:border-warehouse-orange text-xs"
+            />
+          </div>
+        ) : (
+          <div className="text-xs font-bold text-slate-600 flex items-center gap-2">
+            <UserCheck size={16} className="text-emerald-600" />
+            <span>แสดงตารางระดับทักษะพนักงาน: {selectedEmp?.name}</span>
+          </div>
+        )}
 
         {/* Skill Category filter */}
         <div className="flex items-center gap-2">
@@ -921,19 +992,19 @@ export default function SkillsPage() {
                     <div className="flex flex-col items-center group/header relative">
                       <span className="text-[9px] text-warehouse-orange tracking-widest">{skill.category}</span>
                       <span className="mt-0.5 line-clamp-1">{skill.name.split(' (')[0]}</span>
-                      {user?.role !== 'employee' && (
+                      {user?.role === 'admin' && (
                         <div className="flex items-center gap-1 mt-1 opacity-0 group-hover/header:opacity-100 transition-opacity">
                           <button 
                             onClick={(e) => { e.stopPropagation(); openEditSkillModal(skill); }}
                             className="p-1 hover:text-warehouse-orange hover:bg-warehouse-orange/10 rounded transition-all"
-                            title="แก้ไขรายละเอียดทักษะ"
+                            title="แก้ไขรายละเอียดทักษะ (Admin)"
                           >
                             <Edit2 size={10} />
                           </button>
                           <button 
                             onClick={(e) => { e.stopPropagation(); handleDeleteSkill(skill.id); }}
                             className="p-1 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
-                            title="ลบหัวข้อทักษะนี้"
+                            title="ลบหัวข้อทักษะนี้ (Admin)"
                           >
                             <Trash2 size={10} />
                           </button>
@@ -962,8 +1033,8 @@ export default function SkillsPage() {
                     
                     {/* Sticky Employee column with Photo Avatar */}
                     <td 
-                      onClick={() => setSelectedEmpId(emp.id)}
-                      className="px-6 py-3.5 font-semibold text-slate-700 dark:text-slate-200 sticky left-0 bg-white dark:bg-slate-900 border-r border-slate-200/50 dark:border-white/5 z-10 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)] cursor-pointer"
+                      onClick={() => { if (user?.role === 'admin') setSelectedEmpId(emp.id); }}
+                      className={`px-6 py-3.5 font-semibold text-slate-700 dark:text-slate-200 sticky left-0 bg-white dark:bg-slate-900 border-r border-slate-200/50 dark:border-white/5 z-10 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)] ${user?.role === 'admin' ? 'cursor-pointer' : 'cursor-default'}`}
                     >
                       <div className="flex items-center gap-3">
                         <img 
@@ -988,9 +1059,9 @@ export default function SkillsPage() {
                         <td 
                           key={skill.id} 
                           className="px-2 py-4 text-center"
-                          onClick={() => openApprovalCell(emp, skill)}
+                          onClick={() => { if (user?.role === 'admin') openApprovalCell(emp, skill); }}
                         >
-                          <div className={`mx-auto w-24 py-2 rounded-xl flex flex-col items-center gap-0.5 transition-all hover:scale-105 cursor-pointer ${getCellColor(record)}`}>
+                          <div className={`mx-auto w-24 py-2 rounded-xl flex flex-col items-center gap-0.5 transition-all ${user?.role === 'admin' ? 'hover:scale-105 cursor-pointer' : 'cursor-default'} ${getCellColor(record)}`}>
                             <span className="font-mono font-bold text-xs">
                               {record ? `LV. ${record.level}` : 'LV. 0'}
                             </span>
@@ -1012,7 +1083,7 @@ export default function SkillsPage() {
       </GlassCard>
 
       {/* MODAL: UPLOAD HIGH-RESOLUTION EMPLOYEE PHOTO (RESTRICTED TO ADMIN ONLY) */}
-      {showPhotoModal && selectedEmp && (
+      {showPhotoModal && selectedEmp && user?.role === 'admin' && (
         <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <GlassCard className="w-full max-w-lg p-6 border border-slate-200/50 dark:border-white/10 space-y-5 animate-fadeIn">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200/50 dark:border-white/5">
@@ -1025,67 +1096,57 @@ export default function SkillsPage() {
               </button>
             </div>
 
-            {user?.role !== 'admin' ? (
-              <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-xs text-rose-500 flex items-center gap-3">
-                <Lock size={20} className="shrink-0" />
+            <div className="space-y-4 text-xs">
+              <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-3">
+                <img src={empPhoto} alt="Current Preview" className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500" />
                 <div>
-                  <p className="font-bold">ขออภัย! สิทธิ์การเข้าถึงถูกจำกัด</p>
-                  <p className="text-[11px] opacity-90 mt-0.5">เฉพาะผู้ใช้งานสิทธิ์ Admin เท่านั้นที่มีสิทธิ์อัปโหลดหรือแก้ไขรูปภาพพนักงาน</p>
+                  <p className="font-bold text-slate-800 dark:text-white text-sm">{selectedEmp.name}</p>
+                  <p className="text-[11px] text-emerald-600 font-mono font-bold">{selectedEmp.position} ({selectedEmp.employee_id})</p>
                 </div>
               </div>
-            ) : (
-              <div className="space-y-4 text-xs">
-                <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-3">
-                  <img src={empPhoto} alt="Current Preview" className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500" />
-                  <div>
-                    <p className="font-bold text-slate-800 dark:text-white text-sm">{selectedEmp.name}</p>
-                    <p className="text-[11px] text-emerald-600 font-mono font-bold">{selectedEmp.position} ({selectedEmp.employee_id})</p>
-                  </div>
-                </div>
 
-                {/* Option 1: File Upload from Computer */}
-                <div className="space-y-2">
-                  <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <Upload size={14} className="text-emerald-600" />
-                    <span>วิธีที่ 1: เลือกไฟล์ภาพคมชัด HD จากเครื่องคอมพิวเตอร์</span>
-                  </label>
-                  <label className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer flex items-center justify-center gap-2 shadow-md transition-all">
-                    <Upload size={16} />
-                    <span>คลิกเพื่อเลือกไฟล์รูปภาพ HD (PNG, JPG, WEBP)</span>
-                    <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-                  </label>
-                </div>
-
-                <div className="relative flex py-1 items-center">
-                  <div className="flex-grow border-t border-slate-200 dark:border-slate-800" />
-                  <span className="flex-shrink mx-4 text-[10px] text-slate-400 font-bold uppercase">หรือ</span>
-                  <div className="flex-grow border-t border-slate-200 dark:border-slate-800" />
-                </div>
-
-                {/* Option 2: Paste Direct Image URL */}
-                <form onSubmit={handleUrlSubmit} className="space-y-2">
-                  <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <LinkIcon size={14} className="text-warehouse-orange" />
-                    <span>วิธีที่ 2: วางลิงก์รูปภาพ HD Direct URL</span>
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      value={photoUrlInput}
-                      onChange={(e) => setPhotoUrlInput(e.target.value)}
-                      placeholder="วางลิงก์รูปภาพ e.g. https://.../photo.jpg"
-                      className="glass-input text-xs flex-1"
-                    />
-                    <button
-                      type="submit"
-                      className="px-4 py-2.5 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold transition-all shadow-md shadow-warehouse-orange/20"
-                    >
-                      บันทึก URL
-                    </button>
-                  </div>
-                </form>
+              {/* Option 1: File Upload from Computer */}
+              <div className="space-y-2">
+                <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Upload size={14} className="text-emerald-600" />
+                  <span>วิธีที่ 1: เลือกไฟล์ภาพคมชัด HD จากเครื่องคอมพิวเตอร์</span>
+                </label>
+                <label className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer flex items-center justify-center gap-2 shadow-md transition-all">
+                  <Upload size={16} />
+                  <span>คลิกเพื่อเลือกไฟล์รูปภาพ HD (PNG, JPG, WEBP)</span>
+                  <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                </label>
               </div>
-            )}
+
+              <div className="relative flex py-1 items-center">
+                <div className="flex-grow border-t border-slate-200 dark:border-slate-800" />
+                <span className="flex-shrink mx-4 text-[10px] text-slate-400 font-bold uppercase">หรือ</span>
+                <div className="flex-grow border-t border-slate-200 dark:border-slate-800" />
+              </div>
+
+              {/* Option 2: Paste Direct Image URL */}
+              <form onSubmit={handleUrlSubmit} className="space-y-2">
+                <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <LinkIcon size={14} className="text-warehouse-orange" />
+                  <span>วิธีที่ 2: วางลิงก์รูปภาพ HD Direct URL</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={photoUrlInput}
+                    onChange={(e) => setPhotoUrlInput(e.target.value)}
+                    placeholder="วางลิงก์รูปภาพ e.g. https://.../photo.jpg"
+                    className="glass-input text-xs flex-1"
+                  />
+                  <button
+                    type="submit"
+                    className="px-4 py-2.5 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold transition-all shadow-md shadow-warehouse-orange/20"
+                  >
+                    บันทึก URL
+                  </button>
+                </div>
+              </form>
+            </div>
 
             <div className="flex justify-end pt-3 border-t border-slate-200/50 dark:border-white/5">
               <button
@@ -1100,13 +1161,13 @@ export default function SkillsPage() {
         </div>
       )}
 
-      {/* MANAGE SKILLS CATALOG (ADMIN/STAFF ONLY) */}
-      {user?.role !== 'employee' && (
+      {/* MANAGE SKILLS CATALOG (ADMIN ONLY) */}
+      {user?.role === 'admin' && (
         <GlassCard className="border border-slate-200/50 dark:border-white/5 mt-6">
           <div className="flex items-center justify-between pb-4 border-b border-slate-200/50 dark:border-white/5 mb-4">
             <div className="flex items-center gap-2">
               <Award className="text-warehouse-orange" size={20} />
-              <h4 className="font-bold text-sm text-slate-800 dark:text-white">จัดการคลังหัวข้อทักษะ (Manage Skills Catalog)</h4>
+              <h4 className="font-bold text-sm text-slate-800 dark:text-white">จัดการคลังหัวข้อทักษะ (Manage Skills Catalog - Admin Only)</h4>
             </div>
             <button 
               onClick={() => {
@@ -1163,8 +1224,8 @@ export default function SkillsPage() {
         </GlassCard>
       )}
 
-      {/* CREATE SKILL CATALOG MODAL */}
-      {showCreateSkillModal && (
+      {/* CREATE SKILL CATALOG MODAL (ADMIN ONLY) */}
+      {showCreateSkillModal && user?.role === 'admin' && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <GlassCard className="w-full max-w-md overflow-hidden border border-white/10" animate={false}>
             <div className="flex items-center justify-between pb-4 border-b border-slate-200/50 dark:border-white/5 mb-6">
@@ -1224,12 +1285,12 @@ export default function SkillsPage() {
         </div>
       )}
 
-      {/* APPROVAL / ASSIGNMENT DETAIL DRAWER */}
-      {showApprovalDrawer && selectedCell && (
+      {/* APPROVAL / ASSIGNMENT DETAIL DRAWER (ADMIN ONLY) */}
+      {showApprovalDrawer && selectedCell && user?.role === 'admin' && (
         <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white dark:bg-slate-900 border-l border-slate-200/50 dark:border-white/5 z-50 shadow-2xl p-6 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-4 border-b border-slate-200/50 dark:border-white/5 mb-6">
-              <h3 className="font-bold text-sm text-slate-800 dark:text-white">จัดการระดับทักษะ & ตรวจรับรอง</h3>
+              <h3 className="font-bold text-sm text-slate-800 dark:text-white">จัดการระดับทักษะ & ตรวจรับรอง (Admin Only)</h3>
               <button onClick={() => setShowApprovalDrawer(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5">
                 <X size={18} />
               </button>
@@ -1258,107 +1319,91 @@ export default function SkillsPage() {
                 </div>
               )}
 
-              {/* Assign/Approve Form (Visible for Supervisors/Admin) */}
-              {user?.role !== 'employee' ? (
-                <form onSubmit={handleUpdateEmployeeSkill} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-400">ระดับทักษะ (Level 1-5)</label>
-                      <select 
-                        value={assignForm.level} 
-                        onChange={(e) => setAssignForm({ ...assignForm, level: e.target.value })} 
-                        className="glass-input text-xs bg-white dark:bg-warehouse-slate"
-                      >
-                        <option value="1">Level 1 - เริ่มต้นศึกษา</option>
-                        <option value="2">Level 2 - เข้าใจการทำงาน</option>
-                        <option value="3">Level 3 - ปฏิบัติงานจริงได้ (Qualified)</option>
-                        <option value="4">Level 4 - ปฏิบัติงานคล่องแคล่ว (Expert)</option>
-                        <option value="5">Level 5 - วิทยากรหัวหน้าผู้ควบคุม</option>
-                      </select>
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-400">สถานะความชำนาญ (Status)</label>
-                      <select 
-                        value={assignForm.status} 
-                        onChange={(e) => setAssignForm({ ...assignForm, status: e.target.value })} 
-                        className="glass-input text-xs bg-white dark:bg-warehouse-slate"
-                      >
-                        <option value="need_training">ต้องเข้ารับการอบรม (Need)</option>
-                        <option value="training">กำลังอยู่ระหว่างฝึกอบรม (Training)</option>
-                        <option value="qualified">ผ่านเกณฑ์มาตรฐาน (Qualified)</option>
-                        <option value="expert">เชี่ยวชาญสูงสุด (Expert)</option>
-                      </select>
-                    </div>
-                  </div>
-
+              {/* Assign/Approve Form (Visible ONLY FOR ADMIN) */}
+              <form onSubmit={handleUpdateEmployeeSkill} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400">ชื่อเอกสารใบอนุญาต/ใบเซอร์ (Certification Name)</label>
-                    <input 
-                      type="text" 
-                      value={assignForm.certification_name} 
-                      onChange={(e) => setAssignForm({ ...assignForm, certification_name: e.target.value })} 
-                      className="glass-input text-xs" 
-                      placeholder="ใบอนุญาตขับรถยกสากล Class A" 
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-400">วันหมดอายุใบรับรอง</label>
-                      <input 
-                        type="date" 
-                        value={assignForm.expiration_date} 
-                        onChange={(e) => setAssignForm({ ...assignForm, expiration_date: e.target.value })} 
-                        className="glass-input text-xs" 
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-400">ลิงก์แนบเอกสาร PDF/รูปใบเซอร์</label>
-                      <input 
-                        type="text" 
-                        value={assignForm.certification_url} 
-                        onChange={(e) => setAssignForm({ ...assignForm, certification_url: e.target.value })} 
-                        className="glass-input text-xs" 
-                        placeholder="https://example.com/cert.pdf" 
-                      />
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-slate-200/50 dark:border-white/5 flex gap-3">
-                    {/* Approve button for Supervisor */}
-                    {selectedCell.record && selectedCell.record.status !== 'qualified' && selectedCell.record.status !== 'expert' && (
-                      <button 
-                        type="button"
-                        onClick={() => handleApproveSkill(selectedCell.record.id)}
-                        className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1"
-                      >
-                        <Check size={14} />
-                        <span>กดอนุมัติทันที (Approve)</span>
-                      </button>
-                    )}
-                    <button 
-                      type="submit"
-                      className="flex-1 py-2.5 bg-warehouse-orange hover:bg-warehouse-orange/90 text-white rounded-xl text-xs font-bold transition-all"
+                    <label className="text-[10px] font-bold text-slate-400">ระดับทักษะ (Level 1-5)</label>
+                    <select 
+                      value={assignForm.level} 
+                      onChange={(e) => setAssignForm({ ...assignForm, level: e.target.value })} 
+                      className="glass-input text-xs bg-white dark:bg-warehouse-slate"
                     >
-                      บันทึกความก้าวหน้า
-                    </button>
+                      <option value="1">Level 1 - เริ่มต้นศึกษา</option>
+                      <option value="2">Level 2 - เข้าใจการทำงาน</option>
+                      <option value="3">Level 3 - ปฏิบัติงานจริงได้ (Qualified)</option>
+                      <option value="4">Level 4 - ปฏิบัติงานคล่องแคล่ว (Expert)</option>
+                      <option value="5">Level 5 - วิทยากรหัวหน้าผู้ควบคุม</option>
+                    </select>
                   </div>
-                </form>
-              ) : (
-                // View Mode for Employee
-                <div className="space-y-4 text-xs">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-slate-400 font-semibold">ระดับทักษะปัจจุบัน</p>
-                      <p className="font-bold text-slate-700 dark:text-slate-200 mt-1">Level {selectedCell.record ? selectedCell.record.level : 0}</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-400 font-semibold">สถานะความคืบหน้า</p>
-                      <p className="font-bold text-slate-700 dark:text-slate-200 mt-1 uppercase">{selectedCell.record ? selectedCell.record.status : 'NEED TRAINING'}</p>
-                    </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-400">สถานะความชำนาญ (Status)</label>
+                    <select 
+                      value={assignForm.status} 
+                      onChange={(e) => setAssignForm({ ...assignForm, status: e.target.value })} 
+                      className="glass-input text-xs bg-white dark:bg-warehouse-slate"
+                    >
+                      <option value="need_training">ต้องเข้ารับการอบรม (Need)</option>
+                      <option value="training">กำลังอยู่ระหว่างฝึกอบรม (Training)</option>
+                      <option value="qualified">ผ่านเกณฑ์มาตรฐาน (Qualified)</option>
+                      <option value="expert">เชี่ยวชาญสูงสุด (Expert)</option>
+                    </select>
                   </div>
                 </div>
-              )}
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-400">ชื่อเอกสารใบอนุญาต/ใบเซอร์ (Certification Name)</label>
+                  <input 
+                    type="text" 
+                    value={assignForm.certification_name} 
+                    onChange={(e) => setAssignForm({ ...assignForm, certification_name: e.target.value })} 
+                    className="glass-input text-xs" 
+                    placeholder="ใบอนุญาตขับรถยกสากล Class A" 
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-400">วันหมดอายุใบรับรอง</label>
+                    <input 
+                      type="date" 
+                      value={assignForm.expiration_date} 
+                      onChange={(e) => setAssignForm({ ...assignForm, expiration_date: e.target.value })} 
+                      className="glass-input text-xs" 
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-400">ลิงก์แนบเอกสาร PDF/รูปใบเซอร์</label>
+                    <input 
+                      type="text" 
+                      value={assignForm.certification_url} 
+                      onChange={(e) => setAssignForm({ ...assignForm, certification_url: e.target.value })} 
+                      className="glass-input text-xs" 
+                      placeholder="https://example.com/cert.pdf" 
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-200/50 dark:border-white/5 flex gap-3">
+                  {/* Approve button for Admin */}
+                  {selectedCell.record && selectedCell.record.status !== 'qualified' && selectedCell.record.status !== 'expert' && (
+                    <button 
+                      type="button"
+                      onClick={() => handleApproveSkill(selectedCell.record.id)}
+                      className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1"
+                    >
+                      <Check size={14} />
+                      <span>กดอนุมัติทันที (Approve)</span>
+                    </button>
+                  )}
+                  <button 
+                    type="submit"
+                    className="flex-1 py-2.5 bg-warehouse-orange hover:bg-warehouse-orange/90 text-white rounded-xl text-xs font-bold transition-all"
+                  >
+                    บันทึกความก้าวหน้า
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

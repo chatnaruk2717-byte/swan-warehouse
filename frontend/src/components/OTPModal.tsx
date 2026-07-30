@@ -296,6 +296,31 @@ export default function OTPModal({
           </div>
         )}
 
+        {/* LINE OA Add Friend Mobile Push Connection Box */}
+        <div className="p-3 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-600/10 border border-emerald-500/30 rounded-2xl flex items-center justify-between gap-3 text-xs shadow-sm">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-sm">
+              LINE
+            </div>
+            <div className="min-w-0">
+              <p className="font-extrabold text-slate-800 dark:text-white truncate">
+                บัญชีแจ้งเตือน: <span className="text-emerald-600 dark:text-emerald-400">คลังสินค้า SWAN (@045pprhx)</span>
+              </p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                กดแอดไลน์ครั้งเดียว เพื่อให้รหัส OTP เด้งเข้าแอปบนมือถือสดๆ
+              </p>
+            </div>
+          </div>
+          <a
+            href="https://line.me/ti/p/@045pprhx"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-xl text-[11px] shrink-0 shadow-sm transition-all no-underline flex items-center gap-1 cursor-pointer active:scale-95"
+          >
+            <span>+ แอดไลน์รับข้อความ</span>
+          </a>
+        </div>
+
         {/* STEP 1: EXCLUSIVE PROFESSIONAL LINE OTP CARD */}
         {step === 'request' && (
           <div className="space-y-5 pt-2">

@@ -141,10 +141,10 @@ export const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
       >
         {/* Top Header & Navigation Container */}
         <div className="flex flex-col min-h-0 flex-1">
-          {/* Top Brand Logo Header */}
-          <div className="p-4 sm:p-5 flex items-center justify-between border-b border-slate-200/60 dark:border-white/5 relative shrink-0">
+          {/* Top Brand Logo Header - Aligned perfectly with Navbar py-6 height */}
+          <div className="py-6 px-5 flex items-center justify-between border-b border-transparent relative shrink-0">
             {/* Sleek bottom border gradient line matching navbar */}
-            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-warehouse-orange/40 to-emerald-500/40" />
+            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-warehouse-orange/30 to-emerald-500/30" />
             {!collapsed ? (
               <Link href="/dashboard" className="flex items-center gap-2.5 min-w-0">
                 <SwanLogo className="h-9 w-9 shrink-0 shadow-md" />

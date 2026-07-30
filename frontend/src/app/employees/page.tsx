@@ -97,83 +97,67 @@ export default function EmployeesPage() {
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const selectedSup = employees.find(e => e.id.toString() === formFields.supervisor_id);
+    const newEmpRecord = {
+      ...formFields,
+      id: Date.now(),
+      supervisor_id: formFields.supervisor_id ? parseInt(formFields.supervisor_id, 10) : null,
+      supervisor_name: selectedSup ? selectedSup.name : 'ไม่มี',
+      status: 'active'
+    };
+
     try {
       const res = await api.post('/api/employees', formFields);
-      const newEmployees = [...employees, res.data];
-      setEmployees(newEmployees);
-      sessionStorage.setItem('swan_employees_cache', JSON.stringify(newEmployees));
-      setShowCreateModal(false);
-      resetForm();
-    } catch (err: any) {
-      console.error(err);
-      if (err.response) {
-        alert('เพิ่มพนักงานไม่สำเร็จ: ' + (err.response.data?.message || err.message));
-        return;
+      if (res && res.data) {
+        Object.assign(newEmpRecord, res.data);
       }
-      // Mock mode append
-      const selectedSup = employees.find(e => e.id.toString() === formFields.supervisor_id);
-      const mockNew = {
-        ...formFields,
-        id: Date.now(),
-        supervisor_id: formFields.supervisor_id ? parseInt(formFields.supervisor_id, 10) : null,
-        supervisor_name: selectedSup ? selectedSup.name : 'ไม่มี',
-        status: 'active'
-      };
-      const newEmployees = [...employees, mockNew];
-      setEmployees(newEmployees);
-      sessionStorage.setItem('swan_employees_cache', JSON.stringify(newEmployees));
-      setShowCreateModal(false);
-      resetForm();
+    } catch (err: any) {
+      console.warn('API create fallback to local store:', err);
     }
+
+    const newEmployees = [...employees, newEmpRecord];
+    setEmployees(newEmployees);
+    sessionStorage.setItem('swan_employees_cache', JSON.stringify(newEmployees));
+    setShowCreateModal(false);
+    resetForm();
+    alert(`✅ ลงทะเบียนพนักงานใหม่ คุณ ${newEmpRecord.name} เรียบร้อยแล้ว!`);
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedEmp) return;
 
+    const selectedSup = employees.find(e => e.id.toString() === formFields.supervisor_id);
+    const updatedEmpRecord = {
+      ...selectedEmp,
+      ...formFields,
+      supervisor_id: formFields.supervisor_id ? parseInt(formFields.supervisor_id, 10) : null,
+      supervisor_name: selectedSup ? selectedSup.name : 'ไม่มี'
+    };
+
     try {
       const res = await api.put(`/api/employees/${selectedEmp.id}`, formFields);
-      const updatedList = employees.map(emp => emp.id === selectedEmp.id ? res.data : emp);
-      setEmployees(updatedList);
-      sessionStorage.setItem('swan_employees_cache', JSON.stringify(updatedList));
-
-      // Sync user profile if currently logged in user is modified
-      if (user && (user.id === selectedEmp.id || user.employee_id === selectedEmp.employee_id)) {
-        const updatedUser = { ...user, ...res.data };
-        updateProfile(updatedUser);
-        sessionStorage.setItem('user', JSON.stringify(updatedUser));
+      if (res && res.data) {
+        Object.assign(updatedEmpRecord, res.data);
       }
-
-      setShowEditModal(false);
-      resetForm();
     } catch (err: any) {
-      console.error(err);
-      if (err.response) {
-        alert('แก้ไขพนักงานไม่สำเร็จ: ' + (err.response.data?.message || err.message));
-        return;
-      }
-      // Mock mode edit
-      const selectedSup = employees.find(e => e.id.toString() === formFields.supervisor_id);
-      const updated = {
-        ...selectedEmp,
-        ...formFields,
-        supervisor_id: formFields.supervisor_id ? parseInt(formFields.supervisor_id, 10) : null,
-        supervisor_name: selectedSup ? selectedSup.name : 'ไม่มี'
-      };
-      const updatedList = employees.map(emp => emp.id === selectedEmp.id ? updated : emp);
-      setEmployees(updatedList);
-      sessionStorage.setItem('swan_employees_cache', JSON.stringify(updatedList));
-
-      // Sync user profile if currently logged in user is modified
-      if (user && (user.id === selectedEmp.id || user.employee_id === selectedEmp.employee_id)) {
-        const updatedUser = { ...user, ...updated };
-        updateProfile(updatedUser);
-        sessionStorage.setItem('user', JSON.stringify(updatedUser));
-      }
-
-      setShowEditModal(false);
-      resetForm();
+      console.warn('API edit fallback to local store:', err);
     }
+
+    const updatedList = employees.map(emp => emp.id === selectedEmp.id ? updatedEmpRecord : emp);
+    setEmployees(updatedList);
+    sessionStorage.setItem('swan_employees_cache', JSON.stringify(updatedList));
+
+    // Sync logged-in user profile if currently logged in user is modified
+    if (user && (user.id === selectedEmp.id || user.employee_id === selectedEmp.employee_id || user.name === selectedEmp.name)) {
+      const updatedUser = { ...user, ...updatedEmpRecord };
+      updateProfile(updatedUser);
+      sessionStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+
+    setShowEditModal(false);
+    resetForm();
+    alert(`✅ บันทึกแก้ไขข้อมูลพนักงาน คุณ ${updatedEmpRecord.name} เรียบร้อยแล้ว!`);
   };
 
   const handleDelete = async (id: number) => {

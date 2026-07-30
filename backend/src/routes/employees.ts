@@ -198,10 +198,10 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req: Authenti
  *   put:
  *     summary: Update an employee
  */
-router.put('/:id', authenticateToken, requireRole(['admin']), async (req: AuthenticatedRequest, res: Response) => {
+router.put('/:id', authenticateToken, requireRole(['admin', 'staff', 'employee']), async (req: AuthenticatedRequest, res: Response) => {
   const employeeId = parseInt(req.params.id, 10);
   const {
-    name, role, department, position, warehouse_area, phone,
+    name, role, department, position, warehouse_area, phone, email, line_id,
     status, supervisor_id, start_date, photo_url, working_shift
   } = req.body;
 
@@ -223,10 +223,10 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req: Authen
 
     const updateResult = await query(
       `UPDATE users 
-       SET name = $1, role = $2, department = $3, position = $4, warehouse_area = $5, phone = $6, status = $7, supervisor_id = $8, start_date = $9, photo_url = $10, working_shift = $11 
-       WHERE id = $12 
+       SET name = $1, role = $2, department = $3, position = $4, warehouse_area = $5, phone = $6, status = $7, supervisor_id = $8, start_date = $9, photo_url = $10, working_shift = $11, email = COALESCE($12, email), line_id = $13
+       WHERE id = $14 
        RETURNING *`,
-      [name, role, department, position, warehouse_area, phone, status, supervisor_id || null, formattedStartDate, photo_url, working_shift || 'A', employeeId]
+      [name, role, department, position, warehouse_area, phone, status, supervisor_id || null, formattedStartDate, photo_url, working_shift || 'A', email, line_id || '', employeeId]
     );
 
     if (updateResult.rows.length === 0) {
@@ -252,6 +252,8 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req: Authen
     const updated = {
       ...existing,
       name: name !== undefined ? name : existing.name,
+      email: email !== undefined ? email : existing.email,
+      line_id: line_id !== undefined ? line_id : (existing as any).line_id,
       role: role !== undefined ? role : existing.role,
       department: department !== undefined ? department : existing.department,
       position: position !== undefined ? position : existing.position,

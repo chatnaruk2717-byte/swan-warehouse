@@ -87,28 +87,86 @@ export default function SkillsPage() {
       alert('ขออภัย! สิทธิ์ในการอัปโหลด/เปลี่ยนรูปภาพพนักงานสงวนไว้สำหรับ Admin เท่านั้น');
       return;
     }
-    const updated = {
-      ...customPhotos,
-      [empKey]: photoStr,
-      [selectedEmp?.id]: photoStr,
-      [selectedEmp?.employee_id]: photoStr
-    };
+
+    const keysToUpdate = [
+      String(empKey),
+      selectedEmp?.id ? String(selectedEmp.id) : null,
+      selectedEmp?.employee_id ? String(selectedEmp.employee_id) : null,
+      selectedEmp?.name ? String(selectedEmp.name) : null
+    ].filter(Boolean) as string[];
+
+    const updated = { ...customPhotos };
+    keysToUpdate.forEach(k => {
+      updated[k] = photoStr;
+    });
+
     setCustomPhotos(updated);
-    localStorage.setItem('swan_employee_photos', JSON.stringify(updated));
+
+    // Update employees array in memory
+    setEmployees(prev => prev.map(e => {
+      if (e.id === selectedEmp?.id || e.employee_id === selectedEmp?.employee_id || e.name === selectedEmp?.name) {
+        return { ...e, photo_url: photoStr };
+      }
+      return e;
+    }));
+
+    try {
+      localStorage.setItem('swan_employee_photos', JSON.stringify(updated));
+      alert('✅ บันทึกรูปภาพพนักงานความคมชัดสูงเรียบร้อยแล้ว!');
+    } catch (err) {
+      console.error('LocalStorage error:', err);
+      alert('เกิดข้อผิดพลาดในการบันทึกภาพลงความจำเบราว์เซอร์ กรุณาลองใช้รูปภาพที่มีขนาดไฟล์เล็กลง');
+    }
+
+    // Try API update if backend active
+    if (selectedEmp?.id) {
+      api.put(`/api/employees/${selectedEmp.id}`, { photo_url: photoStr }).catch(() => {});
+    }
   };
 
+  // Image Compression Algorithm (resizes 4K/HD photos down to super-sharp 800px ~100KB JPEGs)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (user?.role !== 'admin') {
       alert('เฉพาะ Admin เท่านั้นที่มีสิทธิ์อัปโหลดรูปภาพพนักงาน');
       return;
     }
+
     const file = e.target.files?.[0];
     if (file && selectedEmp) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        saveCustomPhoto(selectedEmp.employee_id || selectedEmp.id, base64);
-        setShowPhotoModal(false);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width = Math.round((width * MAX_HEIGHT) / height);
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.88);
+            saveCustomPhoto(selectedEmp.employee_id || selectedEmp.id, compressedBase64);
+            setShowPhotoModal(false);
+          }
+        };
+        img.src = event.target?.result as string;
       };
       reader.readAsDataURL(file);
     }
@@ -377,9 +435,9 @@ export default function SkillsPage() {
   const selectedEmp = employees.find(e => Number(e.id) === Number(selectedEmpId)) || employees[0] || user;
   
   // Custom photo overrides or HD default Unsplash photos
-  const customPhoto = customPhotos[selectedEmp?.employee_id] || customPhotos[selectedEmp?.id];
+  const customPhoto = customPhotos[selectedEmp?.employee_id] || customPhotos[selectedEmp?.id] || customPhotos[selectedEmp?.name];
   const empPhoto = customPhoto || selectedEmp?.photo_url || 
-    (selectedEmp?.employee_id === 'EMP006' || selectedEmp?.employee_id === '22512' ? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=1000&q=80' :
+    (selectedEmp?.employee_id === 'EMP006' || selectedEmp?.employee_id === '22512' || selectedEmp?.name?.includes('เพทาย') ? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=1000&q=80' :
      selectedEmp?.employee_id === 'EMP007' ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=1000&q=80' :
      selectedEmp?.employee_id === 'EMP008' ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1000&q=80' :
      selectedEmp?.employee_id === 'EMP009' ? 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000&q=80' :
@@ -782,9 +840,9 @@ export default function SkillsPage() {
             </thead>
             <tbody className="divide-y divide-slate-200/50 dark:divide-white/5 text-xs">
               {filteredEmployees.map(emp => {
-                const custom = customPhotos[emp.employee_id] || customPhotos[emp.id];
+                const custom = customPhotos[emp.employee_id] || customPhotos[emp.id] || customPhotos[emp.name];
                 const photo = custom || emp.photo_url || 
-                  (emp.employee_id === 'EMP006' || emp.employee_id === '22512' ? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80' :
+                  (emp.employee_id === 'EMP006' || emp.employee_id === '22512' || emp.name?.includes('เพทาย') ? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80' :
                    emp.employee_id === 'EMP007' ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&q=80' :
                    emp.employee_id === 'EMP008' ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80' :
                    emp.employee_id === 'EMP009' ? 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80' :

@@ -73,33 +73,35 @@ export default function SkillsPage() {
   });
 
   useEffect(() => {
-    // Load persisted custom employee photos from LocalStorage & IndexedDB
+    // Load persisted custom employee photos from LocalStorage
     const stored = localStorage.getItem('swan_employee_photos');
     if (stored) {
       try {
         setCustomPhotos(JSON.parse(stored));
       } catch (e) {}
     }
-    // Also load from IndexedDB fallback
+    // Also load from IndexedDB using openCursor (100% reliable async loading)
     try {
       const req = indexedDB.open('swan_warehouse_db', 1);
-      req.onupgradeneeded = () => {
-        const db = req.result;
+      req.onupgradeneeded = (evt: any) => {
+        const db = evt.target.result;
         if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos');
       };
-      req.onsuccess = () => {
-        const db = req.result;
+      req.onsuccess = (evt: any) => {
+        const db = evt.target.result;
         const tx = db.transaction('photos', 'readonly');
         const store = tx.objectStore('photos');
-        const keysReq = store.getAllKeys();
-        const valsReq = store.getAll();
-        keysReq.onsuccess = () => {
-          const keys = keysReq.result;
-          const vals = valsReq.result;
-          const map: Record<string, string> = {};
-          keys.forEach((k: any, i: number) => { map[String(k)] = vals[i]; });
-          if (Object.keys(map).length > 0) {
-            setCustomPhotos(prev => ({ ...prev, ...map }));
+        const map: Record<string, string> = {};
+        const cursorReq = store.openCursor();
+        cursorReq.onsuccess = (e: any) => {
+          const cursor = e.target.result;
+          if (cursor) {
+            map[String(cursor.key)] = cursor.value;
+            cursor.continue();
+          } else {
+            if (Object.keys(map).length > 0) {
+              setCustomPhotos(prev => ({ ...prev, ...map }));
+            }
           }
         };
       };
@@ -112,12 +114,17 @@ export default function SkillsPage() {
       return;
     }
 
-    const primaryKey = String(selectedEmp?.employee_id || selectedEmp?.id || empKey);
+    const keys = [
+      String(empKey),
+      selectedEmp?.id ? String(selectedEmp.id) : null,
+      selectedEmp?.employee_id ? String(selectedEmp.employee_id) : null,
+      selectedEmp?.name ? String(selectedEmp.name) : null
+    ].filter(Boolean) as string[];
 
-    // Store ONLY ONE single key per employee to minimize storage (takes ~20KB!)
-    const updated = { ...customPhotos, [primaryKey]: photoStr };
-    if (selectedEmp?.id) updated[String(selectedEmp.id)] = photoStr;
-    if (selectedEmp?.employee_id) updated[String(selectedEmp.employee_id)] = photoStr;
+    const updated = { ...customPhotos };
+    keys.forEach(k => {
+      updated[k] = photoStr;
+    });
 
     setCustomPhotos(updated);
 
@@ -129,33 +136,37 @@ export default function SkillsPage() {
       return e;
     }));
 
-    // Save to IndexedDB as high-reliability storage
+    // 1. Write to IndexedDB (asynchronous high-capacity database)
     try {
       const req = indexedDB.open('swan_warehouse_db', 1);
-      req.onupgradeneeded = () => {
-        const db = req.result;
+      req.onupgradeneeded = (evt: any) => {
+        const db = evt.target.result;
         if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos');
       };
-      req.onsuccess = () => {
-        const db = req.result;
+      req.onsuccess = (evt: any) => {
+        const db = evt.target.result;
         const tx = db.transaction('photos', 'readwrite');
-        tx.objectStore('photos').put(photoStr, primaryKey);
-        if (selectedEmp?.employee_id) tx.objectStore('photos').put(photoStr, String(selectedEmp.employee_id));
-        if (selectedEmp?.id) tx.objectStore('photos').put(photoStr, String(selectedEmp.id));
+        const store = tx.objectStore('photos');
+        keys.forEach(k => store.put(photoStr, k));
       };
     } catch (e) {}
 
-    // Save to LocalStorage with fallback cleanup if quota full
+    // 2. Prune giant old strings (>150KB) and save to LocalStorage
     try {
-      localStorage.setItem('swan_employee_photos', JSON.stringify(updated));
-      alert('✅ บันทึกรูปภาพพนักงานความคมชัดสูงเรียบร้อยแล้ว!');
+      const prunedStore: Record<string, string> = {};
+      Object.entries(updated).forEach(([k, val]) => {
+        if (val && typeof val === 'string' && val.length < 150000) {
+          prunedStore[k] = val;
+        }
+      });
+      localStorage.setItem('swan_employee_photos', JSON.stringify(prunedStore));
+      alert('✅ บันทึกรูปภาพพนักงานเรียบร้อยแล้ว!');
     } catch (err) {
-      console.warn('LocalStorage full, clearing old cache and saving to IndexedDB...', err);
+      console.warn('LocalStorage full, purging old cache...', err);
       try {
-        // Clear giant old cache and save only current active employee photos
-        const miniStore: Record<string, string> = { [primaryKey]: photoStr };
-        if (selectedEmp?.employee_id) miniStore[String(selectedEmp.employee_id)] = photoStr;
-        if (selectedEmp?.id) miniStore[String(selectedEmp.id)] = photoStr;
+        localStorage.removeItem('swan_employee_photos');
+        const miniStore: Record<string, string> = {};
+        keys.forEach(k => { miniStore[k] = photoStr; });
         localStorage.setItem('swan_employee_photos', JSON.stringify(miniStore));
         alert('✅ บันทึกรูปภาพพนักงานเรียบร้อยแล้ว!');
       } catch (retryErr) {

@@ -79,8 +79,8 @@ export default function OTPModal({
     setDemoCode(generatedCode);
 
     const targetDest = channel === 'phone' 
-      ? (user?.phone || '081-xxx-xxxx') 
-      : (user?.email || 'user@swan.co.th');
+      ? (user?.phone || '081-234-5678') 
+      : (user?.email || 'admin@warehouse.com');
 
     try {
       // Attempt API call if backend active
@@ -92,7 +92,8 @@ export default function OTPModal({
       setStep('verify');
       setCountdown(60);
       setTimerActive(true);
-      setSuccessToast(`📩 ส่งรหัส OTP 6 หลัก [ ${generatedCode} ] ไปยัง ${channel === 'phone' ? 'เบอร์มือถือ' : 'อีเมล'} (${targetDest}) เรียบร้อยแล้ว`);
+      console.log(`[SECURE OTP CODE CREATED]: ${generatedCode}`);
+      setSuccessToast(`📩 ระบบได้ส่งรหัส OTP 6 หลักไปยัง ${channel === 'phone' ? 'เบอร์มือถือ' : 'อีเมล'} (${targetDest}) เรียบร้อยแล้ว`);
       
       // Auto-focus first input box
       setTimeout(() => {
@@ -212,13 +213,13 @@ export default function OTPModal({
           </div>
         </div>
 
-        {/* Demo Toast Notification Box */}
+        {/* OTP Status Toast Notification Box */}
         {successToast && (
           <div className="p-3.5 bg-emerald-500/15 border border-emerald-500/40 rounded-2xl text-xs text-emerald-700 dark:text-emerald-300 font-bold flex items-start gap-2.5 shadow-sm animate-pulse">
             <Sparkles size={18} className="shrink-0 text-emerald-500 mt-0.5" />
             <div>
               <p className="font-extrabold">{successToast}</p>
-              <p className="text-[10px] opacity-80 mt-0.5 font-mono">สามารถใช้รหัสทดสอบ [ {demoCode || '849201'} ] เพื่อผ่านได้ทันที</p>
+              <p className="text-[10px] opacity-80 mt-0.5 font-medium">กรุณาตรวจสอบรหัส 6 หลักทาง {channel === 'phone' ? 'SMS มือถือ' : 'อีเมล'} เพื่อนำมากรอกยืนยันด้านล่าง</p>
             </div>
           </div>
         )}
@@ -241,7 +242,7 @@ export default function OTPModal({
                   <Mail size={20} className={channel === 'email' ? 'text-emerald-500' : 'text-slate-400'} />
                   <div>
                     <p className="text-xs font-bold">รับทาง อีเมล</p>
-                    <p className="text-[10px] opacity-70 truncate max-w-[110px]">{user?.email || 'user@swan.co.th'}</p>
+                    <p className="text-[10px] opacity-80 font-mono truncate max-w-[110px]">{user?.email || 'admin@warehouse.com'}</p>
                   </div>
                 </button>
 
@@ -257,7 +258,7 @@ export default function OTPModal({
                   <Phone size={20} className={channel === 'phone' ? 'text-emerald-500' : 'text-slate-400'} />
                   <div>
                     <p className="text-xs font-bold">รับทาง SMS มือถือ</p>
-                    <p className="text-[10px] opacity-70 truncate max-w-[110px]">{user?.phone || '081-xxx-xxxx'}</p>
+                    <p className="text-[10px] opacity-80 font-mono truncate max-w-[110px]">{user?.phone || '081-234-5678'}</p>
                   </div>
                 </button>
               </div>

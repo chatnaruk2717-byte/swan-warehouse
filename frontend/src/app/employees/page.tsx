@@ -47,6 +47,7 @@ export default function EmployeesPage() {
     position: 'Forklift Driver',
     warehouse_area: 'Zone A',
     phone: '',
+    line_id: '',
     supervisor_id: '',
     start_date: new Date().toISOString().split('T')[0],
     photo_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
@@ -205,6 +206,7 @@ export default function EmployeesPage() {
       position: emp.position,
       warehouse_area: emp.warehouse_area || '',
       phone: emp.phone || '',
+      line_id: emp.line_id || '',
       supervisor_id: emp.supervisor_id ? emp.supervisor_id.toString() : '',
       start_date: emp.start_date || new Date().toISOString().split('T')[0],
       photo_url: emp.photo_url || '',
@@ -229,6 +231,7 @@ export default function EmployeesPage() {
       position: 'Forklift Driver',
       warehouse_area: 'Zone A',
       phone: '',
+      line_id: '',
       supervisor_id: '',
       start_date: new Date().toISOString().split('T')[0],
       photo_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
@@ -631,14 +634,20 @@ export default function EmployeesPage() {
                   <input type="text" required value={formFields.name} onChange={(e) => setFormFields({ ...formFields, name: e.target.value })} className="glass-input text-xs" placeholder="สมบัติ ยิ้มสู้" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-400">อีเมล</label>
                   <input type="email" required value={formFields.email} onChange={(e) => setFormFields({ ...formFields, email: e.target.value })} className="glass-input text-xs" placeholder="sombat@warehouse.com" />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-400">โทรศัพท์</label>
-                  <input type="text" value={formFields.phone} onChange={(e) => setFormFields({ ...formFields, phone: e.target.value })} className="glass-input text-xs" placeholder="082-999-2222" />
+                  <input type="text" value={formFields.phone} onChange={(e) => setFormFields({ ...formFields, phone: e.target.value })} className="glass-input text-xs" placeholder="0886474453" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <span>LINE ID (รับ OTP 💚)</span>
+                  </label>
+                  <input type="text" value={formFields.line_id || ''} onChange={(e) => setFormFields({ ...formFields, line_id: e.target.value })} className="glass-input text-xs border-emerald-500/40 focus:border-emerald-500 font-mono" placeholder="@chatnaruk02" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -730,9 +739,9 @@ export default function EmployeesPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/50 dark:border-white/5">
-                <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-xs font-semibold">ยกเลิก</button>
-                <button type="submit" className="px-4 py-2 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white text-xs font-bold shadow-md shadow-warehouse-orange/15">ลงทะเบียน</button>
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-white/5">
+                <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white">ยกเลิก</button>
+                <button type="submit" className="px-5 py-2.5 rounded-xl bg-warehouse-orange hover:bg-warehouse-orange/90 text-white font-bold text-xs shadow-md shadow-warehouse-orange/20">บันทึกข้อมูลพนักงาน</button>
               </div>
             </form>
           </GlassCard>

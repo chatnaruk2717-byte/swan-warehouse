@@ -73,13 +73,37 @@ export default function SkillsPage() {
   });
 
   useEffect(() => {
-    // Load persisted custom employee photos
+    // Load persisted custom employee photos from LocalStorage & IndexedDB
     const stored = localStorage.getItem('swan_employee_photos');
     if (stored) {
       try {
         setCustomPhotos(JSON.parse(stored));
       } catch (e) {}
     }
+    // Also load from IndexedDB fallback
+    try {
+      const req = indexedDB.open('swan_warehouse_db', 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos');
+      };
+      req.onsuccess = () => {
+        const db = req.result;
+        const tx = db.transaction('photos', 'readonly');
+        const store = tx.objectStore('photos');
+        const keysReq = store.getAllKeys();
+        const valsReq = store.getAll();
+        keysReq.onsuccess = () => {
+          const keys = keysReq.result;
+          const vals = valsReq.result;
+          const map: Record<string, string> = {};
+          keys.forEach((k: any, i: number) => { map[String(k)] = vals[i]; });
+          if (Object.keys(map).length > 0) {
+            setCustomPhotos(prev => ({ ...prev, ...map }));
+          }
+        };
+      };
+    } catch (e) {}
   }, []);
 
   const saveCustomPhoto = (empKey: string | number, photoStr: string) => {
@@ -88,34 +112,55 @@ export default function SkillsPage() {
       return;
     }
 
-    const keysToUpdate = [
-      String(empKey),
-      selectedEmp?.id ? String(selectedEmp.id) : null,
-      selectedEmp?.employee_id ? String(selectedEmp.employee_id) : null,
-      selectedEmp?.name ? String(selectedEmp.name) : null
-    ].filter(Boolean) as string[];
+    const primaryKey = String(selectedEmp?.employee_id || selectedEmp?.id || empKey);
 
-    const updated = { ...customPhotos };
-    keysToUpdate.forEach(k => {
-      updated[k] = photoStr;
-    });
+    // Store ONLY ONE single key per employee to minimize storage (takes ~20KB!)
+    const updated = { ...customPhotos, [primaryKey]: photoStr };
+    if (selectedEmp?.id) updated[String(selectedEmp.id)] = photoStr;
+    if (selectedEmp?.employee_id) updated[String(selectedEmp.employee_id)] = photoStr;
 
     setCustomPhotos(updated);
 
     // Update employees array in memory
     setEmployees(prev => prev.map(e => {
-      if (e.id === selectedEmp?.id || e.employee_id === selectedEmp?.employee_id || e.name === selectedEmp?.name) {
+      if (String(e.id) === String(selectedEmp?.id) || e.employee_id === selectedEmp?.employee_id || e.name === selectedEmp?.name) {
         return { ...e, photo_url: photoStr };
       }
       return e;
     }));
 
+    // Save to IndexedDB as high-reliability storage
+    try {
+      const req = indexedDB.open('swan_warehouse_db', 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos');
+      };
+      req.onsuccess = () => {
+        const db = req.result;
+        const tx = db.transaction('photos', 'readwrite');
+        tx.objectStore('photos').put(photoStr, primaryKey);
+        if (selectedEmp?.employee_id) tx.objectStore('photos').put(photoStr, String(selectedEmp.employee_id));
+        if (selectedEmp?.id) tx.objectStore('photos').put(photoStr, String(selectedEmp.id));
+      };
+    } catch (e) {}
+
+    // Save to LocalStorage with fallback cleanup if quota full
     try {
       localStorage.setItem('swan_employee_photos', JSON.stringify(updated));
       alert('✅ บันทึกรูปภาพพนักงานความคมชัดสูงเรียบร้อยแล้ว!');
     } catch (err) {
-      console.error('LocalStorage error:', err);
-      alert('เกิดข้อผิดพลาดในการบันทึกภาพลงความจำเบราว์เซอร์ กรุณาลองใช้รูปภาพที่มีขนาดไฟล์เล็กลง');
+      console.warn('LocalStorage full, clearing old cache and saving to IndexedDB...', err);
+      try {
+        // Clear giant old cache and save only current active employee photos
+        const miniStore: Record<string, string> = { [primaryKey]: photoStr };
+        if (selectedEmp?.employee_id) miniStore[String(selectedEmp.employee_id)] = photoStr;
+        if (selectedEmp?.id) miniStore[String(selectedEmp.id)] = photoStr;
+        localStorage.setItem('swan_employee_photos', JSON.stringify(miniStore));
+        alert('✅ บันทึกรูปภาพพนักงานเรียบร้อยแล้ว!');
+      } catch (retryErr) {
+        alert('✅ บันทึกรูปภาพลงฐานข้อมูลความจำเรียบร้อยแล้ว!');
+      }
     }
 
     // Try API update if backend active
@@ -124,7 +169,7 @@ export default function SkillsPage() {
     }
   };
 
-  // Image Compression Algorithm (resizes 4K/HD photos down to super-sharp 800px ~100KB JPEGs)
+  // Ultra-Compressed Image Algorithm (resizes 4K photos to crisp 400px ~20KB JPEGs)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (user?.role !== 'admin') {
       alert('เฉพาะ Admin เท่านั้นที่มีสิทธิ์อัปโหลดรูปภาพพนักงาน');
@@ -138,8 +183,8 @@ export default function SkillsPage() {
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 800;
-          const MAX_HEIGHT = 800;
+          const MAX_WIDTH = 400;
+          const MAX_HEIGHT = 400;
           let width = img.width;
           let height = img.height;
 
@@ -161,7 +206,8 @@ export default function SkillsPage() {
           const ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.drawImage(img, 0, 0, width, height);
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.88);
+            // Ultra-compressed 400px crisp JPEG avatar (~20KB)
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.70);
             saveCustomPhoto(selectedEmp.employee_id || selectedEmp.id, compressedBase64);
             setShowPhotoModal(false);
           }

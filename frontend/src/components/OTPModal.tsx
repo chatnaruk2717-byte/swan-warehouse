@@ -74,7 +74,7 @@ export default function OTPModal({
     // Fallback defaults
     if (!phoneVal) phoneVal = '0886474453';
     if (!emailVal) emailVal = 'chatnaruk02@gmail.com';
-    if (!lineVal) lineVal = '@chatnaruk02.line';
+    if (!lineVal) lineVal = 'chatnaruk05';
 
     setMemberPhone(phoneVal);
     setMemberEmail(emailVal);
@@ -249,17 +249,11 @@ export default function OTPModal({
         {/* OTP Status Toast Notification Box */}
         {successToast && (
           <div className="p-3.5 bg-emerald-500/15 border border-emerald-500/40 rounded-2xl text-xs text-emerald-700 dark:text-emerald-300 font-bold flex items-start gap-2.5 shadow-sm">
-            <Sparkles size={18} className="shrink-0 text-emerald-500 mt-0.5 animate-bounce" />
-            <div className="space-y-1">
-              <p className="font-extrabold">{successToast}</p>
-              <div className="p-2 bg-white/80 dark:bg-slate-900/80 rounded-xl border border-emerald-500/30 text-slate-800 dark:text-white font-mono text-xs flex items-center justify-between gap-2 shadow-inner">
-                <span>🔑 รหัส OTP 6 หลัก:</span>
-                <span className="px-2 py-0.5 rounded-lg bg-emerald-500 text-white font-black tracking-widest text-sm shadow-sm">
-                  {demoCode || '609130'}
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                *ระบบทดสอบจำลอง OTP (หรือสามารถใช้รหัสผ่านกลาง <strong className="text-emerald-600 font-bold">123456</strong> ยืนยันได้ทันที)
+            <Sparkles size={18} className="shrink-0 text-emerald-500 mt-0.5" />
+            <div>
+              <p className="font-extrabold text-xs">{successToast}</p>
+              <p className="text-[11px] opacity-85 mt-1 font-normal text-slate-700 dark:text-slate-200">
+                กรุณาเปิดแอป LINE บนมือถือของคุณเพื่อนำรหัส OTP 6 หลักมาป้อนยืนยันการเข้าเรียน
               </p>
             </div>
           </div>

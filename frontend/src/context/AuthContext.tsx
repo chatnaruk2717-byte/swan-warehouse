@@ -32,7 +32,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const demoProfiles: Record<User['role'], User> = {
-  admin: { id: 1, employee_id: 'EMP001', email: 'admin@warehouse.com', role: 'admin', name: 'ชาติชาย  ทาคำห่อ', department: 'Management', position: 'Warehouse Manager', photo_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', working_shift: 'A', phone: '0886474453', line_id: '@chartchai.swan' },
+  admin: { id: 1, employee_id: 'EMP001', email: 'admin@warehouse.com', role: 'admin', name: 'ชาติชาย  ทาคำห่อ', department: 'Management', position: 'Warehouse Manager', photo_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', working_shift: 'A', phone: '0886474453', line_id: 'chatnaruk05' },
   staff: { id: 4, employee_id: 'EMP004', email: 'supervisor1@warehouse.com', role: 'staff', name: 'ประพันธ์ ยอดคุม', department: 'Operations', position: 'Zone A Supervisor', photo_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', working_shift: 'A', phone: '084-567-8901', line_id: '@prapan.swan' },
   employee: { id: 6, employee_id: 'EMP006', email: 'employee1@warehouse.com', role: 'employee', name: 'สมปอง ลุยงาน', department: 'Operations', position: 'Forklift Driver', photo_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', working_shift: 'A', phone: '086-789-0123', line_id: '@sompong.swan' }
 };

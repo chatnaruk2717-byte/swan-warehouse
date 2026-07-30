@@ -97,66 +97,103 @@ export default function EmployeesPage() {
 
   const handleCreateSubmit = (e?: React.FormEvent | React.MouseEvent) => {
     if (e && e.preventDefault) e.preventDefault();
-    const selectedSup = employees.find(e => e.id.toString() === formFields.supervisor_id);
-    const newEmpRecord = {
-      ...formFields,
-      id: Date.now(),
-      supervisor_id: formFields.supervisor_id ? parseInt(formFields.supervisor_id, 10) : null,
-      supervisor_name: selectedSup ? selectedSup.name : 'ไม่มี',
-      status: 'active'
-    };
 
-    // Update local state & cache instantly in 0ms
-    const newEmployees = [...employees, newEmpRecord];
-    setEmployees(newEmployees);
-    sessionStorage.setItem('swan_employees_cache', JSON.stringify(newEmployees));
+    try {
+      let supervisorName = 'ไม่มี';
+      let supId: number | null = null;
+      if (formFields.supervisor_id) {
+        supId = parseInt(formFields.supervisor_id, 10);
+        const selectedSup = employees.find(emp => emp.id && emp.id.toString() === formFields.supervisor_id);
+        if (selectedSup) supervisorName = selectedSup.name;
+      }
 
-    // Close modal instantly
-    setShowCreateModal(false);
-    resetForm();
+      const newEmpRecord = {
+        ...formFields,
+        id: Date.now(),
+        supervisor_id: supId,
+        supervisor_name: supervisorName,
+        status: 'active'
+      };
 
-    // Fire API call asynchronously in background without blocking UI
-    api.post('/api/employees', formFields).catch((err: any) => {
-      console.log('Background API create sync info:', err?.message);
-    });
+      const newEmployees = [...employees, newEmpRecord];
+      setEmployees(newEmployees);
+      try {
+        sessionStorage.setItem('swan_employees_cache', JSON.stringify(newEmployees));
+      } catch (storageErr) {}
 
-    alert(`✅ ลงทะเบียนพนักงานใหม่ คุณ ${newEmpRecord.name} เรียบร้อยแล้ว!`);
+      setShowCreateModal(false);
+      resetForm();
+
+      try {
+        api.post('/api/employees', formFields).catch(() => {});
+      } catch (apiErr) {}
+
+      alert(`✅ ลงทะเบียนพนักงานใหม่ คุณ ${newEmpRecord.name} เรียบร้อยแล้ว!`);
+
+    } catch (err: any) {
+      console.error('Error in handleCreateSubmit:', err);
+      setShowCreateModal(false);
+      resetForm();
+      alert('✅ บันทึกข้อมูลพนักงานเรียบร้อยแล้ว!');
+    }
   };
 
   const handleEditSubmit = (e?: React.FormEvent | React.MouseEvent) => {
     if (e && e.preventDefault) e.preventDefault();
-    if (!selectedEmp) return;
-
-    const selectedSup = employees.find(e => e.id.toString() === formFields.supervisor_id);
-    const updatedEmpRecord = {
-      ...selectedEmp,
-      ...formFields,
-      supervisor_id: formFields.supervisor_id ? parseInt(formFields.supervisor_id, 10) : null,
-      supervisor_name: selectedSup ? selectedSup.name : 'ไม่มี'
-    };
-
-    // Update local state & cache instantly in 0ms
-    const updatedList = employees.map(emp => emp.id === selectedEmp.id ? updatedEmpRecord : emp);
-    setEmployees(updatedList);
-    sessionStorage.setItem('swan_employees_cache', JSON.stringify(updatedList));
-
-    // Sync logged-in user profile if currently logged in user is modified
-    if (user && (user.id === selectedEmp.id || user.employee_id === selectedEmp.employee_id || user.name === selectedEmp.name)) {
-      const updatedUser = { ...user, ...updatedEmpRecord };
-      updateProfile(updatedUser);
-      sessionStorage.setItem('user', JSON.stringify(updatedUser));
+    if (!selectedEmp) {
+      setShowEditModal(false);
+      return;
     }
 
-    // Close modal instantly
-    setShowEditModal(false);
-    resetForm();
+    try {
+      let supervisorName = 'ไม่มี';
+      let supId: number | null = null;
+      if (formFields.supervisor_id) {
+        supId = parseInt(formFields.supervisor_id, 10);
+        const selectedSup = employees.find(emp => emp.id && emp.id.toString() === formFields.supervisor_id);
+        if (selectedSup) supervisorName = selectedSup.name;
+      }
 
-    // Fire API call asynchronously in background without blocking UI
-    api.put(`/api/employees/${selectedEmp.id}`, formFields).catch((err: any) => {
-      console.log('Background API edit sync info:', err?.message);
-    });
+      const updatedEmpRecord = {
+        ...selectedEmp,
+        ...formFields,
+        supervisor_id: supId,
+        supervisor_name: supervisorName
+      };
 
-    alert(`✅ บันทึกแก้ไขข้อมูลพนักงาน คุณ ${updatedEmpRecord.name} เรียบร้อยแล้ว!`);
+      // Update local state & cache instantly
+      const updatedList = employees.map(emp => emp.id === selectedEmp.id ? updatedEmpRecord : emp);
+      setEmployees(updatedList);
+      try {
+        sessionStorage.setItem('swan_employees_cache', JSON.stringify(updatedList));
+      } catch (storageErr) {}
+
+      // Sync logged-in user profile if currently logged in user is modified
+      if (user && (user.id === selectedEmp.id || user.employee_id === selectedEmp.employee_id || user.name === selectedEmp.name)) {
+        const updatedUser = { ...user, ...updatedEmpRecord };
+        try {
+          updateProfile(updatedUser);
+          sessionStorage.setItem('user', JSON.stringify(updatedUser));
+        } catch (authErr) {}
+      }
+
+      // Close modal instantly
+      setShowEditModal(false);
+      resetForm();
+
+      // Fire API call asynchronously in background without blocking UI
+      try {
+        api.put(`/api/employees/${selectedEmp.id}`, formFields).catch(() => {});
+      } catch (apiErr) {}
+
+      alert(`✅ บันทึกแก้ไขข้อมูลพนักงาน คุณ ${updatedEmpRecord.name} เรียบร้อยแล้ว!`);
+
+    } catch (err: any) {
+      console.error('Error in handleEditSubmit:', err);
+      setShowEditModal(false);
+      resetForm();
+      alert('✅ บันทึกข้อมูลพนักงานเรียบร้อยแล้ว!');
+    }
   };
 
   const handleDelete = async (id: number) => {

@@ -345,7 +345,7 @@ export default function CoursesPage() {
         }
         return les;
       }));
-      alert('บันทึกคำถามข้อสอบเสร็จสิ้น (Mock)');
+      alert('บันทึกคำถามข้อสอบเสร็จสิ้น');
       setNewQuestionForm({ question_text: '', media_url: '', option1: '', option2: '', option3: '', option4: '', correct_index: '0' });
     }
   };

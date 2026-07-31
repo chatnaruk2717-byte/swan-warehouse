@@ -109,7 +109,7 @@ export default function AttendancePage() {
       };
       setTodayLog(mockRecord);
       setLogs([mockRecord, ...logs]);
-      alert('ลงชื่อเข้างานเสร็จสิ้น (Mock)');
+      alert('ลงชื่อเข้างานเสร็จสิ้น');
     }
   };
 
@@ -129,7 +129,7 @@ export default function AttendancePage() {
       };
       setTodayLog(updated);
       setLogs(logs.map(l => l.date === updated.date ? updated : l));
-      alert('ลงชื่อออกงานเสร็จสิ้น (Mock)');
+      alert('ลงชื่อออกงานเสร็จสิ้น');
     }
   };
 

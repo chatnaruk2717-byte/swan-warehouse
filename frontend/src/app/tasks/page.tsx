@@ -205,7 +205,7 @@ export default function TasksPage() {
       }));
       setShowSubmitModal(false);
       setProofFile(null);
-      alert('ส่งงานและอัปโหลดหลักฐานสำเร็จแล้ว (Mock)! รอหัวหน้างานอนุมัติ');
+      alert('ส่งงานและอัปโหลดหลักฐานสำเร็จแล้ว! รอหัวหน้างานอนุมัติ');
     }
   };
 

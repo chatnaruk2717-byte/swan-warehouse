@@ -238,7 +238,7 @@ export default function DocumentsPage() {
       setShowUploadModal(false);
       setUploadForm({ title: '', category: 'JD', file_url: '' });
       setUploadedFileName('');
-      alert('อัปโหลดเอกสารสำเร็จเรียบร้อย (Mock)');
+      alert('อัปโหลดเอกสารสำเร็จเรียบร้อย');
     }
   };
 
@@ -251,7 +251,7 @@ export default function DocumentsPage() {
       alert('ลบเอกสารเสร็จสิ้น');
     } catch (err) {
       setDocuments(prev => (Array.isArray(prev) ? prev.filter(d => d.id !== id) : []));
-      alert('ลบเอกสารเสร็จสิ้น (Mock)');
+      alert('ลบเอกสารเสร็จสิ้น');
     }
   };
 

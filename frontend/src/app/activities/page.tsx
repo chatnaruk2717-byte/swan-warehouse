@@ -141,23 +141,39 @@ export default function DepartmentActivitiesPage() {
   ];
 
   useEffect(() => {
-    // Load persisted posts from localStorage or seed
-    const stored = localStorage.getItem('swan_department_activities');
+    // Load persisted posts from localStorage or seed with auto-sync for new default images
+    const STORAGE_KEY = 'swan_department_activities_v3';
+    const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
-        setPosts(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        const merged = defaultPosts.map(dp => {
+          const found = parsed.find((p: any) => p.id === dp.id);
+          if (found) {
+            return {
+              ...found,
+              media_url: found.media_url || dp.media_url,
+              title: found.title || dp.title,
+              content: found.content || dp.content
+            };
+          }
+          return dp;
+        });
+        const userCreated = parsed.filter((p: any) => !defaultPosts.some(dp => dp.id === p.id));
+        const finalPosts = [...userCreated, ...merged];
+        setPosts(finalPosts);
       } catch (e) {
         setPosts(defaultPosts);
       }
     } else {
       setPosts(defaultPosts);
-      localStorage.setItem('swan_department_activities', JSON.stringify(defaultPosts));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultPosts));
     }
   }, []);
 
   const savePosts = (updatedPosts: ActivityPost[]) => {
     setPosts(updatedPosts);
-    localStorage.setItem('swan_department_activities', JSON.stringify(updatedPosts));
+    localStorage.setItem('swan_department_activities_v3', JSON.stringify(updatedPosts));
   };
 
   const featuredPosts = posts.filter(p => p.is_featured || p.media_url);

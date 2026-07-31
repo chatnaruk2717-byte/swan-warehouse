@@ -4,6 +4,20 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import GlassCard from '../../components/GlassCard';
 import OTPModal from '../../components/OTPModal';
+import { 
+  FolderOpen, 
+  Plus, 
+  Search, 
+  Filter, 
+  ChevronRight, 
+  Trash2, 
+  FileText, 
+  Eye, 
+  Download, 
+  Upload, 
+  X, 
+  ExternalLink 
+} from 'lucide-react';
 
 interface WarehouseDocument {
   id: number;
@@ -24,9 +38,60 @@ const CATEGORIES = [
   'แบบฟอร์มใช้คลังสินค้า'
 ] as const;
 
+const defaultMockDocuments: WarehouseDocument[] = [
+  {
+    id: 1,
+    title: 'WI-01 ขั้นตอนการปฏิบัติงานการรับสินค้าเข้าคลัง (Inbound Receiving Standard Operating Procedure)',
+    category: 'WI',
+    file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    uploaded_by: 'ชาติชาย ทาคำห่อ (Admin)',
+    uploaded_at: '2026-07-01T08:00:00.000Z'
+  },
+  {
+    id: 2,
+    title: 'JD-04 ลักษณะงานและขอบเขตความรับผิดชอบตำแหน่งพนักงานขับรถยก (Forklift Operator Job Description)',
+    category: 'JD',
+    file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    uploaded_by: 'HR Manager',
+    uploaded_at: '2026-07-05T09:30:00.000Z'
+  },
+  {
+    id: 3,
+    title: 'กฎระเบียบและข้อบังคับความปลอดภัยการทำงานในพื้นที่คลังสินค้า 2026 (Safety & Environment Rules)',
+    category: 'กฎระเบียบข้อบังคับ',
+    file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    uploaded_by: 'Safety Officer',
+    uploaded_at: '2026-07-10T10:15:00.000Z'
+  },
+  {
+    id: 4,
+    title: 'Kaizen-12 การปรับปรุงพื้นที่หยิบสินค้าลดระยะเวลาการเดิน (Picking Zone Optimization)',
+    category: 'Kaizen',
+    file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    uploaded_by: 'Operations Sup',
+    uploaded_at: '2026-07-15T14:20:00.000Z'
+  },
+  {
+    id: 5,
+    title: 'OPL-08 บทเรียนจุดเดียวเรื่องการตรวจเช็กสภาพแบตเตอรี่รถยกก่อนใช้งาน',
+    category: 'OPL',
+    file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    uploaded_by: 'Maintenance Team',
+    uploaded_at: '2026-07-18T11:00:00.000Z'
+  },
+  {
+    id: 6,
+    title: 'แบบฟอร์มบันทึกการตรวจนับสต๊อกรายวัน (Daily Stock Counting Record Sheet)',
+    category: 'แบบฟอร์มใช้คลังสินค้า',
+    file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    uploaded_by: 'Inventory Control',
+    uploaded_at: '2026-07-20T16:45:00.000Z'
+  }
+];
+
 export default function DocumentsPage() {
   const { api, user } = useAuth();
-  const [documents, setDocuments] = useState<WarehouseDocument[]>([]);
+  const [documents, setDocuments] = useState<WarehouseDocument[]>(defaultMockDocuments);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ทั้งหมด');
   const [isLoading, setIsLoading] = useState(true);
@@ -111,7 +176,9 @@ export default function DocumentsPage() {
     setIsLoading(true);
     try {
       const res = await api.get('/api/documents');
-      setDocuments(res.data);
+      if (res && Array.isArray(res.data) && res.data.length > 0) {
+        setDocuments(res.data);
+      }
     } catch (err) {
       console.error('Failed to load documents', err);
     } finally {
@@ -152,7 +219,7 @@ export default function DocumentsPage() {
 
     try {
       const res = await api.post('/api/documents', uploadForm);
-      setDocuments(prev => [res.data, ...prev]);
+      setDocuments(prev => [res.data, ...(Array.isArray(prev) ? prev : [])]);
       setShowUploadModal(false);
       setUploadForm({ title: '', category: 'JD', file_url: '' });
       setUploadedFileName('');
@@ -167,7 +234,7 @@ export default function DocumentsPage() {
         uploaded_by: user?.name || 'Staff',
         uploaded_at: new Date().toISOString()
       };
-      setDocuments(prev => [mockDoc, ...prev]);
+      setDocuments(prev => [mockDoc, ...(Array.isArray(prev) ? prev : [])]);
       setShowUploadModal(false);
       setUploadForm({ title: '', category: 'JD', file_url: '' });
       setUploadedFileName('');
@@ -180,18 +247,20 @@ export default function DocumentsPage() {
     if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบเอกสารฉบับนี้?')) return;
     try {
       await api.delete(`/api/documents/${id}`);
-      setDocuments(prev => prev.filter(d => d.id !== id));
+      setDocuments(prev => (Array.isArray(prev) ? prev.filter(d => d.id !== id) : []));
       alert('ลบเอกสารเสร็จสิ้น');
     } catch (err) {
-      setDocuments(prev => prev.filter(d => d.id !== id));
+      setDocuments(prev => (Array.isArray(prev) ? prev.filter(d => d.id !== id) : []));
       alert('ลบเอกสารเสร็จสิ้น (Mock)');
     }
   };
 
-  // Filter documents
-  const filteredDocs = documents.filter(doc => {
-    const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          doc.category.toLowerCase().includes(searchQuery.toLowerCase());
+  // Filter documents safely
+  const docList = Array.isArray(documents) ? documents : defaultMockDocuments;
+  const filteredDocs = docList.filter(doc => {
+    if (!doc || !doc.title) return false;
+    const matchesSearch = doc.title.toLowerCase().includes((searchQuery || '').toLowerCase()) || 
+                          (doc.category || '').toLowerCase().includes((searchQuery || '').toLowerCase());
     const matchesCategory = selectedCategory === 'ทั้งหมด' || doc.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });

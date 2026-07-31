@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import GlassCard from '../../components/GlassCard';
+import { uploadToImgBB } from '../../utils/uploadToImgBB';
 import { 
   Sparkles, 
   Heart, 
@@ -171,95 +172,80 @@ export default function DepartmentActivitiesPage() {
     }
   }, []);
 
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
   const savePosts = (updatedPosts: ActivityPost[]) => {
     setPosts(updatedPosts);
-    localStorage.setItem('swan_department_activities_v3', JSON.stringify(updatedPosts));
-  };
-
-  const featuredPosts = posts.filter(p => p.is_featured || p.media_url);
-
-  // Carousel Auto Slide
-  useEffect(() => {
-    if (featuredPosts.length <= 1) return;
-    const timer = setInterval(() => {
-      setCurrentSlideIndex(prev => (prev + 1) % featuredPosts.length);
-    }, 6000);
-    return () => clearInterval(timer);
-  }, [featuredPosts.length]);
-
-  // Handle Like Post
-  const handleToggleLike = (postId: number) => {
-    const updated = posts.map(post => {
-      if (post.id === postId) {
-        const isLiked = !post.user_liked;
-        return {
-          ...post,
-          user_liked: isLiked,
-          likes_count: isLiked ? post.likes_count + 1 : Math.max(0, post.likes_count - 1)
-        };
+    try {
+      localStorage.setItem('swan_department_activities_v3', JSON.stringify(updatedPosts));
+    } catch (err) {
+      console.warn('LocalStorage quota exceeded, trimming large base64 strings to protect state', err);
+      try {
+        const trimmed = updatedPosts.map(p => ({
+          ...p,
+          media_url: (p.media_url && p.media_url.startsWith('data:') && p.media_url.length > 300000)
+            ? 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&q=80'
+            : p.media_url
+        }));
+        localStorage.setItem('swan_department_activities_v3', JSON.stringify(trimmed));
+      } catch (e) {
+        console.error('Final fallback storage save error:', e);
       }
-      return post;
-    });
-    savePosts(updated);
-  };
-
-  // Handle Add Comment
-  const handleAddComment = (postId: number) => {
-    const text = commentInputs[postId]?.trim();
-    if (!text) return;
-
-    const now = new Date();
-    const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} น.`;
-
-    const newComment: Comment = {
-      id: Date.now(),
-      user_name: user?.name || 'พนักงานคลัง',
-      user_role: user?.role === 'admin' ? 'Admin' : user?.role === 'staff' ? 'Staff' : 'Employee',
-      text,
-      created_at: timeStr
-    };
-
-    const updated = posts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          comments: [...post.comments, newComment]
-        };
-      }
-      return post;
-    });
-
-    savePosts(updated);
-    setCommentInputs({ ...commentInputs, [postId]: '' });
-  };
-
-  // Delete Comment
-  const handleDeleteComment = (postId: number, commentId: number) => {
-    if (confirm('คุณแน่ใจว่าต้องการลบความคิดเห็นนี้?')) {
-      const updated = posts.map(post => {
-        if (post.id === postId) {
-          return {
-            ...post,
-            comments: post.comments.filter(c => c.id !== commentId)
-          };
-        }
-        return post;
-      });
-      savePosts(updated);
     }
   };
 
-  // Image Upload Handling
-  const handleImageFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+  // Canvas Image Compression Helper (Downscales large photos to lightweight JPEG)
+  const compressImage = (file: File, maxWidth = 1000, quality = 0.75): Promise<string> => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        setMediaPreview(base64);
-        setFormMediaUrl(base64);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          } else {
+            resolve(e.target?.result as string);
+          }
+        };
+        img.onerror = () => resolve(e.target?.result as string || '');
+        img.src = e.target?.result as string;
       };
+      reader.onerror = () => resolve('');
       reader.readAsDataURL(file);
+    });
+  };
+
+  // Image Upload Handling (ImgBB Cloud Upload + Canvas Compression Fallback)
+  const handleImageFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    try {
+      // 1. Attempt fast ImgBB cloud upload
+      const cloudUrl = await uploadToImgBB(file);
+      setMediaPreview(cloudUrl);
+      setFormMediaUrl(cloudUrl);
+    } catch (err) {
+      console.warn('ImgBB cloud upload failed, compressing image locally via Canvas...');
+      const compressedBase64 = await compressImage(file);
+      setMediaPreview(compressedBase64);
+      setFormMediaUrl(compressedBase64);
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
@@ -732,8 +718,8 @@ export default function DepartmentActivitiesPage() {
                 <div className="flex items-center gap-3">
                   <label className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer border border-slate-200/50 dark:border-white/5 flex items-center gap-1.5 transition-all">
                     <Upload size={14} className="text-warehouse-orange" />
-                    <span>อัปโหลดรูปภาพใหม่จากเครื่อง</span>
-                    <input type="file" accept="image/*" onChange={handleImageFileSelect} className="hidden" />
+                    <span>{isUploadingImage ? 'กำลังอัปโหลดและบีบอัดรูป...' : 'อัปโหลดรูปภาพใหม่จากเครื่อง'}</span>
+                    <input type="file" accept="image/*" disabled={isUploadingImage} onChange={handleImageFileSelect} className="hidden" />
                   </label>
                 </div>
 
@@ -780,9 +766,10 @@ export default function DepartmentActivitiesPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-warehouse-orange to-amber-500 hover:from-warehouse-orange/95 hover:to-amber-500/95 text-white text-xs font-bold shadow-md shadow-warehouse-orange/20"
+                  disabled={isUploadingImage}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-warehouse-orange to-amber-500 hover:from-warehouse-orange/95 hover:to-amber-500/95 disabled:opacity-50 text-white text-xs font-bold shadow-md shadow-warehouse-orange/20 flex items-center gap-2"
                 >
-                  {editingPost ? 'บันทึกการแก้ไข' : 'เผยแพร่โพสต์กิจกรรม'}
+                  {isUploadingImage ? 'กำลังอัปโหลด...' : (editingPost ? 'บันทึกการแก้ไข' : 'เผยแพร่โพสต์กิจกรรม')}
                 </button>
               </div>
             </form>

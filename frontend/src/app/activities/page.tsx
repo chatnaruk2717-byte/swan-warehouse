@@ -147,32 +147,48 @@ export default function DepartmentActivitiesPage() {
   ];
 
   useEffect(() => {
-    // Load persisted posts from localStorage directly so user edits/creations/deletions are 100% permanent
-    const STORAGE_KEY = 'swan_department_activities_v4';
-    const stored = localStorage.getItem(STORAGE_KEY);
+    // Load persisted posts from localStorage with bulletproof sanitization
+    const STORAGE_KEY = 'swan_department_activities_v5';
+    
+    const sanitizePosts = (arr: any[]): ActivityPost[] => {
+      if (!Array.isArray(arr)) return defaultPosts;
+      const valid = arr.filter(p => p && typeof p === 'object' && p.id && (p.title || p.content)).map(p => ({
+        id: Number(p.id) || Date.now(),
+        title: String(p.title || 'กิจกรรมคลังสินค้า'),
+        category: (['KAIZEN ดีเด่น', 'กิจกรรมคลังสินค้า', 'กีฬาสีโรงงาน', 'ความปลอดภัย', 'ประกาศข่าวสาร'].includes(p.category) ? p.category : 'กิจกรรมคลังสินค้า') as ActivityPost['category'],
+        content: String(p.content || ''),
+        author_name: String(p.author_name || 'ผู้ดูแลระบบ'),
+        author_role: String(p.author_role || 'Admin'),
+        created_at: String(p.created_at || 'เมื่อสักครู่'),
+        media_url: p.media_url ? String(p.media_url) : undefined,
+        media_type: p.media_type === 'video' ? 'video' : 'image',
+        likes_count: typeof p.likes_count === 'number' ? p.likes_count : 0,
+        user_liked: Boolean(p.user_liked),
+        is_featured: Boolean(p.is_featured),
+        comments: Array.isArray(p.comments) 
+          ? p.comments.filter(c => c && typeof c === 'object').map(c => ({
+              id: Number(c.id) || Date.now(),
+              user_name: String(c.user_name || 'สมาชิก'),
+              user_role: String(c.user_role || 'Staff'),
+              text: String(c.text || ''),
+              created_at: String(c.created_at || 'เมื่อสักครู่')
+            }))
+          : []
+      }));
+      return valid.length > 0 ? valid : defaultPosts;
+    };
+
+    const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('swan_department_activities_v4') || localStorage.getItem('swan_department_activities_v3');
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setPosts(parsed);
-          return;
-        }
+        const cleaned = sanitizePosts(parsed);
+        setPosts(cleaned);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+        return;
       } catch (e) {
         console.error('Failed to parse saved activities:', e);
       }
-    }
-
-    // Fallback if key v3 exists
-    const storedV3 = localStorage.getItem('swan_department_activities_v3');
-    if (storedV3) {
-      try {
-        const parsedV3 = JSON.parse(storedV3);
-        if (Array.isArray(parsedV3) && parsedV3.length > 0) {
-          setPosts(parsedV3);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsedV3));
-          return;
-        }
-      } catch (e) {}
     }
 
     // Seed defaults if no saved data
@@ -185,7 +201,7 @@ export default function DepartmentActivitiesPage() {
   const savePosts = (updatedPosts: ActivityPost[]) => {
     setPosts(updatedPosts);
     try {
-      localStorage.setItem('swan_department_activities_v4', JSON.stringify(updatedPosts));
+      localStorage.setItem('swan_department_activities_v5', JSON.stringify(updatedPosts));
     } catch (err) {
       console.warn('LocalStorage quota exceeded, trimming large base64 strings to protect state', err);
       try {
@@ -195,7 +211,7 @@ export default function DepartmentActivitiesPage() {
             ? 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&q=80'
             : p.media_url
         }));
-        localStorage.setItem('swan_department_activities_v4', JSON.stringify(trimmed));
+        localStorage.setItem('swan_department_activities_v5', JSON.stringify(trimmed));
       } catch (e) {
         console.error('Final fallback storage save error:', e);
       }

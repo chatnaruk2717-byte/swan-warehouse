@@ -55,10 +55,79 @@ interface ActivityPost {
   is_featured?: boolean;
 }
 
-export default function DepartmentActivitiesPage() {
+// Default Initial Activities Seed
+const defaultPosts: ActivityPost[] = [
+  {
+    id: 1,
+    title: '🏆 ประกาศรางวัล KAIZEN ดีเด่นประจำเดือน!',
+    category: 'KAIZEN ดีเด่น',
+    content: 'ขอแสดงความยินดีกับผลงาน KAIZEN จากทีมคลังสินค้าแผนก Packing เรื่อง "การลดเวลาค้นหากล่องพัสดุด้วยระบบบาร์โค้ดโซน 4" ช่วยเพิ่มประสิทธิภาพการจัดส่งขึ้น 35%! ขอปรบมือให้ นายสมปอง ลุยงาน (EMP006) ที่ได้รับเงินรางวัล 3,000 บาท พร้อมเกียรติบัตรประจำเดือนนี้ครับ 👏🎉✨',
+    author_name: 'ผู้ดูแลระบบ (Admin)',
+    author_role: 'Admin',
+    created_at: '29 ก.ค. 2026 • 14:30 น.',
+    media_url: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&q=80',
+    media_type: 'image',
+    likes_count: 24,
+    user_liked: false,
+    is_featured: true,
+    comments: [
+      { id: 101, user_name: 'วิภาดา สายสนับสนุน', user_role: 'Staff', text: 'ยินดีด้วยนะคะพี่สมปอง ไอเดียดีมากช่วยทีมงานได้เยอะเลยค่ะ 👍', created_at: '14:45 น.' },
+      { id: 102, user_name: 'สมปอง ลุยงาน', user_role: 'Employee', text: 'ขอบคุณหัวหน้าและเพื่อนๆ ทีมคลังทุกคนที่ช่วยกันทดสอบระบบครับ! 🙏', created_at: '15:10 น.' }
+    ]
+  },
+  {
+    id: 2,
+    title: '⚽ กิจกรรมแข่งกีฬาสีเชื่อมสัมพันธ์โรงงาน Swan Warehouse Games 2026',
+    category: 'กีฬาสีโรงงาน',
+    content: 'ขอเชิญชวนพี่น้องคลังสินค้าทุกท่านเข้าร่วมแข่งขันกีฬาสีประจำปี! ประเภทกีฬา: ฟุตซอล 5 คน, แบดมินตัน, วอลเลย์บอล และชักกะเย่อคลังสินค้า เปิดรับสมัครทีมประจำโซนคลังแล้ววันนี้ ชิงถ้วยรางวัลและเงินรางวัลรวมกว่า 20,000 บาท! มาส่งเสียงเชียร์และสร้างความสามัคคีกันครับ 🏆⚽🏸',
+    author_name: 'HR & กิจกรรมองค์กร',
+    author_role: 'Staff',
+    created_at: '28 ก.ค. 2026 • 10:00 น.',
+    media_url: 'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?w=800&q=80',
+    media_type: 'image',
+    likes_count: 38,
+    user_liked: true,
+    is_featured: true,
+    comments: [
+      { id: 201, user_name: 'มานะ ขยันจัด', user_role: 'Employee', text: 'ทีมโซน Picking พร้อมลงแข่งฟุตซอลแล้วครับ! ⚽🔥', created_at: '10:30 น.' }
+    ]
+  },
+  {
+    id: 3,
+    title: '📦 ภาพบรรยากาศกิจกรรม 5ส & Big Cleaning Day โซนคลังสินค้าวัตถุดิบ',
+    category: 'กิจกรรมคลังสินค้า',
+    content: 'ขอขอบคุณทีมงานคลังสินค้าทุกคนที่ร่วมมือร่วมใจจัดระเบียบพื้นที่เก็บสินค้า Racking A-D และทำความสะอาดคลังสินค้าเพื่อความปลอดภัยสูงสุดในการทำงาน! คลังสินค้าของเราสะอาด เป็นระเบียบ เรียบร้อยขึ้นอย่างเห็นได้ชัดครับ 🧹✨',
+    author_name: 'ชาติชาย ทรงอำนาจ',
+    author_role: 'Warehouse Manager',
+    created_at: '25 ก.ค. 2026 • 16:20 น.',
+    media_url: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80',
+    media_type: 'image',
+    likes_count: 19,
+    user_liked: false,
+    is_featured: true,
+    comments: []
+  },
+  {
+    id: 4,
+    title: '🥽 ภาพการฝึกซ้อมอพยพหนีไฟและสาธิตการใช้ถังดับเพลิงประจำปี',
+    category: 'ความปลอดภัย',
+    content: 'ทบทวนความรู้ขั้นตอนการรับมือเหตุฉุกเฉินและการปฏิบัติงานอย่างปลอดภัยร่วมกับทีมบรรเทาสาธารณภัย เพื่อให้พนักงานคลังสินค้าทุกคนปฏิบัติงานด้วยความมั่นใจและปลอดภัย 100% 🚒🔥',
+    author_name: 'ทีมงาน Safety คลังสินค้า',
+    author_role: 'Staff',
+    created_at: '20 ก.ค. 2026 • 11:15 น.',
+    media_url: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&q=80',
+    media_type: 'image',
+    likes_count: 31,
+    user_liked: false,
+    is_featured: false,
+    comments: []
+  }
+];
+
+function DepartmentActivitiesPageContent() {
   const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
-  const [posts, setPosts] = useState<ActivityPost[]>([]);
+  const [posts, setPosts] = useState<ActivityPost[]>(defaultPosts);
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -77,82 +146,13 @@ export default function DepartmentActivitiesPage() {
   const [formMediaType, setFormMediaType] = useState<'image' | 'video'>('image');
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
 
-  // Default Initial Activities Seed
-  const defaultPosts: ActivityPost[] = [
-    {
-      id: 1,
-      title: '🏆 ประกาศรางวัล KAIZEN ดีเด่นประจำเดือน!',
-      category: 'KAIZEN ดีเด่น',
-      content: 'ขอแสดงความยินดีกับผลงาน KAIZEN จากทีมคลังสินค้าแผนก Packing เรื่อง "การลดเวลาค้นหากล่องพัสดุด้วยระบบบาร์โค้ดโซน 4" ช่วยเพิ่มประสิทธิภาพการจัดส่งขึ้น 35%! ขอปรบมือให้ นายสมปอง ลุยงาน (EMP006) ที่ได้รับเงินรางวัล 3,000 บาท พร้อมเกียรติบัตรประจำเดือนนี้ครับ 👏🎉✨',
-      author_name: 'ผู้ดูแลระบบ (Admin)',
-      author_role: 'Admin',
-      created_at: '29 ก.ค. 2026 • 14:30 น.',
-      media_url: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&q=80',
-      media_type: 'image',
-      likes_count: 24,
-      user_liked: false,
-      is_featured: true,
-      comments: [
-        { id: 101, user_name: 'วิภาดา สายสนับสนุน', user_role: 'Staff', text: 'ยินดีด้วยนะคะพี่สมปอง ไอเดียดีมากช่วยทีมงานได้เยอะเลยค่ะ 👍', created_at: '14:45 น.' },
-        { id: 102, user_name: 'สมปอง ลุยงาน', user_role: 'Employee', text: 'ขอบคุณหัวหน้าและเพื่อนๆ ทีมคลังทุกคนที่ช่วยกันทดสอบระบบครับ! 🙏', created_at: '15:10 น.' }
-      ]
-    },
-    {
-      id: 2,
-      title: '⚽ กิจกรรมแข่งกีฬาสีเชื่อมสัมพันธ์โรงงาน Swan Warehouse Games 2026',
-      category: 'กีฬาสีโรงงาน',
-      content: 'ขอเชิญชวนพี่น้องคลังสินค้าทุกท่านเข้าร่วมแข่งขันกีฬาสีประจำปี! ประเภทกีฬา: ฟุตซอล 5 คน, แบดมินตัน, วอลเลย์บอล และชักกะเย่อคลังสินค้า เปิดรับสมัครทีมประจำโซนคลังแล้ววันนี้ ชิงถ้วยรางวัลและเงินรางวัลรวมกว่า 20,000 บาท! มาส่งเสียงเชียร์และสร้างความสามัคคีกันครับ 🏆⚽🏸',
-      author_name: 'HR & กิจกรรมองค์กร',
-      author_role: 'Staff',
-      created_at: '28 ก.ค. 2026 • 10:00 น.',
-      media_url: 'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?w=800&q=80',
-      media_type: 'image',
-      likes_count: 38,
-      user_liked: true,
-      is_featured: true,
-      comments: [
-        { id: 201, user_name: 'มานะ ขยันจัด', user_role: 'Employee', text: 'ทีมโซน Picking พร้อมลงแข่งฟุตซอลแล้วครับ! ⚽🔥', created_at: '10:30 น.' }
-      ]
-    },
-    {
-      id: 3,
-      title: '📦 ภาพบรรยากาศกิจกรรม 5ส & Big Cleaning Day โซนคลังสินค้าวัตถุดิบ',
-      category: 'กิจกรรมคลังสินค้า',
-      content: 'ขอขอบคุณทีมงานคลังสินค้าทุกคนที่ร่วมมือร่วมใจจัดระเบียบพื้นที่เก็บสินค้า Racking A-D และทำความสะอาดคลังสินค้าเพื่อความปลอดภัยสูงสุดในการทำงาน! คลังสินค้าของเราสะอาด เป็นระเบียบ เรียบร้อยขึ้นอย่างเห็นได้ชัดครับ 🧹✨',
-      author_name: 'ชาติชาย ทรงอำนาจ',
-      author_role: 'Warehouse Manager',
-      created_at: '25 ก.ค. 2026 • 16:20 น.',
-      media_url: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80',
-      media_type: 'image',
-      likes_count: 19,
-      user_liked: false,
-      is_featured: true,
-      comments: []
-    },
-    {
-      id: 4,
-      title: '🥽 ภาพการฝึกซ้อมอพยพหนีไฟและสาธิตการใช้ถังดับเพลิงประจำปี',
-      category: 'ความปลอดภัย',
-      content: 'ทบทวนความรู้ขั้นตอนการรับมือเหตุฉุกเฉินและการปฏิบัติงานอย่างปลอดภัยร่วมกับทีมบรรเทาสาธารณภัย เพื่อให้พนักงานคลังสินค้าทุกคนปฏิบัติงานด้วยความมั่นใจและปลอดภัย 100% 🚒🔥',
-      author_name: 'ทีมงาน Safety คลังสินค้า',
-      author_role: 'Staff',
-      created_at: '20 ก.ค. 2026 • 11:15 น.',
-      media_url: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&q=80',
-      media_type: 'image',
-      likes_count: 31,
-      user_liked: false,
-      is_featured: false,
-      comments: []
-    }
-  ];
-
   useEffect(() => {
     // Load persisted posts from localStorage with bulletproof sanitization
     const STORAGE_KEY = 'swan_department_activities_v5';
     
     const sanitizePosts = (arr: any[]): ActivityPost[] => {
       if (!Array.isArray(arr)) return defaultPosts;
-      const valid = arr.filter(p => p && typeof p === 'object' && p.id && (p.title || p.content)).map(p => ({
+      const valid: ActivityPost[] = arr.filter(p => p && typeof p === 'object' && p.id && (p.title || p.content)).map(p => ({
         id: Number(p.id) || Date.now(),
         title: String(p.title || 'กิจกรรมคลังสินค้า'),
         category: (['KAIZEN ดีเด่น', 'กิจกรรมคลังสินค้า', 'กีฬาสีโรงงาน', 'ความปลอดภัย', 'ประกาศข่าวสาร'].includes(p.category) ? p.category : 'กิจกรรมคลังสินค้า') as ActivityPost['category'],
@@ -161,12 +161,12 @@ export default function DepartmentActivitiesPage() {
         author_role: String(p.author_role || 'Admin'),
         created_at: String(p.created_at || 'เมื่อสักครู่'),
         media_url: p.media_url ? String(p.media_url) : undefined,
-        media_type: p.media_type === 'video' ? 'video' : 'image',
+        media_type: (p.media_type === 'video' ? 'video' : 'image') as 'image' | 'video',
         likes_count: typeof p.likes_count === 'number' ? p.likes_count : 0,
         user_liked: Boolean(p.user_liked),
         is_featured: Boolean(p.is_featured),
         comments: Array.isArray(p.comments) 
-          ? p.comments.filter(c => c && typeof c === 'object').map(c => ({
+          ? p.comments.filter((c: any) => c && typeof c === 'object').map((c: any) => ({
               id: Number(c.id) || Date.now(),
               user_name: String(c.user_name || 'สมาชิก'),
               user_role: String(c.user_role || 'Staff'),
@@ -870,5 +870,59 @@ export default function DepartmentActivitiesPage() {
       )}
 
     </div>
+  );
+}
+
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("Activities Error Boundary caught error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[400px] p-6 text-center space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-2xl">
+            ⚠️
+          </div>
+          <h3 className="text-xl font-bold text-slate-800 dark:text-white">ระบบกำลังปรับปรุงแคชข้อมูลกิจกรรม</h3>
+          <p className="text-sm text-slate-400 max-w-md">ตรวจพบคีย์ข้อมูลเก่าค้างในเบราว์เซอร์ของคุณ กรุณากดปุ่มด้านล่างเพื่อล้างแคชและโหลดใหม่ครับ</p>
+          <button
+            onClick={() => {
+              try {
+                localStorage.removeItem('swan_department_activities_v5');
+                localStorage.removeItem('swan_department_activities_v4');
+                localStorage.removeItem('swan_department_activities_v3');
+                localStorage.removeItem('swan_department_activities_v2');
+                localStorage.removeItem('swan_department_activities');
+              } catch (e) {}
+              window.location.reload();
+            }}
+            className="px-6 py-3 rounded-xl bg-warehouse-orange text-white font-bold text-sm shadow-lg shadow-warehouse-orange/30 hover:bg-warehouse-orange/90 transition-all flex items-center gap-2"
+          >
+            🔄 ล้างแคชและโหลดข้อมูลกิจกรรมใหม่
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+export default function DepartmentActivitiesPage() {
+  return (
+    <ErrorBoundary>
+      <DepartmentActivitiesPageContent />
+    </ErrorBoundary>
   );
 }

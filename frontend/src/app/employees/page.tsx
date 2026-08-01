@@ -24,7 +24,7 @@ import {
 import { uploadToImgBB } from '../../utils/uploadToImgBB';
 
 export default function EmployeesPage() {
-  const { api, user } = useAuth();
+  const { api, user, updateProfile } = useAuth();
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

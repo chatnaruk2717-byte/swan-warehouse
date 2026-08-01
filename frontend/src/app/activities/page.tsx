@@ -335,6 +335,65 @@ export default function DepartmentActivitiesPage() {
     setMediaPreview(null);
   };
 
+  // Toggle Like on Post
+  const handleToggleLike = (postId: number) => {
+    const updated = posts.map(p => {
+      if (p.id === postId) {
+        const user_liked = !p.user_liked;
+        const likes_count = user_liked ? p.likes_count + 1 : Math.max(0, p.likes_count - 1);
+        return { ...p, user_liked, likes_count };
+      }
+      return p;
+    });
+    savePosts(updated);
+  };
+
+  // Add Comment to Post
+  const handleAddComment = (postId: number) => {
+    const text = commentInputs[postId]?.trim();
+    if (!text) return;
+
+    const now = new Date();
+    const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} น.`;
+
+    const newComment: Comment = {
+      id: Date.now(),
+      user_name: user?.name || 'ผู้ดูแลระบบ',
+      user_role: user?.role === 'admin' ? 'Admin' : 'Staff',
+      text,
+      created_at: timeStr
+    };
+
+    const updated = posts.map(p => {
+      if (p.id === postId) {
+        return {
+          ...p,
+          comments: [...(p.comments || []), newComment]
+        };
+      }
+      return p;
+    });
+
+    savePosts(updated);
+    setCommentInputs(prev => ({ ...prev, [postId]: '' }));
+  };
+
+  // Delete Comment from Post
+  const handleDeleteComment = (postId: number, commentId: number) => {
+    if (confirm('คุณต้องการลบความคิดเห็นนี้ใช่หรือไม่?')) {
+      const updated = posts.map(p => {
+        if (p.id === postId) {
+          return {
+            ...p,
+            comments: (p.comments || []).filter(c => c.id !== commentId)
+          };
+        }
+        return p;
+      });
+      savePosts(updated);
+    }
+  };
+
   // Filter Posts
   const featuredPosts = Array.isArray(posts) ? posts.filter(post => post && post.is_featured) : [];
   const filteredPosts = Array.isArray(posts) ? posts.filter(post => {

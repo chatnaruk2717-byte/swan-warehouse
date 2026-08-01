@@ -35,12 +35,17 @@ import SwanLogo from '../../components/SwanLogo';
 
 export default function DashboardPage() {
   const { user, api } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [chartData, setChartData] = useState<any>(null);
   const [myTasks, setMyTasks] = useState<any[]>([]);
   const [perfStats, setPerfStats] = useState<any>(null);
   const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -160,7 +165,7 @@ export default function DashboardPage() {
     }
   };
 
-  if (loading) {
+  if (!mounted || loading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[400px]">
         <div className="w-10 h-10 border-4 border-slate-300 border-t-warehouse-orange rounded-full animate-spin" />
@@ -502,7 +507,11 @@ export default function DashboardPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                   {(stats?.pendingTasks || []).map((task: any) => {
-                    const isOverdue = new Date(task.due_date).getTime() < Date.now();
+                    const taskDate = task.due_date ? new Date(task.due_date) : null;
+                    const isOverdue = taskDate && !isNaN(taskDate.getTime()) ? taskDate.getTime() < Date.now() : false;
+                    const formattedDate = taskDate && !isNaN(taskDate.getTime()) 
+                      ? taskDate.toLocaleDateString('th-TH', { month: 'short', day: 'numeric' })
+                      : '-';
                     return (
                       <tr key={task.id} className="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors">
                         <td className="py-3 pl-2">
@@ -513,7 +522,7 @@ export default function DashboardPage() {
                           {task.task_name}
                         </td>
                         <td className="py-3 text-slate-500 dark:text-slate-400 font-medium">
-                          {new Date(task.due_date).toLocaleDateString('th-TH', { month: 'short', day: 'numeric' })}
+                          {formattedDate}
                         </td>
                         <td className="py-3 text-right pr-2">
                           <span className={`px-2 py-0.5 rounded-lg text-[9px] font-extrabold uppercase ${
@@ -565,28 +574,34 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                  {(stats?.pendingCourses || []).map((course: any) => (
-                    <tr key={course.id} className="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors">
-                      <td className="py-3 pl-2">
-                        <div className="font-bold text-slate-700 dark:text-slate-200">{course.employee_name}</div>
-                        <div className="text-[10px] text-slate-400">{course.employee_code}</div>
-                      </td>
-                      <td className="py-3 text-slate-600 dark:text-slate-300 font-medium max-w-[150px] truncate" title={course.course_name}>
-                        {course.course_name}
-                      </td>
-                      <td className="py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold font-mono text-warehouse-orange text-[11px]">{course.progress_percentage}%</span>
-                          <div className="w-16 bg-slate-200 dark:bg-slate-700 h-1 rounded-full overflow-hidden">
-                            <div className="bg-warehouse-orange h-full" style={{ width: `${course.progress_percentage}%` }} />
+                  {(stats?.pendingCourses || []).map((course: any) => {
+                    const courseDate = course.due_date ? new Date(course.due_date) : null;
+                    const formattedCourseDate = courseDate && !isNaN(courseDate.getTime())
+                      ? courseDate.toLocaleDateString('th-TH', { month: 'short', day: 'numeric' })
+                      : '-';
+                    return (
+                      <tr key={course.id} className="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors">
+                        <td className="py-3 pl-2">
+                          <div className="font-bold text-slate-700 dark:text-slate-200">{course.employee_name}</div>
+                          <div className="text-[10px] text-slate-400">{course.employee_code}</div>
+                        </td>
+                        <td className="py-3 text-slate-600 dark:text-slate-300 font-medium max-w-[150px] truncate" title={course.course_name}>
+                          {course.course_name}
+                        </td>
+                        <td className="py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold font-mono text-warehouse-orange text-[11px]">{course.progress_percentage}%</span>
+                            <div className="w-16 bg-slate-200 dark:bg-slate-700 h-1 rounded-full overflow-hidden">
+                              <div className="bg-warehouse-orange h-full" style={{ width: `${course.progress_percentage}%` }} />
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="py-3 text-right pr-2 font-medium text-slate-500 dark:text-slate-400">
-                        {new Date(course.due_date).toLocaleDateString('th-TH', { month: 'short', day: 'numeric' })}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="py-3 text-right pr-2 font-medium text-slate-500 dark:text-slate-400">
+                          {formattedCourseDate}
+                        </td>
+                      </tr>
+                    );
+                  })}
                   {(stats?.pendingCourses || []).length === 0 && (
                     <tr>
                       <td colSpan={4} className="py-8 text-center text-slate-400 italic">

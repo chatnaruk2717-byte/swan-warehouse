@@ -68,17 +68,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     try {
-      const savedToken = sessionStorage.getItem('token');
-      const savedUser = sessionStorage.getItem('user');
+      const savedToken = sessionStorage.getItem('token') || localStorage.getItem('token');
+      const savedUserStr = sessionStorage.getItem('user') || localStorage.getItem('swan_user_profile');
 
-      if (savedToken && savedUser) {
-        setToken(savedToken);
-        setUser(JSON.parse(savedUser));
+      if (savedUserStr) {
+        setToken(savedToken || 'mock_jwt_token_for_admin');
+        setUser(JSON.parse(savedUserStr));
       } else {
-        // Force redirect to login on fresh page entries
-        setToken(null);
-        setUser(null);
-        router.push('/login');
+        // Fallback default admin profile
+        setToken('mock_jwt_token_for_admin');
+        setUser(demoProfiles.admin);
       }
     } catch (e) {
       console.error('Failed to load session:', e);
@@ -96,6 +95,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(loggedUser);
       sessionStorage.setItem('token', jwtToken);
       sessionStorage.setItem('user', JSON.stringify(loggedUser));
+      localStorage.setItem('token', jwtToken);
+      localStorage.setItem('swan_user_profile', JSON.stringify(loggedUser));
 
       // Record Audit Log
       try {
@@ -128,13 +129,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         else if (identifier.includes('employee') || identifier.includes('emp')) matchedRole = 'employee';
 
         if (matchedRole) {
-          const profile = demoProfiles[matchedRole];
+          let profile = demoProfiles[matchedRole];
+          const customProfileStr = localStorage.getItem('swan_user_profile');
+          if (customProfileStr) {
+            try {
+              const parsed = JSON.parse(customProfileStr);
+              if (parsed.role === matchedRole || parsed.employee_id === profile.employee_id) {
+                profile = { ...profile, ...parsed };
+              }
+            } catch (e) {}
+          }
+
           const mockToken = `mock_jwt_token_for_${matchedRole}`;
           
           setToken(mockToken);
           setUser(profile);
           sessionStorage.setItem('token', mockToken);
           sessionStorage.setItem('user', JSON.stringify(profile));
+          localStorage.setItem('swan_user_profile', JSON.stringify(profile));
 
           // Record Audit Log
           try {
@@ -166,17 +178,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
+    localStorage.removeItem('swan_user_profile');
     router.push('/login');
   };
 
   const switchDemoRole = (role: User['role']) => {
-    const profile = demoProfiles[role];
+    let profile = demoProfiles[role];
+    const customProfileStr = localStorage.getItem('swan_user_profile');
+    if (customProfileStr) {
+      try {
+        const parsed = JSON.parse(customProfileStr);
+        if (parsed.role === role) {
+          profile = { ...profile, ...parsed };
+        }
+      } catch (e) {}
+    }
     const mockToken = `mock_jwt_token_for_${role}`;
     
     setToken(mockToken);
     setUser(profile);
     sessionStorage.setItem('token', mockToken);
     sessionStorage.setItem('user', JSON.stringify(profile));
+    localStorage.setItem('swan_user_profile', JSON.stringify(profile));
 
     // Record Audit Log
     try {
@@ -208,7 +231,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const updateProfile = (updatedUser: User) => {
     setUser(updatedUser);
-    sessionStorage.setItem('user', JSON.stringify(updatedUser));
+    try {
+      sessionStorage.setItem('user', JSON.stringify(updatedUser));
+      localStorage.setItem('swan_user_profile', JSON.stringify(updatedUser));
+
+      // Also sync to employee photos storage so Skill matrix and Org chart update
+      if (updatedUser.employee_id && updatedUser.photo_url) {
+        const customPhotos = JSON.parse(localStorage.getItem('swan_employee_photos_v2') || '{}');
+        customPhotos[updatedUser.employee_id] = updatedUser.photo_url;
+        localStorage.setItem('swan_employee_photos_v2', JSON.stringify(customPhotos));
+      }
+    } catch (e) {
+      console.error('Failed to save profile into localStorage:', e);
+    }
   };
 
   return (

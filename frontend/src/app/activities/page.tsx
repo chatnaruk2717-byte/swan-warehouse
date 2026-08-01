@@ -57,12 +57,17 @@ interface ActivityPost {
 
 export default function DepartmentActivitiesPage() {
   const { user } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [posts, setPosts] = useState<ActivityPost[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingPost, setEditingPost] = useState<ActivityPost | null>(null);
   const [commentInputs, setCommentInputs] = useState<{ [key: number]: string }>({});
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Form State for creating / editing post
   const [formTitle, setFormTitle] = useState('');
@@ -339,10 +344,11 @@ export default function DepartmentActivitiesPage() {
   };
 
   // Filter Posts
-  const filteredPosts = posts.filter(post => {
+  const featuredPosts = Array.isArray(posts) ? posts.filter(post => post && post.is_featured) : [];
+  const filteredPosts = Array.isArray(posts) ? posts.filter(post => {
     if (activeCategory === 'ALL') return true;
     return post.category === activeCategory;
-  });
+  }) : [];
 
   const getCategoryBadgeClass = (cat: string) => {
     if (cat === 'KAIZEN ดีเด่น') return 'bg-amber-500/15 text-amber-500 border border-amber-500/30';
@@ -351,6 +357,14 @@ export default function DepartmentActivitiesPage() {
     if (cat === 'ความปลอดภัย') return 'bg-rose-500/15 text-rose-500 border border-rose-500/30';
     return 'bg-sky-500/15 text-sky-500 border border-sky-500/30';
   };
+
+  if (!mounted) {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-[400px]">
+        <div className="w-10 h-10 border-4 border-slate-300 border-t-warehouse-orange rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-16">

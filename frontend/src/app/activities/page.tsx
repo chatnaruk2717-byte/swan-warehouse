@@ -143,26 +143,37 @@ export default function DepartmentActivitiesPage() {
 
   useEffect(() => {
     // Load persisted posts from localStorage or seed with auto-sync for new default images
-    const STORAGE_KEY = 'swan_department_activities_v3';
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const STORAGE_KEY = 'swan_department_activities_v4';
+    const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('swan_department_activities_v3');
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        const merged = defaultPosts.map(dp => {
-          const found = parsed.find((p: any) => p.id === dp.id);
-          if (found) {
-            return {
-              ...found,
-              media_url: found.media_url || dp.media_url,
-              title: found.title || dp.title,
-              content: found.content || dp.content
-            };
-          }
-          return dp;
-        });
-        const userCreated = parsed.filter((p: any) => !defaultPosts.some(dp => dp.id === p.id));
-        const finalPosts = [...userCreated, ...merged];
-        setPosts(finalPosts);
+        if (Array.isArray(parsed)) {
+          const merged = defaultPosts.map(dp => {
+            const found = parsed.find((p: any) => p && p.id === dp.id);
+            if (found) {
+              return {
+                ...dp,
+                ...found,
+                comments: Array.isArray(found.comments) ? found.comments : [],
+                media_url: found.media_url || dp.media_url,
+                title: found.title || dp.title,
+                content: found.content || dp.content
+              };
+            }
+            return dp;
+          });
+          const userCreated = parsed
+            .filter((p: any) => p && !defaultPosts.some(dp => dp.id === p.id))
+            .map((p: any) => ({
+              ...p,
+              comments: Array.isArray(p.comments) ? p.comments : []
+            }));
+          const finalPosts = [...userCreated, ...merged];
+          setPosts(finalPosts);
+        } else {
+          setPosts(defaultPosts);
+        }
       } catch (e) {
         setPosts(defaultPosts);
       }
@@ -177,7 +188,7 @@ export default function DepartmentActivitiesPage() {
   const savePosts = (updatedPosts: ActivityPost[]) => {
     setPosts(updatedPosts);
     try {
-      localStorage.setItem('swan_department_activities_v3', JSON.stringify(updatedPosts));
+      localStorage.setItem('swan_department_activities_v4', JSON.stringify(updatedPosts));
     } catch (err) {
       console.warn('LocalStorage quota exceeded, trimming large base64 strings to protect state', err);
       try {
@@ -187,7 +198,7 @@ export default function DepartmentActivitiesPage() {
             ? 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&q=80'
             : p.media_url
         }));
-        localStorage.setItem('swan_department_activities_v3', JSON.stringify(trimmed));
+        localStorage.setItem('swan_department_activities_v4', JSON.stringify(trimmed));
       } catch (e) {
         console.error('Final fallback storage save error:', e);
       }
@@ -417,7 +428,7 @@ export default function DepartmentActivitiesPage() {
                     </span>
                     <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/15">
                       <MessageSquare size={14} className="text-sky-400" />
-                      <span>{slide.comments.length} ความคิดเห็น</span>
+                      <span>{slide.comments ? slide.comments.length : 0} ความคิดเห็น</span>
                     </span>
                   </div>
                 </div>
@@ -491,7 +502,7 @@ export default function DepartmentActivitiesPage() {
             <div className="p-5 flex items-center justify-between border-b border-slate-200/40 dark:border-white/5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-warehouse-orange to-amber-500 text-white font-bold flex items-center justify-center text-sm shadow-md">
-                  {post.author_name[0]}
+                  {(post.author_name || 'U')[0]}
                 </div>
                 <div>
                   <h4 className="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2">
@@ -560,7 +571,7 @@ export default function DepartmentActivitiesPage() {
               </span>
 
               <span className="font-semibold">
-                {post.comments.length} ความคิดเห็น
+                {post.comments ? post.comments.length : 0} ความคิดเห็น
               </span>
             </div>
 
@@ -592,12 +603,12 @@ export default function DepartmentActivitiesPage() {
 
             {/* Comments List & Input */}
             <div className="p-5 bg-slate-50/50 dark:bg-white/[0.02] space-y-4">
-              {post.comments.length > 0 && (
+              {Array.isArray(post.comments) && post.comments.length > 0 && (
                 <div className="space-y-3">
                   {post.comments.map(c => (
                     <div key={c.id} className="flex items-start gap-2.5">
                       <div className="w-7 h-7 rounded-full bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
-                        {c.user_name[0]}
+                        {(c.user_name || 'U')[0]}
                       </div>
                       <div className="bg-white dark:bg-white/5 border border-slate-200/60 dark:border-white/5 p-3 rounded-2xl flex-1 text-xs space-y-1">
                         <div className="flex items-center justify-between">

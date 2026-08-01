@@ -147,45 +147,37 @@ export default function DepartmentActivitiesPage() {
   ];
 
   useEffect(() => {
-    // Load persisted posts from localStorage or seed with auto-sync for new default images
+    // Load persisted posts from localStorage directly so user edits/creations/deletions are 100% permanent
     const STORAGE_KEY = 'swan_department_activities_v4';
-    const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('swan_department_activities_v3');
+    const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          const merged = defaultPosts.map(dp => {
-            const found = parsed.find((p: any) => p && p.id === dp.id);
-            if (found) {
-              return {
-                ...dp,
-                ...found,
-                comments: Array.isArray(found.comments) ? found.comments : [],
-                media_url: found.media_url || dp.media_url,
-                title: found.title || dp.title,
-                content: found.content || dp.content
-              };
-            }
-            return dp;
-          });
-          const userCreated = parsed
-            .filter((p: any) => p && !defaultPosts.some(dp => dp.id === p.id))
-            .map((p: any) => ({
-              ...p,
-              comments: Array.isArray(p.comments) ? p.comments : []
-            }));
-          const finalPosts = [...userCreated, ...merged];
-          setPosts(finalPosts);
-        } else {
-          setPosts(defaultPosts);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setPosts(parsed);
+          return;
         }
       } catch (e) {
-        setPosts(defaultPosts);
+        console.error('Failed to parse saved activities:', e);
       }
-    } else {
-      setPosts(defaultPosts);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultPosts));
     }
+
+    // Fallback if key v3 exists
+    const storedV3 = localStorage.getItem('swan_department_activities_v3');
+    if (storedV3) {
+      try {
+        const parsedV3 = JSON.parse(storedV3);
+        if (Array.isArray(parsedV3) && parsedV3.length > 0) {
+          setPosts(parsedV3);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsedV3));
+          return;
+        }
+      } catch (e) {}
+    }
+
+    // Seed defaults if no saved data
+    setPosts(defaultPosts);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultPosts));
   }, []);
 
   const [isUploadingImage, setIsUploadingImage] = useState(false);

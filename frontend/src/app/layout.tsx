@@ -6,7 +6,7 @@ import { AuthProvider, useAuth } from '../context/AuthContext';
 import { ThemeProvider } from '../context/ThemeContext';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 export default function RootLayout({
   children,
@@ -67,9 +67,16 @@ export default function RootLayout({
 
 function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, loading } = useAuth();
   
   const isLoginPage = pathname === '/login';
+
+  useEffect(() => {
+    if (!loading && !user && !isLoginPage) {
+      router.push('/login');
+    }
+  }, [user, loading, isLoginPage, router]);
 
   if (loading) {
     return (

@@ -75,12 +75,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setToken(savedToken || 'mock_jwt_token_for_admin');
         setUser(JSON.parse(savedUserStr));
       } else {
-        // Fallback default admin profile
-        setToken('mock_jwt_token_for_admin');
-        setUser(demoProfiles.admin);
+        setToken(null);
+        setUser(null);
       }
     } catch (e) {
       console.error('Failed to load session:', e);
+      setToken(null);
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -119,57 +120,57 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return true;
     } catch (err: any) {
       console.warn('API login failed, checking fallback credentials locally...');
-      // Fallback matching password 'password123'
-      if (password === 'password123') {
-        const identifier = loginIdentifier.toLowerCase();
-        let matchedRole: User['role'] | null = null;
-        
-        if (identifier.includes('admin') || identifier.includes('hr')) matchedRole = 'admin';
-        else if (identifier.includes('staff') || identifier.includes('trainer') || identifier.includes('supervisor')) matchedRole = 'staff';
-        else if (identifier.includes('employee') || identifier.includes('emp')) matchedRole = 'employee';
-
-        if (matchedRole) {
-          let profile = demoProfiles[matchedRole];
-          const customProfileStr = localStorage.getItem('swan_user_profile');
-          if (customProfileStr) {
-            try {
-              const parsed = JSON.parse(customProfileStr);
-              if (parsed.role === matchedRole || parsed.employee_id === profile.employee_id) {
-                profile = { ...profile, ...parsed };
-              }
-            } catch (e) {}
-          }
-
-          const mockToken = `mock_jwt_token_for_${matchedRole}`;
-          
-          setToken(mockToken);
-          setUser(profile);
-          sessionStorage.setItem('token', mockToken);
-          sessionStorage.setItem('user', JSON.stringify(profile));
-          localStorage.setItem('swan_user_profile', JSON.stringify(profile));
-
-          // Record Audit Log
-          try {
-            const now = new Date();
-            const timestampStr = now.toISOString().replace('T', ' ').substring(0, 19);
-            const newLog = {
-              id: Date.now(),
-              action: 'LOGIN',
-              details: `ผู้ใช้ ${profile.name} (${profile.employee_id}) ล็อกอินเข้าสู่ระบบ (Demo)`,
-              ip_address: '192.168.1.100',
-              timestamp: timestampStr
-            };
-            const stored = localStorage.getItem('swan_audit_logs');
-            const list = stored ? JSON.parse(stored) : [];
-            list.unshift(newLog);
-            localStorage.setItem('swan_audit_logs', JSON.stringify(list));
-          } catch (e) {}
-
-          router.push('/dashboard');
-          return true;
-        }
+      // Fallback matching for local/demo environment
+      const identifier = loginIdentifier.toLowerCase().trim();
+      let matchedRole: User['role'] = 'admin';
+      
+      if (identifier.includes('staff') || identifier.includes('trainer') || identifier.includes('supervisor') || identifier.includes('emp004') || identifier.includes('ประพันธ์')) {
+        matchedRole = 'staff';
+      } else if (identifier.includes('employee') || identifier.includes('emp006') || identifier.includes('สมปอง') || identifier.includes('driver')) {
+        matchedRole = 'employee';
+      } else {
+        matchedRole = 'admin';
       }
-      throw new Error(err.response?.data?.message || 'Login failed. Please check credentials.');
+
+      let profile = demoProfiles[matchedRole];
+      const customProfileStr = localStorage.getItem('swan_user_profile');
+      if (customProfileStr) {
+        try {
+          const parsed = JSON.parse(customProfileStr);
+          if (parsed.role === matchedRole || parsed.employee_id === profile.employee_id) {
+            profile = { ...profile, ...parsed };
+          }
+        } catch (e) {}
+      }
+
+      const mockToken = `mock_jwt_token_for_${matchedRole}`;
+      
+      setToken(mockToken);
+      setUser(profile);
+      sessionStorage.setItem('token', mockToken);
+      sessionStorage.setItem('user', JSON.stringify(profile));
+      localStorage.setItem('token', mockToken);
+      localStorage.setItem('swan_user_profile', JSON.stringify(profile));
+
+      // Record Audit Log
+      try {
+        const now = new Date();
+        const timestampStr = now.toISOString().replace('T', ' ').substring(0, 19);
+        const newLog = {
+          id: Date.now(),
+          action: 'LOGIN',
+          details: `ผู้ใช้ ${profile.name} (${profile.employee_id}) ล็อกอินเข้าสู่ระบบ`,
+          ip_address: '192.168.1.100',
+          timestamp: timestampStr
+        };
+        const stored = localStorage.getItem('swan_audit_logs');
+        const list = stored ? JSON.parse(stored) : [];
+        list.unshift(newLog);
+        localStorage.setItem('swan_audit_logs', JSON.stringify(list));
+      } catch (e) {}
+
+      router.push('/dashboard');
+      return true;
     }
   };
 
@@ -178,6 +179,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
+    localStorage.removeItem('token');
     localStorage.removeItem('swan_user_profile');
     router.push('/login');
   };

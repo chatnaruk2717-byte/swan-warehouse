@@ -144,12 +144,57 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-gradient-to-r from-warehouse-orange to-amber-500 text-white rounded-2xl font-semibold shadow-lg shadow-warehouse-orange/20 hover:opacity-95 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+              className="w-full py-3.5 bg-gradient-to-r from-warehouse-orange to-amber-500 text-white rounded-2xl font-semibold shadow-lg shadow-warehouse-orange/20 hover:opacity-95 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer"
             >
               {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
               {!loading && <ArrowRight size={16} />}
             </button>
           </form>
+
+          {/* Quick Demo Login Preset Buttons */}
+          <div className="mt-8 pt-6 border-t border-white/10">
+            <p className="text-center text-xs font-semibold text-slate-400 mb-3">เลือกระบบทดสอบด่วน (Quick Demo Login)</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <button
+                type="button"
+                onClick={async () => {
+                  setLoading(true);
+                  await login('EMP001', 'password123');
+                  setLoading(false);
+                }}
+                className="px-3 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300 text-xs font-medium flex flex-col items-center justify-center gap-1 transition-all"
+              >
+                <span className="font-bold">👑 Admin</span>
+                <span className="text-[10px] opacity-75">คุณชาติชาย (EMP001)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  setLoading(true);
+                  await login('EMP004', 'password123');
+                  setLoading(false);
+                }}
+                className="px-3 py-2.5 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 rounded-xl text-sky-300 text-xs font-medium flex flex-col items-center justify-center gap-1 transition-all"
+              >
+                <span className="font-bold">👔 Supervisor</span>
+                <span className="text-[10px] opacity-75">คุณประพันธ์ (EMP004)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  setLoading(true);
+                  await login('EMP006', 'password123');
+                  setLoading(false);
+                }}
+                className="px-3 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-emerald-300 text-xs font-medium flex flex-col items-center justify-center gap-1 transition-all"
+              >
+                <span className="font-bold">🚜 Staff</span>
+                <span className="text-[10px] opacity-75">คุณสมปอง (EMP006)</span>
+              </button>
+            </div>
+          </div>
 
 
 

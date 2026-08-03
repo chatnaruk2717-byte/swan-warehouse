@@ -75,13 +75,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setToken(savedToken || 'mock_jwt_token_for_admin');
         setUser(JSON.parse(savedUserStr));
       } else {
-        setToken(null);
-        setUser(null);
+        // Default to Admin profile (คุณชาติชาย ทาคำห่อ) for seamless initial access
+        const defaultAdmin = demoProfiles.admin;
+        setToken('mock_jwt_token_for_admin');
+        setUser(defaultAdmin);
+        localStorage.setItem('swan_user_profile', JSON.stringify(defaultAdmin));
+        localStorage.setItem('token', 'mock_jwt_token_for_admin');
       }
     } catch (e) {
       console.error('Failed to load session:', e);
-      setToken(null);
-      setUser(null);
+      const defaultAdmin = demoProfiles.admin;
+      setToken('mock_jwt_token_for_admin');
+      setUser(defaultAdmin);
     } finally {
       setLoading(false);
     }

@@ -24,14 +24,6 @@ export default function RootLayout({
         }
       });
     }
-    // Clear browser caches to ensure the latest frontend files are loaded instantly
-    if ('caches' in window) {
-      caches.keys().then((keys) => {
-        keys.forEach((key) => {
-          caches.delete(key);
-        });
-      });
-    }
   }, []);
 
   return (

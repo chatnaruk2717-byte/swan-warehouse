@@ -103,7 +103,6 @@ export default function PerformancePage() {
   // Open Score & Stats Modal
   const openEditScore = (emp: any) => {
     setSelectedEmp(emp);
-    setInputScore(emp.evaluation_score !== undefined ? emp.evaluation_score.toString() : '100');
     setInputPoints(emp.accumulated_points !== undefined ? emp.accumulated_points.toString() : '0');
     setInputAbsent(emp.absent_count !== undefined ? emp.absent_count.toString() : '0');
     setInputLeave(emp.leave_count !== undefined ? emp.leave_count.toString() : '0');
@@ -147,22 +146,17 @@ export default function PerformancePage() {
     }
   };
 
-  // Save Employee Stats and Score
+  // Save Employee Stats and Points
   const handleSaveScore = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedEmp) return;
 
-    const score = parseInt(inputScore, 10);
     const points = parseInt(inputPoints, 10);
     const absent = parseInt(inputAbsent, 10);
     const leave = parseInt(inputLeave, 10);
     const late = parseInt(inputLate, 10);
     const warning = parseInt(inputWarning, 10);
 
-    if (isNaN(score) || score < 0 || score > 100) {
-      alert('กรุณากรอกคะแนนประเมินระหว่าง 0 ถึง 100 คะแนน');
-      return;
-    }
     if (isNaN(points) || isNaN(absent) || isNaN(leave) || isNaN(late) || isNaN(warning)) {
       alert('กรุณากรอกตัวเลขข้อมูลที่ถูกต้อง');
       return;
@@ -170,7 +164,7 @@ export default function PerformancePage() {
 
     try {
       const res = await api.put(`/api/performance/employee/${selectedEmp.id}`, {
-        evaluation_score: score,
+        evaluation_score: selectedEmp.evaluation_score !== undefined ? selectedEmp.evaluation_score : 100,
         accumulated_points: points,
         absent_count: absent,
         leave_count: leave,
@@ -182,7 +176,6 @@ export default function PerformancePage() {
         emp.id === selectedEmp.id 
           ? { 
               ...emp, 
-              evaluation_score: res.data.evaluation_score,
               accumulated_points: res.data.accumulated_points,
               absent_count: res.data.absent_count,
               leave_count: res.data.leave_count,
@@ -194,7 +187,7 @@ export default function PerformancePage() {
       
       setShowScoreModal(false);
       setSelectedEmp(null);
-      alert('บันทึกปรับปรุงข้อมูลคะแนนและประวัติเข้างานสำเร็จ');
+      alert('บันทึกปรับปรุงข้อมูลคะแนนสะสมและประวัติเข้างานสำเร็จ');
     } catch (err: any) {
       alert('บันทึกไม่สำเร็จ: ' + (err.response?.data?.message || err.message));
     }
@@ -224,8 +217,8 @@ export default function PerformancePage() {
     return (
       <div className="space-y-8">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">รายงานประเมินผลงาน & KPI สะสม</h2>
-          <p className="text-slate-400 text-sm mt-1">สรุปข้อมูลคะแนนสะสมและการประเมินประสิทธิภาพการทำงานคลังสินค้า Swan</p>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">รายงานผลงาน & คะแนนสะสมพนักงาน</h2>
+          <p className="text-slate-400 text-sm mt-1">สรุปข้อมูลคะแนนสะสมและการปฏิบัติงานคลังสินค้า Swan</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -346,48 +339,34 @@ export default function PerformancePage() {
 
           </div>
 
-          {/* Right Column: Evaluation Score */}
+          {/* Right Column: Total Accumulated Points */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* KPI 100 Score card */}
-            <GlassCard className="p-6 flex flex-col md:flex-row items-center gap-8 border border-slate-200/50 dark:border-white/5">
+            {/* Total Accumulated Points Banner Card */}
+            <GlassCard className="p-6 flex flex-col md:flex-row items-center gap-8 border border-slate-200/50 dark:border-white/5 bg-gradient-to-br from-warehouse-orange/10 via-transparent to-amber-500/5">
               
-              {/* Circular Gauge */}
-              <div className="relative w-36 h-36 flex items-center justify-center shrink-0">
-                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                  <circle 
-                    cx="50" cy="50" r="42" 
-                    className="stroke-slate-200 dark:stroke-white/5" 
-                    strokeWidth="8" fill="transparent" 
-                  />
-                  <circle 
-                    cx="50" cy="50" r="42" 
-                    className="stroke-emerald-500 transition-all duration-1000" 
-                    strokeWidth="8" fill="transparent"
-                    strokeDasharray={2 * Math.PI * 42}
-                    strokeDashoffset={2 * Math.PI * 42 * (1 - myStats.evaluation_score / 100)}
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <div className="absolute flex flex-col items-center justify-center">
-                  <span className="text-3xl font-black text-slate-800 dark:text-white font-mono">{myStats.evaluation_score}</span>
-                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">คะแนนเต็ม 100</span>
-                </div>
+              {/* Trophy Highlight Box */}
+              <div className="w-32 h-32 rounded-3xl bg-gradient-to-tr from-warehouse-orange to-amber-500 flex flex-col items-center justify-center text-white shadow-xl shadow-warehouse-orange/20 shrink-0">
+                <Trophy size={40} className="mb-1 animate-bounce" />
+                <span className="text-2xl font-black font-mono">{myStats.accumulated_points || 0}</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest opacity-90">PTS</span>
               </div>
 
               {/* Status and Information */}
               <div className="space-y-3.5 flex-1 w-full text-center md:text-left">
                 <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">คะแนนประเมินผลงานปลายปี</p>
-                  <h4 className="text-xl font-bold text-slate-800 dark:text-white mt-1">เกณฑ์ผลประเมินประจำปี</h4>
+                  <p className="text-[10px] text-warehouse-orange font-bold uppercase tracking-wider">คะแนนสะสมรวมสุทธิ</p>
+                  <h4 className="text-2xl font-black text-slate-800 dark:text-white mt-1">
+                    {myStats.accumulated_points || 0} <span className="text-base font-normal text-slate-400">คะแนน (Points)</span>
+                  </h4>
                 </div>
                 
-                <div className={`inline-flex px-4 py-2 border rounded-2xl text-xs font-bold ${gradeInfo.bg} ${gradeInfo.color}`}>
-                  {gradeInfo.text} (Grade {gradeInfo.grade})
+                <div className="inline-flex px-4 py-2 border rounded-2xl text-xs font-bold bg-warehouse-orange/10 border-warehouse-orange/20 text-warehouse-orange">
+                  🏆 อันดับผลงานสะสมคลังสินค้า Swan
                 </div>
 
                 <p className="text-slate-400 text-xs leading-relaxed">
-                  คะแนนประเมินนี้คำนวณและตั้งค่าโดยผู้บริหารสูงสุด (Admin) โดยอิงตามพฤติกรรมการเข้าเรียนอบรม, ความแม่นยำในการปฏิบัติงานคลัง, อัตราความปลอดภัย (Safety) และการส่งงานประจำวัน
+                  คะแนนสะสมคำนวณโดยอัตโนมัติจากการทำภารกิจที่ได้รับมอบหมายสำเร็จ, การเรียนจบคอร์สฝึกอบรมคลังสินค้า และการทดสอบผ่านเกณฑ์
                 </p>
               </div>
 
@@ -428,8 +407,7 @@ export default function PerformancePage() {
   // RENDER ADMIN / STAFF PERFORMANCE VIEW
   const chartData = employees.map(emp => ({
     name: emp.name.split(' ')[0],
-    'คะแนนสะสม': emp.accumulated_points,
-    'คะแนนประเมิน': emp.evaluation_score
+    'คะแนนสะสม': emp.accumulated_points
   }));
 
   return (
@@ -452,7 +430,7 @@ export default function PerformancePage() {
 
       {/* Compare Chart */}
       <GlassCard className="p-5">
-        <h4 className="font-bold text-xs text-slate-400 mb-4 uppercase tracking-wider">กราฟวิเคราะห์คะแนนสะสมและคะแนนประเมินของพนักงานและหัวหน้างาน</h4>
+        <h4 className="font-bold text-xs text-slate-400 mb-4 uppercase tracking-wider">กราฟวิเคราะห์คะแนนสะสมของพนักงานและหัวหน้างาน</h4>
         <div className="w-full h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -462,7 +440,6 @@ export default function PerformancePage() {
               <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', color: '#fff', fontSize: '11px' }} />
               <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
               <Bar dataKey="คะแนนสะสม" fill="#F26522" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="คะแนนประเมิน" fill="#10B981" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -481,14 +458,11 @@ export default function PerformancePage() {
                 <th className="py-4 px-4 text-center">ขาด/ลา/สาย</th>
                 <th className="py-4 px-4 text-center">ใบเตือน (Warning)</th>
                 <th className="py-4 px-4 text-center">คะแนนสะสมรวม</th>
-                <th className="py-4 px-4 text-center">คะแนนประเมิน (100)</th>
                 <th className="py-4 px-6 text-right">จัดการ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-slate-600 dark:text-slate-300">
               {employees.map(emp => {
-                const gradeInfo = getScoreGradeText(emp.evaluation_score);
-                
                 return (
                   <tr key={emp.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <td className="py-4 px-6 flex items-center gap-3">
@@ -541,16 +515,6 @@ export default function PerformancePage() {
                         {emp.accumulated_points} Pts
                       </span>
                     </td>
-                    <td className="py-4 px-4 text-center">
-                      <div className="flex flex-col items-center">
-                        <span className="font-mono font-extrabold text-sm text-slate-700 dark:text-white">
-                          {emp.evaluation_score}
-                        </span>
-                        <span className={`text-[9px] font-bold mt-0.5 ${gradeInfo.color}`}>
-                          Grade {gradeInfo.grade}
-                        </span>
-                      </div>
-                    </td>
                     <td className="py-4 px-6 text-right">
                       {user?.role === 'admin' ? (
                         <button 
@@ -572,7 +536,7 @@ export default function PerformancePage() {
         </div>
       </GlassCard>
 
-      {/* EDIT EVALUATION SCORE & ATTENDANCE STATS MODAL */}
+      {/* EDIT ATTENDANCE & POINTS STATS MODAL */}
       {showScoreModal && selectedEmp && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <GlassCard className="w-full max-w-md overflow-hidden border border-white/10" animate={false}>
@@ -596,33 +560,18 @@ export default function PerformancePage() {
                 </div>
               </div>
 
-              {/* Grid for Score and Points */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">คะแนนประเมินปลายปี (0-100)</label>
-                  <input 
-                    type="number" 
-                    min="0" 
-                    max="100" 
-                    required 
-                    value={inputScore} 
-                    onChange={(e) => setInputScore(e.target.value)} 
-                    className="glass-input text-xs" 
-                    placeholder="คะแนนเต็ม 100" 
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">คะแนนสะสม (Total Points)</label>
-                  <input 
-                    type="number" 
-                    min="0" 
-                    required 
-                    value={inputPoints} 
-                    onChange={(e) => setInputPoints(e.target.value)} 
-                    className="glass-input text-xs" 
-                    placeholder="คะแนนสะสมรวม" 
-                  />
-                </div>
+              {/* Input for Points */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">คะแนนสะสม (Total Points)</label>
+                <input 
+                  type="number" 
+                  min="0" 
+                  required 
+                  value={inputPoints} 
+                  onChange={(e) => setInputPoints(e.target.value)} 
+                  className="glass-input text-xs" 
+                  placeholder="คะแนนสะสมรวม" 
+                />
               </div>
 
               {/* Grid for Attendance counters */}

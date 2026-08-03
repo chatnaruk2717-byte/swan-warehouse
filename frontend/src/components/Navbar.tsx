@@ -179,18 +179,18 @@ export const Navbar = ({ onToggleMobileSidebar }: NavbarProps) => {
         {/* PROFILE BADGE */}
         <Link href="/profile" className="flex items-center gap-3 border-l border-slate-200/50 dark:border-white/5 pl-4 hover:opacity-80 transition-all cursor-pointer">
           <div className="hidden md:flex flex-col text-right">
-            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{user.name}</span>
-            <span className="text-[10px] text-slate-400 font-medium">{user.position}</span>
+            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{user?.name || 'ผู้ใช้งาน'}</span>
+            <span className="text-[10px] text-slate-400 font-medium">{user?.position || 'พนักงาน'}</span>
           </div>
-          {user.photo_url ? (
+          {user?.photo_url ? (
             <img 
               src={user.photo_url} 
-              alt={user.name} 
+              alt={user.name || 'User'} 
               className="w-9 h-9 rounded-xl object-cover ring-2 ring-warehouse-orange/20"
             />
           ) : (
             <div className="w-9 h-9 rounded-xl bg-warehouse-orange/20 text-warehouse-orange flex items-center justify-center font-bold">
-              {user.name[0]}
+              {user?.name?.[0] || 'U'}
             </div>
           )}
         </Link>

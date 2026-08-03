@@ -196,21 +196,21 @@ export const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
         <div className="p-3 border-t border-slate-200/60 dark:border-white/5 space-y-2 shrink-0 bg-slate-50/60 dark:bg-slate-900/60">
           {!collapsed && (
             <div className="bg-white dark:bg-white/5 p-2.5 rounded-xl flex items-center gap-3 border border-slate-200/60 dark:border-white/5 shadow-sm">
-              {user.photo_url ? (
+              {user?.photo_url ? (
                 <img 
                   src={user.photo_url} 
-                  alt={user.name} 
+                  alt={user.name || 'User'} 
                   className="w-9 h-9 rounded-lg object-cover ring-2 ring-warehouse-orange/20 shrink-0"
                 />
               ) : (
                 <div className="w-9 h-9 rounded-lg bg-warehouse-orange/20 text-warehouse-orange flex items-center justify-center font-bold text-xs shrink-0">
-                  {user.name[0]}
+                  {user?.name?.[0] || 'U'}
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold truncate text-slate-800 dark:text-slate-200">{user.name}</p>
+                <p className="text-xs font-bold truncate text-slate-800 dark:text-slate-200">{user?.name || 'ผู้ใช้งาน'}</p>
                 <span className="text-[9px] uppercase font-extrabold text-emerald-600 dark:text-emerald-400 tracking-wider">
-                  {user.role.replace('_', ' ')}
+                  {(user?.role || 'admin').replace('_', ' ')}
                 </span>
               </div>
             </div>

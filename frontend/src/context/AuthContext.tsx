@@ -71,17 +71,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const savedToken = sessionStorage.getItem('token') || localStorage.getItem('token');
       const savedUserStr = sessionStorage.getItem('user') || localStorage.getItem('swan_user_profile');
 
+      let validUser: User | null = null;
       if (savedUserStr) {
-        setToken(savedToken || 'mock_jwt_token_for_admin');
-        setUser(JSON.parse(savedUserStr));
-      } else {
-        // Default to Admin profile (คุณชาติชาย ทาคำห่อ) for seamless initial access
-        const defaultAdmin = demoProfiles.admin;
-        setToken('mock_jwt_token_for_admin');
-        setUser(defaultAdmin);
-        localStorage.setItem('swan_user_profile', JSON.stringify(defaultAdmin));
+        try {
+          const parsed = JSON.parse(savedUserStr);
+          if (parsed && typeof parsed === 'object' && parsed.id && parsed.name && parsed.role) {
+            validUser = { ...demoProfiles.admin, ...parsed };
+          }
+        } catch (err) {
+          console.error('Failed to parse saved user:', err);
+        }
+      }
+
+      if (!validUser) {
+        validUser = demoProfiles.admin;
+        localStorage.setItem('swan_user_profile', JSON.stringify(validUser));
         localStorage.setItem('token', 'mock_jwt_token_for_admin');
       }
+
+      setToken(savedToken || 'mock_jwt_token_for_admin');
+      setUser(validUser);
     } catch (e) {
       console.error('Failed to load session:', e);
       const defaultAdmin = demoProfiles.admin;

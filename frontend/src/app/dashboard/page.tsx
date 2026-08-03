@@ -638,19 +638,19 @@ export default function DashboardPage() {
             {perfStats?.photo_url ? (
               <img 
                 src={perfStats.photo_url} 
-                alt={user.name} 
+                alt={user?.name || 'User'} 
                 className="w-16 h-16 rounded-full object-cover border-2 border-warehouse-orange shadow-md bg-slate-100 dark:bg-slate-800"
               />
             ) : (
               <div className="w-16 h-16 rounded-full bg-warehouse-orange/10 border-2 border-warehouse-orange flex items-center justify-center text-warehouse-orange font-bold text-lg">
-                {user.name.charAt(0)}
+                {user?.name?.charAt(0) || 'U'}
               </div>
             )}
             <div className="space-y-1">
               <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                <span>สวัสดีครับ คุณ{user.name} 👋</span>
+                <span>สวัสดีครับ คุณ{user?.name || 'ผู้ใช้งาน'} 👋</span>
               </h2>
-              <p className="text-slate-600 dark:text-slate-300 text-xs md:text-sm font-medium">แผนก {user.department} • ตำแหน่ง {user.position}</p>
+              <p className="text-slate-600 dark:text-slate-300 text-xs md:text-sm font-medium">แผนก {user?.department || 'Operations'} • ตำแหน่ง {user?.position || 'Staff'}</p>
             </div>
           </div>
           

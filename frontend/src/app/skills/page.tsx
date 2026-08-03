@@ -73,8 +73,8 @@ export default function SkillsPage() {
   });
 
   useEffect(() => {
-    // Load persisted custom employee photos from LocalStorage
-    const stored = localStorage.getItem('swan_employee_photos');
+    // Load persisted custom employee photos from LocalStorage (v4 key invalidates old stale mobile cache)
+    const stored = localStorage.getItem('swan_employee_photos_v4') || localStorage.getItem('swan_employee_photos');
     if (stored) {
       try {
         setCustomPhotos(JSON.parse(stored));
@@ -106,6 +106,33 @@ export default function SkillsPage() {
         };
       };
     } catch (e) {}
+
+    // Listen for dynamic photo updates across tabs/windows/components
+    const handlePhotoUpdated = () => {
+      const reloaded = localStorage.getItem('swan_employee_photos_v4') || localStorage.getItem('swan_employee_photos');
+      if (reloaded) {
+        try {
+          setCustomPhotos(JSON.parse(reloaded));
+        } catch (e) {}
+      }
+      try {
+        const cachedStr = localStorage.getItem('swan_employees_cache') || sessionStorage.getItem('swan_employees_cache');
+        if (cachedStr) {
+          const cachedEmps = JSON.parse(cachedStr);
+          setEmployees(prev => prev.map(e => {
+            const match = cachedEmps.find((c: any) => String(c.id) === String(e.id) || c.employee_id === e.employee_id || c.name === e.name);
+            return match ? { ...e, ...match } : e;
+          }));
+        }
+      } catch (e) {}
+    };
+
+    window.addEventListener('swan_employee_photo_updated', handlePhotoUpdated);
+    window.addEventListener('storage', handlePhotoUpdated);
+    return () => {
+      window.removeEventListener('swan_employee_photo_updated', handlePhotoUpdated);
+      window.removeEventListener('storage', handlePhotoUpdated);
+    };
   }, []);
 
   const saveCustomPhoto = (empKey: string | number, photoStr: string) => {
@@ -129,12 +156,13 @@ export default function SkillsPage() {
     setCustomPhotos(updated);
 
     // Update employees array in memory
-    setEmployees(prev => prev.map(e => {
+    const updatedEmployees = employees.map(e => {
       if (String(e.id) === String(selectedEmp?.id) || e.employee_id === selectedEmp?.employee_id || e.name === selectedEmp?.name) {
         return { ...e, photo_url: photoStr };
       }
       return e;
-    }));
+    });
+    setEmployees(updatedEmployees);
 
     // 1. Write to IndexedDB (asynchronous high-capacity database)
     try {
@@ -151,23 +179,34 @@ export default function SkillsPage() {
       };
     } catch (e) {}
 
-    // 2. Prune giant old strings (>150KB) and save to LocalStorage
+    // 2. Save to LocalStorage & SessionStorage cache
     try {
       const prunedStore: Record<string, string> = {};
       Object.entries(updated).forEach(([k, val]) => {
-        if (val && typeof val === 'string' && val.length < 150000) {
+        if (val && typeof val === 'string' && val.length < 250000) {
           prunedStore[k] = val;
         }
       });
-      localStorage.setItem('swan_employee_photos', JSON.stringify(prunedStore));
+      localStorage.setItem('swan_employee_photos_v4', JSON.stringify(prunedStore));
+      localStorage.setItem('swan_employees_cache', JSON.stringify(updatedEmployees));
+      sessionStorage.setItem('swan_employees_cache', JSON.stringify(updatedEmployees));
+
+      // If user updated their own profile photo
+      if (user && (String(user.id) === String(selectedEmp?.id) || user.employee_id === selectedEmp?.employee_id || user.name === selectedEmp?.name)) {
+        const updatedUser = { ...user, photo_url: photoStr };
+        localStorage.setItem('swan_user_profile', JSON.stringify(updatedUser));
+        sessionStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+
+      window.dispatchEvent(new Event('swan_employee_photo_updated'));
       alert('✅ บันทึกรูปภาพพนักงานเรียบร้อยแล้ว!');
     } catch (err) {
       console.warn('LocalStorage full, purging old cache...', err);
       try {
-        localStorage.removeItem('swan_employee_photos');
         const miniStore: Record<string, string> = {};
         keys.forEach(k => { miniStore[k] = photoStr; });
-        localStorage.setItem('swan_employee_photos', JSON.stringify(miniStore));
+        localStorage.setItem('swan_employee_photos_v4', JSON.stringify(miniStore));
+        window.dispatchEvent(new Event('swan_employee_photo_updated'));
         alert('✅ บันทึกรูปภาพพนักงานเรียบร้อยแล้ว!');
       } catch (retryErr) {
         alert('✅ บันทึกรูปภาพลงฐานข้อมูลความจำเรียบร้อยแล้ว!');
@@ -557,9 +596,8 @@ export default function SkillsPage() {
   
   // Custom photo overrides or HD default Unsplash photos
   const customPhoto = customPhotos[selectedEmp?.employee_id] || customPhotos[selectedEmp?.id] || customPhotos[selectedEmp?.name];
-  const empPhoto = customPhoto || selectedEmp?.photo_url || 
-    (selectedEmp?.employee_id === 'EMP006' || selectedEmp?.employee_id === '22512' || selectedEmp?.name?.includes('เพทาย') ? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=1000&q=80' :
-     selectedEmp?.employee_id === 'EMP007' ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=1000&q=80' :
+  const empPhoto = selectedEmp?.photo_url || customPhoto || 
+    (selectedEmp?.employee_id === 'EMP007' ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=1000&q=80' :
      selectedEmp?.employee_id === 'EMP008' ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1000&q=80' :
      selectedEmp?.employee_id === 'EMP009' ? 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000&q=80' :
      selectedEmp?.employee_id === 'EMP010' ? 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=1000&q=80' :
@@ -1037,9 +1075,8 @@ export default function SkillsPage() {
             <tbody className="divide-y divide-slate-200/50 dark:divide-white/5 text-xs">
               {filteredEmployees.map(emp => {
                 const custom = customPhotos[emp.employee_id] || customPhotos[emp.id] || customPhotos[emp.name];
-                const photo = custom || emp.photo_url || 
-                  (emp.employee_id === 'EMP006' || emp.employee_id === '22512' || emp.name?.includes('เพทาย') ? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80' :
-                   emp.employee_id === 'EMP007' ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&q=80' :
+                const photo = emp.photo_url || custom || 
+                  (emp.employee_id === 'EMP007' ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&q=80' :
                    emp.employee_id === 'EMP008' ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80' :
                    emp.employee_id === 'EMP009' ? 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80' :
                    emp.employee_id === 'EMP010' ? 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&q=80' :

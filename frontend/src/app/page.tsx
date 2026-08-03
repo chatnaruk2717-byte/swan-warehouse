@@ -5,20 +5,25 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 
 export default function HomeRedirect() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (user) {
-      router.push('/dashboard');
-    } else {
-      router.push('/login');
+    if (!loading) {
+      if (user) {
+        router.push('/dashboard');
+      } else {
+        router.push('/login');
+      }
     }
-  }, [user, router]);
+  }, [user, loading, router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-warehouse-light dark:bg-warehouse-dark">
-      <div className="w-10 h-10 border-4 border-slate-300 border-t-warehouse-orange rounded-full animate-spin" />
+    <div className="min-h-screen flex items-center justify-center bg-warehouse-light dark:bg-slate-950">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-12 h-12 rounded-full border-4 border-slate-300 border-t-warehouse-orange animate-spin" />
+        <p className="text-sm font-semibold text-slate-500">กำลังเชื่อมต่อระบบ...</p>
+      </div>
     </div>
   );
 }

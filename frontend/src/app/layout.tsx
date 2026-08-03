@@ -91,8 +91,19 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  if (isLoginPage || !user) {
+  if (isLoginPage) {
     return <>{children}</>;
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-warehouse-light dark:bg-slate-950">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-12 h-12 rounded-full border-4 border-slate-300 border-t-warehouse-orange animate-spin" />
+          <p className="text-sm font-semibold text-slate-500">กำลังนำคุณไปยังหน้าเข้าสู่ระบบ...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

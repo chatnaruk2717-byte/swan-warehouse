@@ -165,7 +165,7 @@ export default function DashboardPage() {
     }
   };
 
-  if (!mounted || loading) {
+  if (!mounted || loading || !user) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[400px]">
         <div className="w-10 h-10 border-4 border-slate-300 border-t-warehouse-orange rounded-full animate-spin" />

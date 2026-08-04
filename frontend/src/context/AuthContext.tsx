@@ -83,19 +83,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       }
 
-      if (!validUser) {
-        validUser = demoProfiles.admin;
-        localStorage.setItem('swan_user_profile', JSON.stringify(validUser));
-        localStorage.setItem('token', 'mock_jwt_token_for_admin');
+      if (savedToken && validUser) {
+        setToken(savedToken);
+        setUser(validUser);
+      } else {
+        setToken(null);
+        setUser(null);
       }
-
-      setToken(savedToken || 'mock_jwt_token_for_admin');
-      setUser(validUser);
     } catch (e) {
       console.error('Failed to load session:', e);
-      const defaultAdmin = demoProfiles.admin;
-      setToken('mock_jwt_token_for_admin');
-      setUser(defaultAdmin);
+      setToken(null);
+      setUser(null);
     } finally {
       setLoading(false);
     }

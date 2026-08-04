@@ -128,7 +128,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.setItem('swan_audit_logs', JSON.stringify(list));
       } catch (e) {}
       
-      router.push('/dashboard');
+      window.location.href = '/dashboard/';
       return true;
     } catch (err: any) {
       console.warn('API login failed, checking fallback credentials locally...');
@@ -181,7 +181,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.setItem('swan_audit_logs', JSON.stringify(list));
       } catch (e) {}
 
-      router.push('/dashboard');
+      window.location.href = '/dashboard/';
       return true;
     }
   };
@@ -193,7 +193,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     sessionStorage.removeItem('user');
     localStorage.removeItem('token');
     localStorage.removeItem('swan_user_profile');
-    router.push('/login');
+    window.location.href = '/login/';
   };
 
   const switchDemoRole = (role: User['role']) => {

@@ -70,9 +70,9 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading && !user && !isLoginPage && !isPublicPage) {
-      router.push('/login');
+      window.location.href = '/login/';
     }
-  }, [user, loading, isLoginPage, isPublicPage, router]);
+  }, [user, loading, isLoginPage, isPublicPage]);
 
   if (loading) {
     return (

@@ -12,6 +12,8 @@ export interface AuthenticatedRequest extends Request {
     email: string;
     role: 'admin' | 'staff' | 'employee';
     name: string;
+    line_id?: string;
+    phone?: string;
   };
 }
 

@@ -11,8 +11,12 @@ import {
   Camera, 
   Save, 
   ShieldCheck, 
-  Key
+  Key,
+  Award,
+  ExternalLink,
+  Printer
 } from 'lucide-react';
+import CertificateModal, { CertificateData } from '../../components/CertificateModal';
 import { uploadToImgBB } from '../../utils/uploadToImgBB';
 
 export default function ProfilePage() {
@@ -35,6 +39,8 @@ export default function ProfilePage() {
 
   const [loading, setLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showCertModal, setShowCertModal] = useState(false);
+  const [selectedCert, setSelectedCert] = useState<CertificateData | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -332,9 +338,101 @@ export default function ProfilePage() {
             </form>
           </GlassCard>
 
+          {/* My Certificates & Badges Wallet */}
+          <GlassCard className="border border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 via-transparent to-amber-500/5" delay={0.2}>
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200/50 dark:border-white/5">
+              <div className="flex items-center gap-2">
+                <Award className="text-emerald-500" size={20} />
+                <h4 className="font-extrabold text-sm text-slate-800 dark:text-white">คลังใบประกาศนียบัตรส่วนตัว (My Certificates & Badges Wallet)</h4>
+              </div>
+              <span className="text-[10px] font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/20">
+                สิทธิ์รับรอง 2 รายการ
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
+              {/* Cert 1 */}
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-emerald-500/20 shadow-sm flex flex-col justify-between space-y-3">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400">
+                    <span>COURSE CERTIFICATE</span>
+                    <span className="font-mono">SWAN-CERT-2026-849201</span>
+                  </div>
+                  <h5 className="font-bold text-xs text-slate-800 dark:text-white leading-snug">
+                    หลักสูตรมาตรฐานความปลอดภัยและการปฏิบัติงานคลังสินค้า Swan
+                  </h5>
+                  <p className="text-[10px] text-slate-400">ผู้อนุมัติ: คุณประธาน  สวอนอินดัสตรีส์ (Warehouse Manager)</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedCert({
+                      certificate_number: 'SWAN-CERT-2026-849201',
+                      recipient_name: user?.name || 'ชาติชาย  ทาคำห่อ',
+                      employee_id: user?.employee_id || 'EMP001',
+                      title: 'หลักสูตรมาตรฐานความปลอดภัยและการปฏิบัติงานคลังสินค้า (Warehouse Safety & Operations)',
+                      type: 'course',
+                      issued_date: '2026-08-01',
+                      issuer_name: 'คุณประธาน  สวอนอินดัสตรีส์',
+                      issuer_title: 'Warehouse Operations Manager',
+                      skill_level: 'Level 5 Expert'
+                    });
+                    setShowCertModal(true);
+                  }}
+                  className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  <Printer size={13} />
+                  <span>เปิดดู / พิมพ์ใบประกาศฯ (View & Print)</span>
+                </button>
+              </div>
+
+              {/* Cert 2 */}
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-amber-500/20 shadow-sm flex flex-col justify-between space-y-3">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[10px] font-extrabold text-amber-600 dark:text-amber-400">
+                    <span>SKILL MASTERY CERTIFICATE</span>
+                    <span className="font-mono">SWAN-CERT-2026-920184</span>
+                  </div>
+                  <h5 className="font-bold text-xs text-slate-800 dark:text-white leading-snug">
+                    ความเชี่ยวชาญการขับรถยกและการจัดเก็บสินค้า (Forklift & Stacking)
+                  </h5>
+                  <p className="text-[10px] text-slate-400">ระดับความเชี่ยวชาญ: Level 4 Advanced</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedCert({
+                      certificate_number: 'SWAN-CERT-2026-920184',
+                      recipient_name: user?.name || 'ชาติชาย  ทาคำห่อ',
+                      employee_id: user?.employee_id || 'EMP001',
+                      title: 'ความเชี่ยวชาญการขับรถยกและการจัดเก็บสินค้า (Forklift Driving & Stacking Mastery)',
+                      type: 'skill',
+                      issued_date: '2026-08-03',
+                      issuer_name: 'คุณประธาน  สวอนอินดัสตรีส์',
+                      issuer_title: 'Warehouse Operations Manager',
+                      skill_level: 'Level 4 Advanced'
+                    });
+                    setShowCertModal(true);
+                  }}
+                  className="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  <Printer size={13} />
+                  <span>เปิดดู / พิมพ์ใบประกาศฯ (View & Print)</span>
+                </button>
+              </div>
+
+            </div>
+          </GlassCard>
+
         </div>
 
       </div>
+
+      {/* Certificate Modal */}
+      <CertificateModal
+        isOpen={showCertModal}
+        onClose={() => setShowCertModal(false)}
+        certificate={selectedCert}
+      />
 
     </div>
   );

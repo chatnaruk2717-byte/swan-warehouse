@@ -19,6 +19,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import OTPModal from '../../../components/OTPModal';
+import CertificateModal, { CertificateData } from '../../../components/CertificateModal';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 
@@ -1015,32 +1016,22 @@ export default function CourseViewerClient() {
 
       </div>
 
-      {/* FLOATING CERTIFICATE POPUP */}
-      {showCertPopup && certId && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <GlassCard className="w-full max-w-sm text-center space-y-6 p-8 border border-emerald-500/20" animate={false}>
-            <button onClick={() => setShowCertPopup(false)} className="absolute right-4 top-4 text-slate-400 hover:text-slate-200">
-              <X size={18} />
-            </button>
-            <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-500 mx-auto flex items-center justify-center glow-orange animate-pulse">
-              <Award size={36} />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-800 dark:text-white">ยินดีด้วย! คุณเรียนจบหลักสูตร</h3>
-              <p className="text-slate-400 text-xs mt-2">คุณผ่านการอบรมและควิซทุกหัวข้อวิชาครบถ้วนเรียบร้อย ระบบได้ออกรหัสใบรับรองทักษะให้คุณ:</p>
-              <p className="mt-4 font-mono font-bold text-sm bg-emerald-500/10 text-emerald-500 py-2.5 rounded-xl border border-emerald-500/20 tracking-wider">
-                {certId}
-              </p>
-            </div>
-            <button 
-              onClick={() => setShowCertPopup(false)}
-              className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all"
-            >
-              ปิดรับใบรับรอง
-            </button>
-          </GlassCard>
-        </div>
-      )}
+      {/* DIGITAL CERTIFICATE A4 PRINTABLE MODAL */}
+      <CertificateModal
+        isOpen={showCertPopup}
+        onClose={() => setShowCertPopup(false)}
+        certificate={{
+          certificate_number: certId || `SWAN-CERT-2026-${Math.floor(100000 + Math.random() * 900000)}`,
+          recipient_name: user?.name || 'พนักงานคลังสินค้า',
+          employee_id: user?.employee_id || 'EMP001',
+          title: course?.name || 'หลักสูตรมาตรฐานความปลอดภัยและการปฏิบัติงานคลังสินค้า Swan',
+          type: 'course',
+          issued_date: new Date().toISOString().split('T')[0],
+          issuer_name: 'คุณประธาน  สวอนอินดัสตรีส์',
+          issuer_title: 'Warehouse Operations Manager',
+          skill_level: 'Level 5 Expert'
+        }}
+      />
 
       {/* 6-DIGIT OTP VERIFICATION MODAL FOR COURSE VIEWER */}
       <OTPModal

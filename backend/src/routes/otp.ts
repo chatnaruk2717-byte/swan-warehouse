@@ -32,8 +32,8 @@ router.post('/send', authenticateToken, async (req: AuthenticatedRequest, res: R
     const lineToken = process.env.LINE_CHANNEL_ACCESS_TOKEN || 'Oy7bodOcAnQanlCmMOMNzrV5vcFzHLNBU2+ZaVW9B4HVdwWtD9TmdpdSzkyrAsi17WaQq6so/wr6LZVvfjYa3+F9svBu9qSQ35T5udbjIVVIPJ0HBkMXl9XdSK1MEWLBFppBgEoHjpMwYk7FciG6GwdB04t89/1O/w1cDnyilFU=';
     if (lineToken) {
       try {
-        const fetch = (await import('node-fetch')).default;
-        await fetch('https://api.line.me/v2/bot/message/broadcast', {
+        const fetchFn = (globalThis as any).fetch || require('node-fetch');
+        await fetchFn('https://api.line.me/v2/bot/message/broadcast', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

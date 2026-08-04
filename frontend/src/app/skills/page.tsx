@@ -28,6 +28,7 @@ import {
   Link as LinkIcon,
   Lock
 } from 'lucide-react';
+import CertificateModal, { CertificateData } from '../../components/CertificateModal';
 import { 
   Radar, 
   RadarChart, 
@@ -56,6 +57,8 @@ export default function SkillsPage() {
   const [selectedSkill, setSelectedSkill] = useState<any>(null);
   const [selectedCell, setSelectedCell] = useState<any>(null); // { employee, skill, record }
   const [showApprovalDrawer, setShowApprovalDrawer] = useState(false);
+  const [showCertModal, setShowCertModal] = useState(false);
+  const [selectedCert, setSelectedCert] = useState<CertificateData | null>(null);
 
   // Form states
   const [skillForm, setSkillForm] = useState({
@@ -1440,30 +1443,61 @@ export default function SkillsPage() {
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-200/50 dark:border-white/5 flex gap-3">
-                  {/* Approve button for Admin */}
-                  {selectedCell.record && selectedCell.record.status !== 'qualified' && selectedCell.record.status !== 'expert' && (
-                    <button 
-                      type="button"
-                      onClick={() => handleApproveSkill(selectedCell.record.id)}
-                      className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1"
-                    >
-                      <Check size={14} />
-                      <span>กดอนุมัติทันที (Approve)</span>
-                    </button>
-                  )}
-                  <button 
-                    type="submit"
-                    className="flex-1 py-2.5 bg-warehouse-orange hover:bg-warehouse-orange/90 text-white rounded-xl text-xs font-bold transition-all"
+                <div className="pt-4 border-t border-slate-200/50 dark:border-white/5 space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCert({
+                        certificate_number: `SWAN-CERT-2026-${Math.floor(100000 + Math.random() * 900000)}`,
+                        recipient_name: selectedCell.employee?.name || 'พนักงานคลังสินค้า',
+                        employee_id: selectedCell.employee?.employee_id || 'EMP001',
+                        title: `การรับรองความเชี่ยวชาญทักษะ ${selectedCell.skill?.name || 'คลังสินค้า'}`,
+                        type: 'skill',
+                        issued_date: new Date().toISOString().split('T')[0],
+                        issuer_name: 'คุณประธาน  สวอนอินดัสตรีส์',
+                        issuer_title: 'Warehouse Operations Manager',
+                        skill_level: `Level ${selectedCell.record?.level || '5'} Expert`
+                      });
+                      setShowCertModal(true);
+                    }}
+                    className="w-full py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-extrabold shadow-md shadow-emerald-500/20 transition-all flex items-center justify-center gap-1.5"
                   >
-                    บันทึกความก้าวหน้า
+                    <Award size={15} />
+                    <span>📜 ออก/พิมพ์ใบรับรองความเชี่ยวชาญ (View Certificate)</span>
                   </button>
+
+                  <div className="flex gap-3">
+                    {/* Approve button for Admin */}
+                    {selectedCell.record && selectedCell.record.status !== 'qualified' && selectedCell.record.status !== 'expert' && (
+                      <button 
+                        type="button"
+                        onClick={() => handleApproveSkill(selectedCell.record.id)}
+                        className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1"
+                      >
+                        <Check size={14} />
+                        <span>กดอนุมัติทันที (Approve)</span>
+                      </button>
+                    )}
+                    <button 
+                      type="submit"
+                      className="flex-1 py-2.5 bg-warehouse-orange hover:bg-warehouse-orange/90 text-white rounded-xl text-xs font-bold transition-all"
+                    >
+                      บันทึกความก้าวหน้า
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>
           </div>
         </div>
       )}
+
+      {/* Certificate Modal */}
+      <CertificateModal
+        isOpen={showCertModal}
+        onClose={() => setShowCertModal(false)}
+        certificate={selectedCert}
+      />
 
     </div>
   );

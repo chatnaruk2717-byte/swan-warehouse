@@ -328,7 +328,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex-1 w-full text-xs">
               <ResponsiveContainer width="100%" height="90%">
-                <AreaChart data={chartData?.monthlyTrends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <AreaChart data={chartData?.monthlyTrends || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorEnrolled" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#155E38" stopOpacity={0.2}/>
@@ -360,7 +360,7 @@ export default function DashboardPage() {
               <ResponsiveContainer width="100%" height="90%">
                 <PieChart>
                   <Pie
-                    data={chartData?.skillStatusDistribution}
+                    data={chartData?.skillStatusDistribution || []}
                     cx="50%"
                     cy="45%"
                     innerRadius={55}
@@ -369,7 +369,7 @@ export default function DashboardPage() {
                     dataKey="count"
                     nameKey="status"
                   >
-                    {chartData?.skillStatusDistribution?.map((entry: any, index: number) => (
+                    {(chartData?.skillStatusDistribution || []).map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                     ))}
                   </Pie>
@@ -379,7 +379,7 @@ export default function DashboardPage() {
               
               {/* Legend overlay */}
               <div className="absolute bottom-0 left-0 right-0 flex flex-wrap justify-center gap-x-4 gap-y-1">
-                {chartData?.skillStatusDistribution?.map((entry: any, index: number) => (
+                {(chartData?.skillStatusDistribution || []).map((entry: any, index: number) => (
                   <div key={entry.status} className="flex items-center gap-1.5 text-[10px]">
                     <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }} />
                     <span className="text-slate-400">{getStatusLabel(entry.status)}: <strong className="text-slate-700 dark:text-slate-200">{entry.count}</strong></span>
@@ -400,13 +400,13 @@ export default function DashboardPage() {
             </div>
             <div className="flex-1 w-full text-xs">
               <ResponsiveContainer width="100%" height="90%">
-                <BarChart data={chartData?.departmentStats} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <BarChart data={chartData?.departmentStats || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" className="dark:stroke-slate-800" />
                   <XAxis dataKey="department" tickLine={false} stroke="#94A3B8" />
                   <YAxis axisLine={false} tickLine={false} stroke="#94A3B8" />
                   <Tooltip contentStyle={{ borderRadius: '12px' }} />
                   <Bar dataKey="avg_progress" name="ความคืบหน้าอบรมเฉลี่ย (%)" radius={[8, 8, 0, 0]}>
-                    {chartData?.departmentStats?.map((entry: any, index: number) => (
+                    {(chartData?.departmentStats || []).map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#1E3A8A' : '#F97316'} />
                     ))}
                   </Bar>
@@ -423,7 +423,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex-1 w-full text-xs">
               <ResponsiveContainer width="100%" height="90%">
-                <BarChart data={chartData?.positionStats} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <BarChart data={chartData?.positionStats || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" className="dark:stroke-slate-800" />
                   <XAxis 
                     dataKey="position" 
@@ -447,7 +447,7 @@ export default function DashboardPage() {
                   <YAxis axisLine={false} tickLine={false} stroke="#94A3B8" />
                   <Tooltip contentStyle={{ borderRadius: '12px' }} />
                   <Bar dataKey="avg_progress" name="ความคืบหน้าอบรมเฉลี่ย (%)" radius={[8, 8, 0, 0]}>
-                    {chartData?.positionStats?.map((entry: any, index: number) => (
+                    {(chartData?.positionStats || []).map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#10B981' : '#F59E0B'} />
                     ))}
                   </Bar>

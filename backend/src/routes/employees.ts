@@ -221,40 +221,76 @@ router.put('/:id', authenticateToken, requireRole(['admin', 'staff', 'employee']
       formattedStartDate = new Date().toISOString().split('T')[0];
     }
 
-    const updateResult = await query(
-      `UPDATE users 
-       SET name = COALESCE($1, name), 
-           role = COALESCE($2, role), 
-           department = COALESCE($3, department), 
-           position = COALESCE($4, position), 
-           warehouse_area = COALESCE($5, warehouse_area), 
-           phone = COALESCE($6, phone), 
-           status = COALESCE($7, status), 
-           supervisor_id = COALESCE($8, supervisor_id), 
-           start_date = COALESCE($9, start_date), 
-           photo_url = COALESCE($10, photo_url), 
-           working_shift = COALESCE($11, working_shift), 
-           email = COALESCE($12, email), 
-           line_id = COALESCE($13, line_id)
-       WHERE id = $14 
-       RETURNING *`,
-      [
-        name || null, 
-        role || null, 
-        department || null, 
-        position || null, 
-        warehouse_area || null, 
-        phone || null, 
-        status || null, 
-        supervisor_id || null, 
-        formattedStartDate || null, 
-        photo_url || null, 
-        working_shift || null, 
-        email || null, 
-        line_id || null, 
-        employeeId
-      ]
-    );
+    let updateResult;
+    try {
+      updateResult = await query(
+        `UPDATE users 
+         SET name = COALESCE($1, name), 
+             role = COALESCE($2, role), 
+             department = COALESCE($3, department), 
+             position = COALESCE($4, position), 
+             warehouse_area = COALESCE($5, warehouse_area), 
+             phone = COALESCE($6, phone), 
+             status = COALESCE($7, status), 
+             supervisor_id = COALESCE($8, supervisor_id), 
+             start_date = COALESCE($9, start_date), 
+             photo_url = COALESCE($10, photo_url), 
+             working_shift = COALESCE($11, working_shift), 
+             email = COALESCE($12, email), 
+             line_id = COALESCE($13, line_id)
+         WHERE id = $14 
+         RETURNING *`,
+        [
+          name || null, 
+          role || null, 
+          department || null, 
+          position || null, 
+          warehouse_area || null, 
+          phone || null, 
+          status || null, 
+          supervisor_id || null, 
+          formattedStartDate || null, 
+          photo_url || null, 
+          working_shift || null, 
+          email || null, 
+          line_id || null, 
+          employeeId
+        ]
+      );
+    } catch (dbColErr) {
+      updateResult = await query(
+        `UPDATE users 
+         SET name = COALESCE($1, name), 
+             role = COALESCE($2, role), 
+             department = COALESCE($3, department), 
+             position = COALESCE($4, position), 
+             warehouse_area = COALESCE($5, warehouse_area), 
+             phone = COALESCE($6, phone), 
+             status = COALESCE($7, status), 
+             supervisor_id = COALESCE($8, supervisor_id), 
+             start_date = COALESCE($9, start_date), 
+             photo_url = COALESCE($10, photo_url), 
+             working_shift = COALESCE($11, working_shift), 
+             email = COALESCE($12, email)
+         WHERE id = $13 
+         RETURNING *`,
+        [
+          name || null, 
+          role || null, 
+          department || null, 
+          position || null, 
+          warehouse_area || null, 
+          phone || null, 
+          status || null, 
+          supervisor_id || null, 
+          formattedStartDate || null, 
+          photo_url || null, 
+          working_shift || null, 
+          email || null, 
+          employeeId
+        ]
+      );
+    }
 
     if (updateResult.rows.length === 0) {
       return res.status(404).json({ message: 'Employee not found.' });

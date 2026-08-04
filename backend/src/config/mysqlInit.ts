@@ -33,6 +33,7 @@ export const initializeMySQL = async (pool: mysql.Pool) => {
         await connection.query('ALTER TABLE users ADD COLUMN leave_count INT DEFAULT 0').catch(() => {});
         await connection.query('ALTER TABLE users ADD COLUMN late_count INT DEFAULT 0').catch(() => {});
         await connection.query('ALTER TABLE users ADD COLUMN warning_letters INT DEFAULT 0').catch(() => {});
+        await connection.query('ALTER TABLE users ADD COLUMN line_id VARCHAR(100) NULL').catch(() => {});
         
         // Create performance_settings table if it doesn't exist (e.g. for existing DB updates)
         await connection.query(`

@@ -62,13 +62,17 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, loading } = useAuth();
   
+  // IMPORTANT: All hooks MUST be called before any conditional returns (React Rules of Hooks)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
   const isLoginPage = pathname === '/login';
+  const isPublicPage = pathname?.startsWith('/certificates/verify');
 
   useEffect(() => {
-    if (!loading && !user && !isLoginPage) {
+    if (!loading && !user && !isLoginPage && !isPublicPage) {
       router.push('/login');
     }
-  }, [user, loading, isLoginPage, router]);
+  }, [user, loading, isLoginPage, isPublicPage, router]);
 
   if (loading) {
     return (
@@ -81,9 +85,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-
-  if (isLoginPage) {
+  if (isLoginPage || isPublicPage) {
     return <>{children}</>;
   }
 

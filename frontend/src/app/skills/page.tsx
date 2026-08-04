@@ -218,7 +218,9 @@ export default function SkillsPage() {
 
     // Try API update if backend active
     if (selectedEmp?.id) {
-      api.put(`/api/employees/${selectedEmp.id}`, { photo_url: photoStr }).catch(() => {});
+      api.put(`/api/employees/${selectedEmp.id}`, { ...selectedEmp, photo_url: photoStr }).catch((err) => {
+        console.warn('API update photo error:', err);
+      });
     }
   };
 
@@ -293,6 +295,20 @@ export default function SkillsPage() {
 
       const empRes = await api.get('/api/employees');
       const filteredEmps = empRes.data.filter((e: any) => (e.role === 'employee' || e.role === 'staff') && e.department !== 'Management');
+      
+      // Sync server-persisted photo_urls into customPhotos map so all devices display the updated photos
+      const serverPhotos: Record<string, string> = {};
+      filteredEmps.forEach((e: any) => {
+        if (e.photo_url) {
+          if (e.employee_id) serverPhotos[e.employee_id] = e.photo_url;
+          if (e.id) serverPhotos[String(e.id)] = e.photo_url;
+          if (e.name) serverPhotos[e.name] = e.photo_url;
+        }
+      });
+      if (Object.keys(serverPhotos).length > 0) {
+        setCustomPhotos(prev => ({ ...serverPhotos, ...prev }));
+      }
+
       setEmployees(filteredEmps);
 
       // ONLY ADMIN sees all employees. Staff and Employee see ONLY THEIR OWN profile!

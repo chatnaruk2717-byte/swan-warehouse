@@ -223,10 +223,37 @@ router.put('/:id', authenticateToken, requireRole(['admin', 'staff', 'employee']
 
     const updateResult = await query(
       `UPDATE users 
-       SET name = $1, role = $2, department = $3, position = $4, warehouse_area = $5, phone = $6, status = $7, supervisor_id = $8, start_date = $9, photo_url = $10, working_shift = $11, email = COALESCE($12, email), line_id = $13
+       SET name = COALESCE($1, name), 
+           role = COALESCE($2, role), 
+           department = COALESCE($3, department), 
+           position = COALESCE($4, position), 
+           warehouse_area = COALESCE($5, warehouse_area), 
+           phone = COALESCE($6, phone), 
+           status = COALESCE($7, status), 
+           supervisor_id = COALESCE($8, supervisor_id), 
+           start_date = COALESCE($9, start_date), 
+           photo_url = COALESCE($10, photo_url), 
+           working_shift = COALESCE($11, working_shift), 
+           email = COALESCE($12, email), 
+           line_id = COALESCE($13, line_id)
        WHERE id = $14 
        RETURNING *`,
-      [name, role, department, position, warehouse_area, phone, status, supervisor_id || null, formattedStartDate, photo_url, working_shift || 'A', email, line_id || '', employeeId]
+      [
+        name || null, 
+        role || null, 
+        department || null, 
+        position || null, 
+        warehouse_area || null, 
+        phone || null, 
+        status || null, 
+        supervisor_id || null, 
+        formattedStartDate || null, 
+        photo_url || null, 
+        working_shift || null, 
+        email || null, 
+        line_id || null, 
+        employeeId
+      ]
     );
 
     if (updateResult.rows.length === 0) {

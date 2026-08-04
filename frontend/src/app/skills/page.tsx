@@ -597,9 +597,9 @@ export default function SkillsPage() {
 
   const selectedEmp = employees.find(e => Number(e.id) === Number(selectedEmpId)) || employees[0] || user;
   
-  // Custom photo overrides or HD default Unsplash photos
+  // Custom photo overrides or HD default Unsplash photos — custom uploaded photo MUST take priority
   const customPhoto = customPhotos[selectedEmp?.employee_id] || customPhotos[selectedEmp?.id] || customPhotos[selectedEmp?.name];
-  const empPhoto = selectedEmp?.photo_url || customPhoto || 
+  const empPhoto = customPhoto || selectedEmp?.photo_url || 
     (selectedEmp?.employee_id === 'EMP007' ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=1000&q=80' :
      selectedEmp?.employee_id === 'EMP008' ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1000&q=80' :
      selectedEmp?.employee_id === 'EMP009' ? 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000&q=80' :
@@ -1078,7 +1078,7 @@ export default function SkillsPage() {
             <tbody className="divide-y divide-slate-200/50 dark:divide-white/5 text-xs">
               {filteredEmployees.map(emp => {
                 const custom = customPhotos[emp.employee_id] || customPhotos[emp.id] || customPhotos[emp.name];
-                const photo = emp.photo_url || custom || 
+                const photo = custom || emp.photo_url || 
                   (emp.employee_id === 'EMP007' ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&q=80' :
                    emp.employee_id === 'EMP008' ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80' :
                    emp.employee_id === 'EMP009' ? 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80' :

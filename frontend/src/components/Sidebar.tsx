@@ -171,7 +171,9 @@ export const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
           <nav className="p-3 space-y-1 overflow-y-auto flex-1 custom-scrollbar">
             {filteredMenu.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.path || (item.path !== '/dashboard' && pathname.startsWith(item.path));
+              const cleanPathname = pathname?.replace(/\/$/, '') || '';
+              const cleanItemPath = item.path.replace(/\/$/, '');
+              const isActive = cleanPathname === cleanItemPath || (cleanItemPath !== '/dashboard' && cleanPathname.startsWith(cleanItemPath));
               
               return (
                 <Link 

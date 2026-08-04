@@ -65,7 +65,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
   // IMPORTANT: All hooks MUST be called before any conditional returns (React Rules of Hooks)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  const isLoginPage = pathname === '/login';
+  const isLoginPage = pathname === '/login' || pathname === '/login/' || pathname?.startsWith('/login');
   const isPublicPage = pathname?.startsWith('/certificates/verify');
 
   useEffect(() => {

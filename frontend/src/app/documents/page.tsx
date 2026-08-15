@@ -13,11 +13,18 @@ import {
   Trash2, 
   FileText, 
   Eye, 
-  Download, 
   Upload, 
   X, 
-  ExternalLink 
+  ExternalLink,
+  Maximize2,
+  Shield 
 } from 'lucide-react';
+
+const getSecurePdfUrl = (url: string) => {
+  if (!url) return '';
+  const separator = url.includes('#') ? '&' : '#';
+  return `${url}${separator}toolbar=0&navpanes=0&scrollbar=0`;
+};
 
 interface WarehouseDocument {
   id: number;
@@ -113,23 +120,16 @@ export default function DocumentsPage() {
   // PDF Viewer modal states
   const [activeViewerDoc, setActiveViewerDoc] = useState<WarehouseDocument | null>(null);
   const [displayDocUrl, setDisplayDocUrl] = useState('');
+  const [isViewerFullscreen, setIsViewerFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   const triggerDocumentActionWithOTP = (doc: WarehouseDocument, action: 'view' | 'download') => {
-    if (action === 'view') {
-      setActiveViewerDoc(doc);
-    } else {
-      window.open(doc.file_url, '_blank');
-    }
+    setActiveViewerDoc(doc);
   };
 
   const handleOTPSuccess = () => {
     if (pendingActionDoc) {
-      if (pendingActionDoc.action === 'view') {
-        setActiveViewerDoc(pendingActionDoc.doc);
-      } else {
-        window.open(pendingActionDoc.doc.file_url, '_blank');
-      }
+      setActiveViewerDoc(pendingActionDoc.doc);
       setPendingActionDoc(null);
     }
   };
@@ -402,21 +402,14 @@ export default function DocumentsPage() {
                       </div>
                     </div>
 
-                    {/* Action buttons with OTP verification */}
-                    <div className="flex gap-2.5 mt-5 border-t border-slate-100 dark:border-white/5 pt-4">
+                    {/* Action button - Read Online Only */}
+                    <div className="mt-5 border-t border-slate-100 dark:border-white/5 pt-4">
                       <button
-                        onClick={() => triggerDocumentActionWithOTP(doc, 'view')}
-                        className="flex-1 py-2 bg-warehouse-navy hover:bg-warehouse-navy/90 text-slate-700 dark:text-white rounded-xl text-[11px] font-bold transition-all border border-slate-200/50 dark:border-white/5 flex items-center justify-center gap-1.5"
+                        onClick={() => setActiveViewerDoc(doc)}
+                        className="w-full py-2.5 bg-emerald-600/90 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-900/20 flex items-center justify-center gap-2"
                       >
-                        <Eye size={12} />
-                        เปิดอ่านออนไลน์
-                      </button>
-                      <button
-                        onClick={() => triggerDocumentActionWithOTP(doc, 'download')}
-                        className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-white rounded-xl text-[11px] font-bold transition-all border border-slate-200/50 dark:border-white/5 flex items-center justify-center"
-                        title="ดาวน์โหลด PDF"
-                      >
-                        <Download size={12} />
+                        <Eye size={14} />
+                        <span>เปิดอ่านออนไลน์</span>
                       </button>
                     </div>
                   </GlassCard>
@@ -521,65 +514,57 @@ export default function DocumentsPage() {
 
       {/* PDF INLINE VIEWER MODAL */}
       {activeViewerDoc && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <GlassCard className="w-full max-w-5xl h-[85vh] flex flex-col p-0 overflow-hidden border border-white/10" animate={false}>
+        <div 
+          className="fixed inset-0 bg-slate-900/85 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4 select-none"
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          <GlassCard 
+            className={`w-full flex flex-col p-0 overflow-hidden border border-white/10 shadow-2xl transition-all duration-200 ${
+              isViewerFullscreen ? 'max-w-full h-full rounded-none' : 'max-w-5xl h-[88vh] rounded-3xl'
+            }`} 
+            animate={false}
+          >
             {/* Header info */}
-            <div className="flex items-center justify-between px-6 py-4.5 border-b border-slate-200/50 dark:border-white/5 bg-slate-100/50 dark:bg-white/5 flex-shrink-0">
-              <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200/50 dark:border-white/5 bg-slate-100/80 dark:bg-slate-900/80 flex-shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <span className="px-2.5 py-0.5 rounded-lg text-[9px] font-extrabold uppercase bg-warehouse-orange/15 text-warehouse-orange border border-warehouse-orange/20 shrink-0">
                   {activeViewerDoc.category}
                 </span>
                 <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-white truncate">
                   {activeViewerDoc.title}
                 </span>
+                <span className="hidden sm:inline-block px-2 py-0.5 rounded-md text-[9px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20 shrink-0">
+                  ระบบอ่านออนไลน์ (ห้ามดาวน์โหลด/บันทึกไฟล์)
+                </span>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <a 
-                  href={displayDocUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-warehouse-orange hover:text-warehouse-orange/80 p-2 rounded-xl bg-warehouse-orange/10 border border-warehouse-orange/20 transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0"
-                  title="เปิดในหน้าต่างใหม่ (Open in new window)"
-                >
-                  <ExternalLink size={14} />
-                  <span>เปิดอ่าน PDF เต็มจอ</span>
-                </a>
                 <button 
-                  onClick={() => setActiveViewerDoc(null)}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1.5 rounded-lg bg-slate-100 dark:bg-white/5 transition-colors shrink-0"
+                  onClick={() => setIsViewerFullscreen(!isViewerFullscreen)}
+                  className="text-slate-600 dark:text-slate-300 hover:text-warehouse-orange dark:hover:text-warehouse-orange p-1.5 rounded-lg bg-slate-200/50 dark:bg-white/5 transition-colors flex items-center gap-1 text-xs font-semibold"
+                  title={isViewerFullscreen ? "ย่อหน้าต่าง" : "ขยายเต็มจอ"}
+                >
+                  <Maximize2 size={14} />
+                  <span className="hidden sm:inline">{isViewerFullscreen ? "ย่อขนาด" : "ขยายเต็มจอ"}</span>
+                </button>
+                <button 
+                  onClick={() => {
+                    setActiveViewerDoc(null);
+                    setIsViewerFullscreen(false);
+                  }}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1.5 rounded-lg bg-slate-200/50 dark:bg-white/5 transition-colors shrink-0"
+                  title="ปิด"
                 >
                   <X size={16} />
                 </button>
               </div>
             </div>
             
-            {/* Embedded PDF iframe / Mobile Button Fallback */}
-            {isMobile ? (
-              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-slate-50 dark:bg-slate-900/40 space-y-4">
-                <div className="p-4 bg-warehouse-orange/10 text-warehouse-orange rounded-full animate-pulse">
-                  <FileText size={48} />
-                </div>
-                <div className="space-y-1.5 max-w-sm">
-                  <h4 className="font-bold text-slate-800 dark:text-white text-sm">ไม่สามารถเปิดแสดง PDF ในหน้านี้โดยตรงบนมือถือ</h4>
-                  <p className="text-xs text-slate-400">บราวเซอร์มือถือจำกัดการแสดงผล PDF ในเว็บเพจ ท่านสามารถเปิดเพื่ออ่านไฟล์ขนาดเต็มหรือดาวน์โหลดได้โดยตรงที่ลิงก์ด้านล่าง</p>
-                </div>
-                <a 
-                  href={displayDocUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="px-6 py-3 bg-warehouse-orange hover:bg-warehouse-orange/95 text-white rounded-xl font-bold text-xs shadow-md shadow-warehouse-orange/15 transition-all flex items-center gap-2"
-                >
-                  <ExternalLink size={14} />
-                  <span>เปิดอ่านเอกสาร PDF (Open PDF)</span>
-                </a>
-              </div>
-            ) : (
-              <iframe 
-                src={displayDocUrl} 
-                className="w-full flex-1 border-none bg-slate-900" 
-                title={activeViewerDoc.title}
-              />
-            )}
+            {/* Embedded PDF iframe */}
+            <iframe 
+              src={getSecurePdfUrl(displayDocUrl)} 
+              className="w-full flex-1 border-none bg-slate-900" 
+              title={activeViewerDoc.title}
+            />
           </GlassCard>
         </div>
       )}
@@ -589,7 +574,7 @@ export default function DocumentsPage() {
         isOpen={showOtpModal}
         onClose={() => { setShowOtpModal(false); setPendingActionDoc(null); }}
         onSuccess={handleOTPSuccess}
-        title="ยืนยันตัวตน OTP ก่อนดาวน์โหลดหรืออ่านเอกสาร"
+        title="ยืนยันตัวตน OTP ก่อนเปิดอ่านเอกสาร"
         subtitle="กรุณายืนยันตัวตนด้วยรหัส OTP 6 หลัก เพื่อความปลอดภัยในการเข้าถึงเอกสารคลังสินค้า"
         actionItemName={pendingActionDoc?.doc.title}
       />

@@ -218,7 +218,7 @@ export default function SkillsPage() {
 
     // Try API update if backend active
     if (selectedEmp?.id) {
-      api.put(`/api/employees/${selectedEmp.id}`, { ...selectedEmp, photo_url: photoStr }).catch((err) => {
+      api.put(`/api/employees/${selectedEmp.id}`, { ...selectedEmp, photo_url: photoStr }).catch((err: any) => {
         console.warn('API update photo error:', err);
       });
     }

@@ -746,10 +746,11 @@ export default function TasksPage() {
                         <p className="text-xs text-slate-400">ไฟล์หลักฐานรูปแบบเอกสาร PDF</p>
                         <a 
                           href={selectedReviewTask.proof_file} 
-                          download={`proof-task-${selectedReviewTask.id}.pdf`}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="inline-block px-4 py-2 bg-warehouse-orange hover:bg-warehouse-orange/95 text-white text-[10px] font-bold rounded-xl shadow-sm transition-all"
                         >
-                          ดาวน์โหลดหลักฐาน PDF
+                          เปิดดูเอกสารหลักฐาน PDF
                         </a>
                       </div>
                     )}

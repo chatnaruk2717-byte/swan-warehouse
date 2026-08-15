@@ -8,6 +8,7 @@ interface GlassCardProps {
   className?: string;
   hoverEffect?: boolean;
   onClick?: () => void;
+  onContextMenu?: React.MouseEventHandler<HTMLDivElement>;
   animate?: boolean;
   delay?: number;
 }
@@ -17,12 +18,14 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   className = '',
   hoverEffect = false,
   onClick,
+  onContextMenu,
   animate = true,
   delay = 0
 }) => {
   const cardContent = (
     <div
       onClick={onClick}
+      onContextMenu={onContextMenu}
       className={`glass-panel rounded-2xl p-6 transition-all duration-300 ${
         onClick ? 'cursor-pointer' : ''
       } ${

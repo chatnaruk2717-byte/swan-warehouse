@@ -16,12 +16,20 @@ import {
   X,
   Award,
   Video,
-  ExternalLink
+  ExternalLink,
+  Maximize2,
+  Shield
 } from 'lucide-react';
 import OTPModal from '../../../components/OTPModal';
 import CertificateModal, { CertificateData } from '../../../components/CertificateModal';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
+
+const getSecurePdfUrl = (url: string) => {
+  if (!url) return '';
+  const separator = url.includes('#') ? '&' : '#';
+  return `${url}${separator}toolbar=0&navpanes=0&scrollbar=0`;
+};
 
 const formatYoutubeUrl = (url: string) => {
   if (!url) return '';
@@ -73,6 +81,7 @@ export default function CourseViewerClient() {
   const [certId, setCertId] = useState<string>('');
   const [currentQuizQuestions, setCurrentQuizQuestions] = useState<any[]>([]);
   const [displayDocUrl, setDisplayDocUrl] = useState<string>('');
+  const [showFullscreenDoc, setShowFullscreenDoc] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -800,18 +809,25 @@ export default function CourseViewerClient() {
               )}
 
               {activeLesson.content_type === 'document' && activeLesson.content_url && (
-                <GlassCard className="min-h-[350px] md:h-[450px] flex flex-col p-0 overflow-hidden border border-slate-200/50 dark:border-white/5">
-                  <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/50 dark:border-white/5 bg-slate-100/50 dark:bg-white/5">
-                    <span className="font-bold text-xs">เอกสารหลักสูตร: {activeLesson.title}</span>
-                    <a 
-                      href={displayDocUrl} 
-                      target="_blank" 
-                      rel="noreferrer" 
-                      className="text-xs text-warehouse-orange hover:text-warehouse-orange/80 font-bold flex items-center gap-1.5 bg-warehouse-orange/10 border border-warehouse-orange/20 px-3 py-1.5 rounded-xl transition-all"
+                <GlassCard 
+                  className="min-h-[380px] md:h-[500px] flex flex-col p-0 overflow-hidden border border-slate-200/50 dark:border-white/5 select-none"
+                  onContextMenu={(e) => e.preventDefault()}
+                >
+                  <div className="flex items-center justify-between px-6 py-3.5 border-b border-slate-200/50 dark:border-white/5 bg-slate-100/50 dark:bg-white/5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-bold text-xs truncate">เอกสารหลักสูตร: {activeLesson.title}</span>
+                      <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20 shrink-0">
+                        อ่านออนไลน์เท่านั้น
+                      </span>
+                    </div>
+                    <button 
+                      onClick={() => setShowFullscreenDoc(true)} 
+                      className="text-xs text-warehouse-orange hover:text-warehouse-orange/80 font-bold flex items-center gap-1.5 bg-warehouse-orange/10 border border-warehouse-orange/20 px-3 py-1.5 rounded-xl transition-all shrink-0"
+                      title="เปิดอ่านเอกสาร PDF เต็มจอ"
                     >
-                      <ExternalLink size={12} />
+                      <Maximize2 size={13} />
                       <span>เปิดอ่าน PDF เต็มจอ</span>
-                    </a>
+                    </button>
                   </div>
                   {isMobile ? (
                     <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-slate-50 dark:bg-slate-900/40 space-y-4">
@@ -819,21 +835,23 @@ export default function CourseViewerClient() {
                         <FileText size={40} />
                       </div>
                       <div className="space-y-1.5 max-w-sm">
-                        <h4 className="font-bold text-slate-800 dark:text-white text-xs">ไม่สามารถเปิดแสดง PDF ในหน้านี้โดยตรงบนมือถือ</h4>
-                        <p className="text-[10px] text-slate-400">บราวเซอร์บนโทรศัพท์จำกัดการฝังหน้าไฟล์ PDF ท่านสามารถกดเปิดเพื่อเรียนรู้ในหน้าจอขนาดใหญ่เต็มจอได้ทันที</p>
+                        <h4 className="font-bold text-slate-800 dark:text-white text-xs">เอกสารสำหรับเรียนรู้ออนไลน์</h4>
+                        <p className="text-[10px] text-slate-400">ระบบป้องกันการดาวน์โหลดเอกสาร ท่านสามารถเปิดอ่านเอกสารแบบเต็มจอในระบบได้ทันที</p>
                       </div>
-                      <a 
-                        href={displayDocUrl} 
-                        target="_blank" 
-                        rel="noreferrer"
+                      <button 
+                        onClick={() => setShowFullscreenDoc(true)} 
                         className="px-5 py-2.5 bg-warehouse-orange hover:bg-warehouse-orange/95 text-white rounded-xl font-bold text-[10px] shadow-md shadow-warehouse-orange/15 transition-all flex items-center gap-2"
                       >
-                        <ExternalLink size={12} />
-                        <span>เปิดอ่านไฟล์เอกสาร PDF (Open PDF)</span>
-                      </a>
+                        <Maximize2 size={13} />
+                        <span>เปิดอ่านไฟล์เอกสาร PDF (Fullscreen Reader)</span>
+                      </button>
                     </div>
                   ) : (
-                    <iframe src={displayDocUrl} className="w-full flex-1 border-none bg-slate-900" />
+                    <iframe 
+                      src={getSecurePdfUrl(displayDocUrl)} 
+                      className="w-full flex-1 border-none bg-slate-900" 
+                      title={activeLesson.title}
+                    />
                   )}
                 </GlassCard>
               )}
@@ -1050,6 +1068,41 @@ export default function CourseViewerClient() {
         subtitle="กรุณายืนยันตัวตนด้วยรหัส OTP 6 หลัก เพื่อเริ่มเรียนและรับชมวิดีโอคอร์สฝึกอบรม"
         actionItemName={course?.name}
       />
+
+      {/* SECURE FULLSCREEN PDF VIEWER MODAL */}
+      {showFullscreenDoc && activeLesson && activeLesson.content_type === 'document' && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in select-none"
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          <GlassCard className="w-full max-w-6xl h-[92vh] flex flex-col p-0 overflow-hidden border border-slate-200/50 dark:border-white/10 shadow-2xl relative" animate={false}>
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200/50 dark:border-white/5 bg-slate-100/80 dark:bg-slate-900/80">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <FileText size={16} className="text-amber-500 shrink-0" />
+                <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-white truncate">
+                  {activeLesson.title}
+                </span>
+                <span className="hidden sm:inline-block px-2 py-0.5 rounded-md text-[9px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20 shrink-0">
+                  ระบบความปลอดภัย: ปิดการดาวน์โหลด / บันทึกไฟล์
+                </span>
+              </div>
+              <button 
+                onClick={() => setShowFullscreenDoc(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-2 rounded-xl bg-slate-200/50 dark:bg-white/10 transition-colors shrink-0 flex items-center gap-1 text-xs font-bold"
+              >
+                <X size={16} />
+                <span className="hidden sm:inline">ปิดหน้าต่าง</span>
+              </button>
+            </div>
+            
+            <iframe 
+              src={getSecurePdfUrl(displayDocUrl)} 
+              className="w-full flex-1 border-none bg-slate-900" 
+              title={activeLesson.title}
+            />
+          </GlassCard>
+        </div>
+      )}
 
     </div>
   );

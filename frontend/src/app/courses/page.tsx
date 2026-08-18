@@ -21,6 +21,7 @@ import {
   Sliders
 } from 'lucide-react';
 import Link from 'next/link';
+import { uploadFile } from '../../utils/uploadFile';
 
 const formatYoutubeUrl = (url: string) => {
   if (!url) return '';
@@ -1242,17 +1243,19 @@ export default function CoursesPage() {
                                       type="file" 
                                       accept={newLessonForm.content_type === 'video' ? 'video/*' : 'application/pdf'} 
                                       className="hidden" 
-                                      onChange={(e) => {
+                                      onChange={async (e) => {
                                         const file = e.target.files?.[0];
                                         if (file) {
                                           setUploadedFileName(file.name);
                                           setIsUploading(true);
-                                          const reader = new FileReader();
-                                          reader.onloadend = () => {
-                                            setNewLessonForm({ ...newLessonForm, content_url: reader.result as string });
+                                          try {
+                                            const fileUrl = await uploadFile(file);
+                                            setNewLessonForm({ ...newLessonForm, content_url: fileUrl });
+                                          } catch (err: any) {
+                                            console.error('Lesson file upload error:', err);
+                                          } finally {
                                             setIsUploading(false);
-                                          };
-                                          reader.readAsDataURL(file);
+                                          }
                                         }
                                       }}
                                     />

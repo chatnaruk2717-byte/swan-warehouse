@@ -20,7 +20,7 @@ import {
   Maximize
 } from 'lucide-react';
 
-import { uploadToImgBB } from '../../utils/uploadToImgBB';
+import { uploadFile } from '../../utils/uploadFile';
 
 interface OrgChartItem {
   id: number;
@@ -361,7 +361,7 @@ export default function OrgChartPage() {
     fetchOrgItems();
   }, []);
 
-  // Handle image upload converting to ImgBB CDN URL or Base64 fallback
+  // Handle image upload converting directly to Company Server / Cloud storage
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -373,45 +373,12 @@ export default function OrgChartPage() {
       setIsUploading(true);
       
       try {
-        const cdnUrl = await uploadToImgBB(file);
-        setFormState(prev => ({ ...prev, image_url: cdnUrl }));
+        const fileUrl = await uploadFile(file);
+        setFormState(prev => ({ ...prev, image_url: fileUrl }));
         setIsUploading(false);
-      } catch (err) {
-        console.warn('Falling back to local image compression:', err);
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const max_size = 150;
-            let width = img.width;
-            let height = img.height;
-
-            if (width > height) {
-              if (width > max_size) {
-                height *= max_size / width;
-                width = max_size;
-              }
-            } else {
-              if (height > max_size) {
-                width *= max_size / height;
-                height = max_size;
-              }
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-              ctx.drawImage(img, 0, 0, width, height);
-              const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-              setFormState(prev => ({ ...prev, image_url: compressedBase64 }));
-            }
-            setIsUploading(false);
-          };
-          img.src = event.target?.result as string;
-        };
-        reader.readAsDataURL(file);
+      } catch (err: any) {
+        console.error('Image upload error:', err);
+        setIsUploading(false);
       }
     }
   };

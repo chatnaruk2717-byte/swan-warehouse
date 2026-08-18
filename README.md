@@ -39,14 +39,14 @@ erDiagram
 
 ```text
 ├── database/
-│   ├── schema.sql         # PostgreSQL Schema ตารางความสัมพันธ์และดัชนี
-│   └── seeds.sql          # ข้อมูลพนักงาน ทักษะ คอร์ส และข้อสอบจำลองเริ่มต้น
+│   ├── schema_mysql.sql   # MySQL 8.0 / MariaDB Schema และข้อมูลเริ่มต้น (ครบถ้วนสมบูรณ์)
+│   └── schema.sql         # PostgreSQL Schema ตารางความสัมพันธ์
 │
 ├── backend/
 │   ├── src/
-│   │   ├── config/        # การเชื่อมต่อฐานข้อมูลและข้อมูลสำรอง (db.ts, mockData.ts)
+│   │   ├── config/        # การเชื่อมต่อฐานข้อมูล (db.ts, mysqlInit.ts, mockData.ts)
 │   │   ├── middleware/    # ตรวจสอบสิทธิ์เข้าถึง (auth.ts)
-│   │   ├── routes/        # บริการ API (auth.ts, employees.ts, skills.ts, courses.ts, tasks.ts, attendance.ts, reports.ts)
+│   │   ├── routes/        # บริการ API (auth, employees, skills, courses, tasks, attendance, reports, layouts, ฯลฯ)
 │   │   └── index.ts       # จุดรันเซิร์ฟเวอร์หลักและระบุ Swagger
 │   ├── Dockerfile
 │   ├── tsconfig.json
@@ -54,63 +54,63 @@ erDiagram
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── app/           # หน้าเว็บ Next.js (layout, dashboard, login, employees, skills, courses, tasks, hours, performance, reports, admin)
-│   │   ├── components/    # คอมโพเนนต์ UI (GlassCard.tsx, Sidebar.tsx, Navbar.tsx)
-│   │   └── context/       # เก็บสถานะ (ThemeContext.tsx, AuthContext.tsx)
-│   ├── tailwind.config.js
-│   ├── postcss.config.js
-│   ├── Dockerfile
+│   │   ├── app/           # หน้าเว็บ Next.js 14 App Router
+│   │   ├── components/    # คอมโพเนนต์ UI (GlassCard, Sidebar, Navbar, ฯลฯ)
+│   │   └── context/       # เก็บสถานะ (ThemeContext, AuthContext)
+│   ├── nginx.conf         # การตั้งค่า Nginx สำหรับ Static Production Container
+│   ├── Dockerfile         # Multi-stage Nginx Alpine Container
 │   ├── tsconfig.json
 │   └── package.json
 │
-├── docker-compose.yml     # รัน PostgreSQL, pgAdmin, Backend และ Frontend ผ่าน Docker Container
+├── docker-compose.yml     # รัน MySQL 8, phpMyAdmin, Backend API และ Frontend UI
+├── IT_DEPLOYMENT_GUIDE.md # เอกสารคู่มือการติดตั้งและส่งมอบระบบขึ้น Cloud สำหรับฝ่าย IT
+├── package_for_it.bat     # สคริปต์บีบอัดไฟล์ Source Code สะอาดสำหรับส่งมอบ IT
 ├── .env.example           # ไฟล์กำหนดตัวแปรสภาพแวดล้อมจำลอง
 └── README.md              # เอกสารอธิบายการติดตั้งและคู่มือใช้งาน
 ```
 
 ---
 
+## เอกสารการส่งมอบและติดตั้งขึ้น Cloud (Cloud & IT Deployment)
+> สำหรับฝ่าย IT / DevOps / Cloud Engineer โปรดดูคู่มือฉบับเต็มอย่างละเอียดได้ที่: **[IT_DEPLOYMENT_GUIDE.md](file:///c:/Users/chatn/OneDrive/Desktop/Leaning/IT_DEPLOYMENT_GUIDE.md)**
+
+---
+
 ## ขั้นตอนการติดตั้งและรันระบบ (Setup & Running Guide)
 
-### วิธีที่ 1: รันแบบเร็วที่สุดด้วย Docker Compose (แนะนำ)
+### วิธีที่ 1: รันผ่าน Docker Compose (แนะนำ)
 ต้องการเพียงติดตั้ง Docker บนเครื่อง และรันคำสั่งเดียวยกทั้งระบบ:
 
 ```bash
-# โคลนและเปิดโปรเจกต์
-# รันระบบทั้งหมด
-docker-compose up --build
+# รันระบบทั้งหมด (MySQL 8, phpMyAdmin, Backend, Frontend)
+docker compose up -d --build
 ```
 ระบบจะเปิดพอร์ตดังนี้:
 - **Frontend App**: `http://localhost:3000`
 - **Backend API**: `http://localhost:5000`
 - **Swagger Docs**: `http://localhost:5000/api-docs`
-- **pgAdmin**: `http://localhost:5050` (Email: `admin@warehouse.com` | Password: `adminpassword`)
+- **phpMyAdmin**: `http://localhost:8080` (User: `root` | Password: `rootpassword`)
 
 ---
 
 ### วิธีที่ 2: รันแบบแมนนวลในเครื่องคอมพิวเตอร์ (Local Development)
 
-#### 1. การเตรียมฐานข้อมูล (Database)
-1. ติดตั้งและเปิดรัน PostgreSQL บนเครื่องคอมพิวเตอร์
+#### 1. การเตรียมฐานข้อมูล (MySQL Database)
+1. ติดตั้งและเปิดรัน MySQL 8 บนเครื่องคอมพิวเตอร์
 2. สร้างฐานข้อมูลชื่อ `warehouse_db`
-3. รันสคริปต์ SQL จาก `database/schema.sql` และตามด้วย `database/seeds.sql` เพื่อป้อนข้อมูลจำลอง
+3. รันสคริปต์ SQL จาก `database/schema_mysql.sql` หรือให้ Backend รัน Auto-Migration เองเมื่อเริ่มระบบ
 
 #### 2. รันส่วนหลังบ้าน (Backend API)
 ```bash
 cd backend
-# ติดตั้ง dependencies
 npm install
-# รันเซิร์ฟเวอร์ในโหมด Developer (nodemon)
 npm run dev
 ```
-*หมายเหตุ: ตั้งค่าความเชื่อมโยงในไฟล์ `.env` (ดูได้จากตัวอย่าง `.env.example`)*
 
 #### 3. รันส่วนหน้าบ้าน (Frontend UI)
 ```bash
 cd frontend
-# ติดตั้ง dependencies
 npm install
-# รันเซิร์ฟเวอร์ Next.js ในหน้าเว็บพัฒนา
 npm run dev
 ```
 เปิดบราวเซอร์เพื่อเข้าไปที่: `http://localhost:3000`

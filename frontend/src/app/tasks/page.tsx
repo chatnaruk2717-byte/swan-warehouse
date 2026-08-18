@@ -17,6 +17,7 @@ import {
   Upload,
   Trash2
 } from 'lucide-react';
+import { uploadFile } from '../../utils/uploadFile';
 
 export default function TasksPage() {
   const { api, user } = useAuth();
@@ -80,17 +81,18 @@ export default function TasksPage() {
     loadData();
   }, [user]);
 
-  const handleTaskImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTaskImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
+    try {
+      const fileUrl = await uploadFile(file);
       setTaskForm(prev => ({
         ...prev,
-        task_image: reader.result as string
+        task_image: fileUrl
       }));
-    };
-    reader.readAsDataURL(file);
+    } catch (err: any) {
+      console.error('Task image upload error:', err);
+    }
   };
 
   const handleCreateTask = async (e: React.FormEvent) => {

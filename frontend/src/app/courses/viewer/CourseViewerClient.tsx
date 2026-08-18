@@ -184,6 +184,28 @@ export default function CourseViewerClient() {
       } else {
         setActiveLesson(null);
       }
+
+      // Record Audit Log for Course Learning Activity
+      if (user && res.data?.name) {
+        try {
+          const now = new Date();
+          const timestampStr = now.toISOString().replace('T', ' ').substring(0, 19);
+          const action = 'LEARN_COURSE';
+          const details = `ผู้ใช้ ${user.name} (${user.employee_id}) เข้าเรียนหลักสูตร "${res.data.name}"`;
+          const newLog = {
+            id: Date.now(),
+            action,
+            details,
+            ip_address: '192.168.1.100',
+            timestamp: timestampStr
+          };
+          const stored = localStorage.getItem('swan_audit_logs');
+          const list = stored ? JSON.parse(stored) : [];
+          list.unshift(newLog);
+          localStorage.setItem('swan_audit_logs', JSON.stringify(list));
+          api.post('/api/reports/audit-logs', { action, details }).catch(() => {});
+        } catch (e) {}
+      }
     } catch (err) {
       console.error('API error loading course structure:', err);
       

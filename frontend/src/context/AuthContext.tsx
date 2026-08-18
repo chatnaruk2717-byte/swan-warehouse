@@ -44,10 +44,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
 
   // Create axios instance pre-configured for the backend API
+  const getBaseUrl = () => {
+    if (process.env.NEXT_PUBLIC_API_URL) {
+      return process.env.NEXT_PUBLIC_API_URL;
+    }
+    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      return 'http://localhost:5000';
+    }
+    return 'https://swan-warehouse.onrender.com';
+  };
+
   const api = axios.create({
-    baseURL: typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      ? 'http://localhost:5000'
-      : 'https://swan-warehouse.onrender.com',
+    baseURL: getBaseUrl(),
     timeout: 30000
   });
 

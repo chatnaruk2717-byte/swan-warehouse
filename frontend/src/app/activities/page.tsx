@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import GlassCard from '../../components/GlassCard';
-import { uploadToImgBB } from '../../utils/uploadToImgBB';
+import { uploadFile } from '../../utils/uploadFile';
 import { 
   Sparkles, 
   Heart, 
@@ -252,19 +252,18 @@ function DepartmentActivitiesPageContent() {
     });
   };
 
-  // Image Upload Handling (ImgBB Cloud Upload + Canvas Compression Fallback)
+  // Image Upload Handling (Company Cloud Storage)
   const handleImageFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsUploadingImage(true);
     try {
-      // 1. Attempt fast ImgBB cloud upload
-      const cloudUrl = await uploadToImgBB(file);
+      const cloudUrl = await uploadFile(file);
       setMediaPreview(cloudUrl);
       setFormMediaUrl(cloudUrl);
     } catch (err) {
-      console.warn('ImgBB cloud upload failed, compressing image locally via Canvas...');
+      console.warn('Company upload failed, compressing image locally via Canvas...');
       const compressedBase64 = await compressImage(file);
       setMediaPreview(compressedBase64);
       setFormMediaUrl(compressedBase64);

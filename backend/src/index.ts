@@ -39,6 +39,7 @@ import performanceRouter from './routes/performance';
 import warehouseLayoutsRouter from './routes/warehouseLayouts';
 import otpRouter from './routes/otp';
 import certificatesRouter from './routes/certificates';
+import uploadRouter from './routes/upload';
 
 dotenv.config();
 
@@ -52,8 +53,11 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
+
+// Serve uploaded company media/files statically from local storage
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // System Health & Status Check
 app.get('/api/status', (req: Request, res: Response) => {
@@ -66,6 +70,7 @@ app.get('/api/status', (req: Request, res: Response) => {
 });
 
 // Register REST API Routers
+app.use('/api/upload', uploadRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/employees', employeesRouter);
 app.use('/api/skills', skillsRouter);

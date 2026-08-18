@@ -1,0 +1,12 @@
+node_modules
+npm-debug.log
+.next
+out
+.env
+.env.local
+.env.*.local
+.wrangler
+*.log
+*.zip
+zip.js
+list_zip.js

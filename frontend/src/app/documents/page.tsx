@@ -19,6 +19,7 @@ import {
   Maximize2,
   Shield 
 } from 'lucide-react';
+import { uploadFile } from '../../utils/uploadFile';
 
 const getSecurePdfUrl = (url: string) => {
   if (!url) return '';
@@ -123,13 +124,38 @@ export default function DocumentsPage() {
   const [isViewerFullscreen, setIsViewerFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  const triggerDocumentActionWithOTP = (doc: WarehouseDocument, action: 'view' | 'download') => {
+  const handleOpenDocument = (doc: WarehouseDocument) => {
     setActiveViewerDoc(doc);
+
+    // Record Audit Log for Security & Compliance Tracking
+    try {
+      const now = new Date();
+      const timestampStr = now.toISOString().replace('T', ' ').substring(0, 19);
+      const action = 'VIEW_DOCUMENT';
+      const details = `ผู้ใช้ ${user?.name || 'พนักงาน'} (${user?.employee_id || 'EMP'}) เปิดอ่านเอกสาร "${doc.title}" (หมวดหมู่: ${doc.category})`;
+      const newLog = {
+        id: Date.now(),
+        action,
+        details,
+        ip_address: '192.168.1.100',
+        timestamp: timestampStr
+      };
+      const stored = localStorage.getItem('swan_audit_logs');
+      const list = stored ? JSON.parse(stored) : [];
+      list.unshift(newLog);
+      localStorage.setItem('swan_audit_logs', JSON.stringify(list));
+
+      api.post('/api/reports/audit-logs', { action, details }).catch(() => {});
+    } catch (e) {}
+  };
+
+  const triggerDocumentActionWithOTP = (doc: WarehouseDocument, action: 'view' | 'download') => {
+    handleOpenDocument(doc);
   };
 
   const handleOTPSuccess = () => {
     if (pendingActionDoc) {
-      setActiveViewerDoc(pendingActionDoc.doc);
+      handleOpenDocument(pendingActionDoc.doc);
       setPendingActionDoc(null);
     }
   };
@@ -190,8 +216,8 @@ export default function DocumentsPage() {
     fetchDocuments();
   }, []);
 
-  // Handle PDF file selection & conversion to Base64
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle PDF file selection & upload directly to Company Storage
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.type !== 'application/pdf') {
@@ -200,12 +226,14 @@ export default function DocumentsPage() {
       }
       setUploadedFileName(file.name);
       setIsUploadingFile(true);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setUploadForm(prev => ({ ...prev, file_url: reader.result as string }));
+      try {
+        const fileUrl = await uploadFile(file);
+        setUploadForm(prev => ({ ...prev, file_url: fileUrl }));
+      } catch (err: any) {
+        console.error('Document upload error:', err);
+      } finally {
         setIsUploadingFile(false);
-      };
-      reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -405,7 +433,7 @@ export default function DocumentsPage() {
                     {/* Action button - Read Online Only */}
                     <div className="mt-5 border-t border-slate-100 dark:border-white/5 pt-4">
                       <button
-                        onClick={() => setActiveViewerDoc(doc)}
+                        onClick={() => handleOpenDocument(doc)}
                         className="w-full py-2.5 bg-emerald-600/90 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-900/20 flex items-center justify-center gap-2"
                       >
                         <Eye size={14} />

@@ -205,6 +205,8 @@ export default function AdminSettingsPage() {
 
     if (selectedActionFilter === 'ALL') return matchesSearch;
     if (selectedActionFilter === 'LOGIN') return matchesSearch && (log.action === 'LOGIN' || log.action === 'ROLE_SWITCH');
+    if (selectedActionFilter === 'COURSES') return matchesSearch && (log.action.includes('COURSE') || log.action.includes('LESSON') || log.action.includes('QUIZ'));
+    if (selectedActionFilter === 'DOCS') return matchesSearch && (log.action.includes('DOCUMENT') || log.action.includes('DOC'));
     if (selectedActionFilter === 'SKILLS') return matchesSearch && log.action.includes('SKILL');
     if (selectedActionFilter === 'USERS') return matchesSearch && (log.action.includes('USER') || log.action.includes('CLOCK'));
     if (selectedActionFilter === 'BACKUP') return matchesSearch && (log.action.includes('BACKUP') || log.action.includes('RESTORE'));
@@ -214,6 +216,8 @@ export default function AdminSettingsPage() {
   const getActionBadgeColor = (action: string) => {
     if (action === 'LOGIN') return 'bg-indigo-500/10 text-indigo-500 border border-indigo-500/20';
     if (action === 'ROLE_SWITCH') return 'bg-purple-500/10 text-purple-500 border border-purple-500/20';
+    if (action === 'VIEW_DOCUMENT') return 'bg-amber-500/10 text-amber-500 border border-amber-500/20';
+    if (action.includes('COURSE') || action.includes('LESSON') || action.includes('QUIZ')) return 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20';
     if (action === 'APPROVE_SKILL') return 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20';
     if (action === 'CREATE_USER') return 'bg-sky-500/10 text-sky-500 border border-sky-500/20';
     if (action === 'CLOCK_IN') return 'bg-amber-500/10 text-amber-500 border border-amber-500/20';
@@ -305,6 +309,8 @@ export default function AdminSettingsPage() {
               {[
                 { id: 'ALL', label: 'ทั้งหมด' },
                 { id: 'LOGIN', label: 'การเข้าใช้ระบบ' },
+                { id: 'COURSES', label: 'การเข้าเรียน/อบรม' },
+                { id: 'DOCS', label: 'การเปิดดูเอกสาร' },
                 { id: 'SKILLS', label: 'อนุมัติทักษะ' },
                 { id: 'USERS', label: 'ผู้ใช้/ลงเวลา' },
                 { id: 'BACKUP', label: 'สำรอง/กู้คืน' },

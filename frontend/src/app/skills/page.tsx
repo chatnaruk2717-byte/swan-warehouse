@@ -29,6 +29,7 @@ import {
   Lock
 } from 'lucide-react';
 import CertificateModal, { CertificateData } from '../../components/CertificateModal';
+import { uploadFile } from '../../utils/uploadFile';
 import { 
   Radar, 
   RadarChart, 
@@ -224,8 +225,8 @@ export default function SkillsPage() {
     }
   };
 
-  // Ultra-Compressed Image Algorithm (resizes 4K photos to crisp 400px ~20KB JPEGs)
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Image Upload using Company Cloud Storage
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (user?.role !== 'admin') {
       alert('เฉพาะ Admin เท่านั้นที่มีสิทธิ์อัปโหลดรูปภาพพนักงาน');
       return;
@@ -233,42 +234,13 @@ export default function SkillsPage() {
 
     const file = e.target.files?.[0];
     if (file && selectedEmp) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 400;
-          const MAX_HEIGHT = 400;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height = Math.round((height * MAX_WIDTH) / width);
-              width = MAX_WIDTH;
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width = Math.round((width * MAX_HEIGHT) / height);
-              height = MAX_HEIGHT;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height);
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.70);
-            saveCustomPhoto(selectedEmp.employee_id || selectedEmp.id, compressedBase64);
-            setShowPhotoModal(false);
-          }
-        };
-        img.src = event.target?.result as string;
-      };
-      reader.readAsDataURL(file);
+      try {
+        const fileUrl = await uploadFile(file);
+        saveCustomPhoto(selectedEmp.employee_id || selectedEmp.id, fileUrl);
+        setShowPhotoModal(false);
+      } catch (err: any) {
+        console.error('Photo upload error:', err);
+      }
     }
   };
 

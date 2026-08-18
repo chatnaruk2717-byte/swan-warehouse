@@ -22,6 +22,7 @@ import {
   AlignJustify,
   ArrowUp
 } from 'lucide-react';
+import { uploadFile } from '../../utils/uploadFile';
 
 interface WarehouseLayout {
   id: number;
@@ -75,10 +76,18 @@ export default function WarehouseLayoutPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Axios instance matching AuthContext configuration
+  const getBaseUrl = () => {
+    if (process.env.NEXT_PUBLIC_API_URL) {
+      return process.env.NEXT_PUBLIC_API_URL;
+    }
+    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      return 'http://localhost:5000';
+    }
+    return 'https://swan-warehouse.onrender.com';
+  };
+
   const api = axios.create({
-    baseURL: typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      ? 'http://localhost:5000'
-      : 'https://swan-warehouse.onrender.com',
+    baseURL: getBaseUrl(),
     timeout: 30000
   });
 
@@ -171,45 +180,18 @@ export default function WarehouseLayoutPage() {
     setIsModalOpen(true);
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const max_size = 1200; // slightly larger size limit for layout details
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height) {
-            if (width > max_size) {
-              height *= max_size / width;
-              width = max_size;
-            }
-          } else {
-            if (height > max_size) {
-              width *= max_size / height;
-              height = max_size;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height);
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-            setFormFields(prev => ({
-              ...prev,
-              layout_image: compressedBase64
-            }));
-          }
-        };
-        img.src = event.target?.result as string;
-      };
-      reader.readAsDataURL(file);
+      try {
+        const fileUrl = await uploadFile(file);
+        setFormFields(prev => ({
+          ...prev,
+          layout_image: fileUrl
+        }));
+      } catch (err: any) {
+        console.error('Layout image upload error:', err);
+      }
     }
   };
 

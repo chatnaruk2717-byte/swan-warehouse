@@ -17,7 +17,7 @@ import {
   Printer
 } from 'lucide-react';
 import CertificateModal, { CertificateData } from '../../components/CertificateModal';
-import { uploadToImgBB } from '../../utils/uploadToImgBB';
+import { uploadFile } from '../../utils/uploadFile';
 
 export default function ProfilePage() {
   const { user, api, updateProfile } = useAuth();
@@ -57,49 +57,13 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        const cdnUrl = await uploadToImgBB(file);
+        const fileUrl = await uploadFile(file);
         setProfileForm(prev => ({
           ...prev,
-          photo_url: cdnUrl
+          photo_url: fileUrl
         }));
       } catch (err) {
-        console.warn('Falling back to local image compression:', err);
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const max_size = 150;
-            let width = img.width;
-            let height = img.height;
-
-            if (width > height) {
-              if (width > max_size) {
-                height *= max_size / width;
-                width = max_size;
-              }
-            } else {
-              if (height > max_size) {
-                width *= max_size / height;
-                height = max_size;
-              }
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-              ctx.drawImage(img, 0, 0, width, height);
-              const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-              setProfileForm(prev => ({
-                ...prev,
-                photo_url: compressedBase64
-              }));
-            }
-          };
-          img.src = event.target?.result as string;
-        };
-        reader.readAsDataURL(file);
+        console.error('Photo upload error:', err);
       }
     }
   };

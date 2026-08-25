@@ -77,13 +77,20 @@ export default function WarehouseLayoutPage() {
 
   // Axios instance matching AuthContext configuration
   const getBaseUrl = () => {
-    if (process.env.NEXT_PUBLIC_API_URL) {
-      return process.env.NEXT_PUBLIC_API_URL;
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      // 1. If on Cloudflare Pages public demo domain
+      if (hostname === 'swan-warehouse-app.pages.dev' || hostname.endsWith('.pages.dev')) {
+        return 'https://swan-warehouse.onrender.com';
+      }
+      // 2. If explicit custom API URL provided (not localhost)
+      if (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost')) {
+        return process.env.NEXT_PUBLIC_API_URL;
+      }
+      // 3. For any company server IP (e.g. 10.10.99.25), private network, or localhost
+      return `http://${hostname}:5000`;
     }
-    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-      return 'http://localhost:5000';
-    }
-    return 'https://swan-warehouse.onrender.com';
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
   };
 
   const api = axios.create({

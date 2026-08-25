@@ -171,7 +171,7 @@ app.listen(PORT, () => {
   console.log(`================================================`);
   console.log(` Warehouse Backend API listening on port ${PORT} `);
   console.log(` Swagger Docs available at http://localhost:${PORT}/api-docs `);
-  console.log(` Mock DB Status: ${getMockStatus() ? 'ACTIVE (Fallback)' : 'INACTIVE (PostgreSQL Connected)'} `);
+  console.log(` Mock DB Status: ${getMockStatus() ? 'ACTIVE (Fallback)' : 'INACTIVE (MySQL Connected)'} `);
   console.log(`================================================`);
 });
 

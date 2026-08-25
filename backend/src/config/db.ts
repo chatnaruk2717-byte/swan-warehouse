@@ -1,7 +1,21 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
 import { initializeMySQL } from './mysqlInit';
 
+// Load environment variables from backend/.env or root .env
+const envPaths = [
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(process.cwd(), 'backend/.env'),
+  path.resolve(__dirname, '../../.env'),
+  path.resolve(__dirname, '../.env')
+];
+for (const p of envPaths) {
+  if (fs.existsSync(p)) {
+    dotenv.config({ path: p });
+  }
+}
 dotenv.config();
 
 let pool: mysql.Pool | null = null;
@@ -12,16 +26,23 @@ if (process.env.USE_MOCK_DB === 'true') {
   useMock = true;
 } else {
   try {
-    const connectionString = process.env.DATABASE_URL || 'mysql://root:root@localhost:3306/warehouse_db';
-    pool = mysql.createPool({
+    const connectionString = process.env.DATABASE_URL || 'mysql://root:@localhost:3306/warehouse_db';
+    const isSslNeeded = connectionString.includes('ssl=') || process.env.DB_SSL === 'true';
+
+    const poolOptions: mysql.PoolOptions = {
       uri: connectionString,
       waitForConnections: true,
       connectionLimit: 10,
-      queueLimit: 0,
-      ssl: {
+      queueLimit: 0
+    };
+
+    if (isSslNeeded) {
+      poolOptions.ssl = {
         rejectUnauthorized: false
-      }
-    });
+      };
+    }
+
+    pool = mysql.createPool(poolOptions);
     
     // Test the database connection and initialize tables
     pool.query('SELECT 1')

@@ -68,7 +68,7 @@ services:
     container_name: warehouse_frontend_ui
     restart: always
     ports:
-      - "3000:80"
+      - "3100:80"
     depends_on:
       - backend
 
